@@ -1,0 +1,47 @@
+{
+    "name": "learning-path-builder",
+    "version": "1.0.0",
+    "description": "Monorepo pour Learning Path Builder avec backend Node.js et frontend React",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "npm run dev --workspace=@learning-path-builder/backend",
+        "dev:frontend": "npm run dev --workspace=@learning-path-builder/frontend",
+        "build": "npm run build --workspace=@learning-path-builder/backend && npm run build --workspace=@learning-path-builder/frontend",
+        "build:backend": "npm run build --workspace=@learning-path-builder/backend",
+        "build:frontend": "npm run build --workspace=@learning-path-builder/frontend",
+        "test": "npm run test --workspace=@learning-path-builder/backend && npm run test --workspace=@learning-path-builder/frontend",
+        "lint": "npm run lint --workspace=@learning-path-builder/backend && npm run lint --workspace=@learning-path-builder/frontend",
+        "clean": "npm run clean --workspace=@learning-path-builder/backend && npm run clean --workspace=@learning-path-builder/frontend",
+        "docker:build": "docker-compose build",
+        "docker:up": "docker-compose up",
+        "docker:down": "docker-compose down"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0"
+    },
+    "engines": {
+        "node": ">=22.0.0",
+        "npm": ">=10.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/your-username/learning-path-builder.git"
+    },
+    "keywords": [
+        "learning",
+        "path",
+        "builder",
+        "monorepo",
+        "nodejs",
+        "react",
+        "typescript"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}
