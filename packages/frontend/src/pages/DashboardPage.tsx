@@ -45,19 +45,28 @@ const DashboardPage: React.FC = () => {
     navigate(`/study/${plan.id}`, { state: { plan, mode } });
   };
 
-  const handleCreatePlan = async (title: string, skillLevel: string, topic?: string) => {
+  const handleCreatePlan = async (planData: {
+    title: string;
+    description: string;
+    topic: string;
+    skillLevel: string;
+    mode: string;
+    cardCount?: number;
+    generateFromDocument?: boolean;
+  }) => {
     try {
       await dispatch(
         createLearningPlan({
-          title,
-          description: `Plan d'apprentissage pour ${title}`,
-          topic: topic || 'Général',
-          skillLevel,
-          mode: 'mixed',
+          title: planData.title,
+          description: planData.description,
+          topic: planData.topic,
+          skillLevel: planData.skillLevel,
+          mode: planData.mode,
         })
       ).unwrap();
     } catch (error) {
       console.error('Error creating learning plan:', error);
+      throw error; // Re-throw to show error in modal
     }
   };
 

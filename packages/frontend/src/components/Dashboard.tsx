@@ -16,7 +16,15 @@ interface DashboardProps {
   user: User;
   plans: LearningPlan[];
   onStartStudy: (plan: LearningPlan, mode: 'flashcards' | 'quiz') => void;
-  onCreatePlan: (title: string, skillLevel: string, topic?: string) => void;
+  onCreatePlan: (planData: {
+    title: string;
+    description: string;
+    topic: string;
+    skillLevel: string;
+    mode: string;
+    cardCount?: number;
+    generateFromDocument?: boolean;
+  }) => void;
   onUpdatePlan: (planId: string, data: Partial<LearningPlan>) => void;
   onDeletePlan: (planId: string) => void;
   onUpdateUser: (updatedUser: User) => void;
