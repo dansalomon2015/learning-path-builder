@@ -1,5 +1,17 @@
 import axios, {AxiosInstance, AxiosResponse} from "axios";
-import {LearningPath, User, ApiResponse, PaginatedResponse} from "@/types";
+import {
+    LearningPlan,
+    Flashcard,
+    QuizQuestion,
+    StudySession,
+    DocumentUpload,
+    ExportData,
+    ApiResponse,
+    PaginatedResponse,
+    QuizResult,
+    LearningProgress,
+} from "@/types";
+import {AuthService} from "./firebase";
 
 class ApiService {
     private api: AxiosInstance;
@@ -15,10 +27,10 @@ class ApiService {
 
         // Request interceptor
         this.api.interceptors.request.use(
-            (config) => {
-                const token = localStorage.getItem("authToken");
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
+            async (config) => {
+                const idToken = await AuthService.getIdToken();
+                if (idToken) {
+                    config.headers.Authorization = `Bearer ${idToken}`;
                 }
                 return config;
             },
@@ -34,7 +46,7 @@ class ApiService {
             },
             (error) => {
                 if (error.response?.status === 401) {
-                    localStorage.removeItem("authToken");
+                    AuthService.signOut();
                     window.location.href = "/login";
                 }
                 return Promise.reject(error);
@@ -42,94 +54,163 @@ class ApiService {
         );
     }
 
-    // Learning Paths
-    async getLearningPaths(params?: {
-        page?: number;
-        limit?: number;
-        difficulty?: string;
-        search?: string;
-    }): Promise<PaginatedResponse<LearningPath>> {
-        const response = await this.api.get("/learning-paths", {params});
+    // Learning Plans
+    async getLearningPlans(): Promise<ApiResponse<LearningPlan[]>> {
+        const response = await this.api.get("/learning-plans");
         return response.data;
     }
 
-    async getLearningPath(id: string): Promise<ApiResponse<LearningPath>> {
-        const response = await this.api.get(`/learning-paths/${id}`);
+    async getLearningPlan(id: string): Promise<ApiResponse<LearningPlan>> {
+        const response = await this.api.get(`/learning-plans/${id}`);
         return response.data;
     }
 
-    async createLearningPath(
-        data: Partial<LearningPath>
-    ): Promise<ApiResponse<LearningPath>> {
-        const response = await this.api.post("/learning-paths", data);
+    async createLearningPlan(data: {
+        title: string;
+        description: string;
+        topic: string;
+        skillLevel: string;
+        mode: string;
+    }): Promise<ApiResponse<LearningPlan>> {
+        const response = await this.api.post("/learning-plans", data);
         return response.data;
     }
 
-    async updateLearningPath(
+    async updateLearningPlan(
         id: string,
-        data: Partial<LearningPath>
-    ): Promise<ApiResponse<LearningPath>> {
-        const response = await this.api.put(`/learning-paths/${id}`, data);
+        data: Partial<LearningPlan>
+    ): Promise<ApiResponse<LearningPlan>> {
+        const response = await this.api.put(`/learning-plans/${id}`, data);
         return response.data;
     }
 
-    async deleteLearningPath(id: string): Promise<ApiResponse<void>> {
-        const response = await this.api.delete(`/learning-paths/${id}`);
+    async deleteLearningPlan(id: string): Promise<ApiResponse<void>> {
+        const response = await this.api.delete(`/learning-plans/${id}`);
         return response.data;
     }
 
-    // Users
-    async getUsers(params?: {
-        page?: number;
-        limit?: number;
-    }): Promise<PaginatedResponse<User>> {
-        const response = await this.api.get("/users", {params});
+    // Study Sessions
+    async startStudySession(
+        planId: string,
+        mode: "flashcards" | "quiz"
+    ): Promise<ApiResponse<StudySession>> {
+        const response = await this.api.post(
+            `/learning-plans/${planId}/study-session`,
+            {mode}
+        );
         return response.data;
     }
 
-    async getUser(id: string): Promise<ApiResponse<User>> {
-        const response = await this.api.get(`/users/${id}`);
+    async reviewFlashcard(
+        planId: string,
+        cardId: string,
+        userResponse: "correct" | "incorrect",
+        responseTime: number,
+        sessionId: string
+    ): Promise<ApiResponse<Flashcard>> {
+        const response = await this.api.post(
+            `/learning-plans/${planId}/flashcards/${cardId}/review`,
+            {
+                userResponse,
+                responseTime,
+                sessionId,
+            }
+        );
         return response.data;
     }
 
-    async getCurrentUser(): Promise<ApiResponse<User>> {
-        const response = await this.api.get("/users/me");
+    // Quiz
+    async getQuizQuestions(
+        planId: string,
+        count: number = 5
+    ): Promise<
+        ApiResponse<{
+            questions: QuizQuestion[];
+            difficulty: string;
+            adaptiveRecommendations: string[];
+        }>
+    > {
+        const response = await this.api.get(
+            `/learning-plans/${planId}/quiz-questions?count=${count}`
+        );
         return response.data;
     }
 
-    async updateUser(
-        id: string,
-        data: Partial<User>
-    ): Promise<ApiResponse<User>> {
-        const response = await this.api.put(`/users/${id}`, data);
+    async submitQuiz(
+        planId: string,
+        answers: any[],
+        sessionId: string
+    ): Promise<ApiResponse<QuizResult>> {
+        const response = await this.api.post(
+            `/learning-plans/${planId}/quiz-submit`,
+            {
+                answers,
+                sessionId,
+            }
+        );
         return response.data;
     }
 
-    // Auth
-    async login(
-        email: string,
-        password: string
-    ): Promise<ApiResponse<{token: string; user: User}>> {
-        const response = await this.api.post("/auth/login", {email, password});
+    // Document Upload
+    async uploadDocument(
+        file: File,
+        topic?: string
+    ): Promise<
+        ApiResponse<{
+            uploadId: string;
+            learningPlanId: string;
+            extractedTopics: string[];
+            generatedFlashcards: number;
+        }>
+    > {
+        const formData = new FormData();
+        formData.append("document", file);
+        if (topic) {
+            formData.append("topic", topic);
+        }
+
+        const response = await this.api.post("/documents/upload", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
         return response.data;
     }
 
-    async register(data: {
-        name: string;
-        email: string;
-        password: string;
-    }): Promise<ApiResponse<{token: string; user: User}>> {
-        const response = await this.api.post("/auth/register", data);
+    async getDocumentUploads(): Promise<ApiResponse<DocumentUpload[]>> {
+        const response = await this.api.get("/documents/uploads");
         return response.data;
     }
 
-    async logout(): Promise<void> {
-        localStorage.removeItem("authToken");
+    // Export
+    async exportData(
+        format: "csv" | "pdf",
+        options: {
+            dateRange?: {start: string; end: string};
+            includeSessions?: boolean;
+            includeStatistics?: boolean;
+            includeFlashcards?: boolean;
+        }
+    ): Promise<Blob> {
+        const response = await this.api.post(`/export/${format}`, options, {
+            responseType: "blob",
+        });
+        return response.data;
     }
 
     // Health check
     async healthCheck(): Promise<
-        ApiResponse<{status: string; timestamp: string}>
+        ApiResponse<{
+            status: string;
+            timestamp: string;
+            services: {
+                firebase: boolean;
+                gemini: boolean;
+                firestore: boolean;
+            };
+            uptime: number;
+            version: string;
+        }>
     > {
         const response = await this.api.get("/health");
         return response.data;

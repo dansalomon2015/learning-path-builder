@@ -1,26 +1,61 @@
-import {Routes, Route} from "react-router-dom";
-import {Layout} from "@/components/Layout";
-import {HomePage} from "@/pages/HomePage";
-import {LearningPathsPage} from "@/pages/LearningPathsPage";
-import {LearningPathDetailPage} from "@/pages/LearningPathDetailPage";
-import {ProfilePage} from "@/pages/ProfilePage";
-import {NotFoundPage} from "@/pages/NotFoundPage";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './store';
+import { AuthProvider } from './contexts/AuthContext';
+import LandingPage from './pages/LandingPage';
+import AuthPage from './pages/AuthPage';
+import DashboardPage from './pages/DashboardPage';
+import ProfilePageRoute from './pages/ProfilePageRoute';
+import StudyPage from './pages/StudyPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
-function App() {
-    return (
-        <Layout>
+const App: React.FC = () => {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+        <AuthProvider>
+          <Router>
             <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/learning-paths" element={<LearningPathsPage />} />
-                <Route
-                    path="/learning-paths/:id"
-                    element={<LearningPathDetailPage />}
-                />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="*" element={<NotFoundPage />} />
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePageRoute />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/study/:planId"
+                element={
+                  <ProtectedRoute>
+                    <StudyPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-        </Layout>
-    );
-}
+          </Router>
+        </AuthProvider>
+      </PersistGate>
+    </Provider>
+  );
+};
 
 export default App;
