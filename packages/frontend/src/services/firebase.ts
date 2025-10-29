@@ -6,6 +6,8 @@ import {
   signOut,
   onAuthStateChanged,
   User,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -37,6 +39,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Ensure auth is persisted locally across reloads
+setPersistence(auth, browserLocalPersistence).catch(() => {
+  // no-op: fallback to default persistence if setting fails
+});
 
 // Auth service
 export class AuthService {

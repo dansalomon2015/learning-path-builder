@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
-import FlashcardView from '../components/FlashcardView';
+import StudySession from '../components/StudySession';
 import { AuthService } from '../services/firebase';
 import { User, LearningPlan } from '../types';
 
@@ -65,7 +65,8 @@ const StudyPage: React.FC = () => {
   };
 
   const handleStudyComplete = () => {
-    navigate('/dashboard');
+    // Session completion is handled by StudySession component
+    // We can add additional logic here if needed
   };
 
   if (loading) {
@@ -80,9 +81,12 @@ const StudyPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Plan non trouvé</h2>
-          <button onClick={handleBackToDashboard} className="btn btn-primary">
-            Retour au tableau de bord
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Plan not found</h2>
+          <button
+            onClick={handleBackToDashboard}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            Back to Dashboard
           </button>
         </div>
       </div>
@@ -94,19 +98,7 @@ const StudyPage: React.FC = () => {
       <Header user={user} onLogout={handleLogout} onViewProfile={() => navigate('/profile')} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <button
-            onClick={handleBackToDashboard}
-            className="text-indigo-600 hover:text-indigo-500 font-medium mb-4"
-          >
-            ← Retour au tableau de bord
-          </button>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {plan.title} - {studyMode === 'flashcards' ? 'Flashcards' : 'Quiz'}
-          </h1>
-        </div>
-
-        <FlashcardView
+        <StudySession
           plan={plan}
           mode={studyMode}
           onComplete={handleStudyComplete}

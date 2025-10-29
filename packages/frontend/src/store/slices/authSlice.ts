@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '@/types';
-import { AuthService } from '@/services/firebase';
+import { apiService } from '@/services/api';
 
 interface AuthState {
   user: User | null;
@@ -21,9 +21,15 @@ export const signIn = createAsyncThunk(
   'auth/signIn',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const firebaseUser = await AuthService.signIn(email, password);
-      const userProfile = await AuthService.getUserProfile(firebaseUser.uid);
-      return userProfile as User;
+      // Backend login: email + password (no token required)
+      const { jwtToken, user } = await apiService.backendLogin(email, password);
+      if (jwtToken) {
+        localStorage.setItem('jwtToken', jwtToken);
+      }
+      if (!user) {
+        throw new Error('User data missing from login response');
+      }
+      return user as User;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Sign in failed');
     }
@@ -37,21 +43,44 @@ export const signUp = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const firebaseUser = await AuthService.signUp(email, password, name);
-      const userProfile = await AuthService.getUserProfile(firebaseUser.uid);
-      return userProfile as User;
+      const { jwtToken, user } = await apiService.backendRegister(name, email, password);
+      if (jwtToken) {
+        localStorage.setItem('jwtToken', jwtToken);
+      }
+      if (!user) {
+        throw new Error('User data missing from register response');
+      }
+      // Map backend user to frontend User shape if needed
+      const mappedUser: User = {
+        id: user.id || user.uid,
+        email: user.email,
+        name: user.name || user.displayName || '',
+        avatar: user.avatar,
+        skillLevel: user.skillLevel || 'beginner',
+        learningObjectives: user.learningObjectives || [],
+        preferences: user.preferences || {
+          studyMode: 'mixed',
+          difficultyAdjustment: 'automatic',
+          sessionLength: 15,
+          notifications: true,
+          language: 'fr',
+        },
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString(),
+      };
+      return mappedUser;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Sign up failed');
     }
   }
 );
 
-export const signOut = createAsyncThunk('auth/signOut', async (_, { rejectWithValue }) => {
+export const signOut = createAsyncThunk('auth/signOut', async () => {
   try {
-    await AuthService.signOut();
+    localStorage.removeItem('jwtToken');
     return null;
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Sign out failed');
+  } catch {
+    return null;
   }
 });
 

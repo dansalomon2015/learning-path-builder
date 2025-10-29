@@ -1,0 +1,5 @@
+{
+  "name": "Adaptive Flashcard Learner",
+  "description": "An adaptive learning assistant that uses flashcards to help users master new topics. Users can create personalized learning plans, and the app generates flashcards for an advanced, animated study experience.",
+  "requestFramePermissions": []
+}

@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { AuthService } from '../services/firebase';
 import {
-  loadUserProfile,
   signOut as signOutAction,
-  setUser,
   clearError as clearAuthError,
   signIn as signInAction,
   signUp as signUpAction,
 } from '../store/slices/authSlice';
-import { clearPlans } from '../store/slices/learningPlansSlice';
 
 interface AuthContextType {
   user: any;
@@ -32,27 +28,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const { user, isAuthenticated, isLoading, error } = useAppSelector(state => state.auth);
 
-  // Listen to Firebase auth state changes
+  // No Firebase listener: rely on Redux (persist) and backend JWT
   useEffect(() => {
-    const unsubscribe = AuthService.onAuthStateChanged(async firebaseUser => {
-      if (firebaseUser) {
-        try {
-          // Load user profile from Redux
-          await dispatch(loadUserProfile(firebaseUser.uid)).unwrap();
-        } catch (error) {
-          console.error('Error loading user profile:', error);
-          // If profile doesn't exist, sign out
-          await dispatch(signOutAction()).unwrap();
-        }
-      } else {
-        // User is signed out
-        dispatch(setUser(null));
-        dispatch(clearPlans());
-      }
-    });
-
-    return () => unsubscribe();
-  }, [dispatch]);
+    // nothing to do on mount; Redux Persist rehydrates auth state
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {

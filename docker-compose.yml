@@ -7,17 +7,23 @@ services:
       context: .
       dockerfile: packages/backend/Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - FRONTEND_URL=http://localhost:5173
+      - FRONTEND_URL=http://localhost:80
     volumes:
       - ./packages/backend:/app
       - /app/node_modules
     networks:
       - app-network
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Frontend service
   frontend:
@@ -25,33 +31,22 @@ services:
       context: .
       dockerfile: packages/frontend/Dockerfile
     ports:
-      - "80:80"
+      - '80:80'
     environment:
       - VITE_API_URL=http://localhost:3000/api
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
-
-  # MongoDB (for development)
-  mongodb:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
-      - MONGO_INITDB_DATABASE=learning-path-builder
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - app-network
-    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:80']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  mongodb_data:

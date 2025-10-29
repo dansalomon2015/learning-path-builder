@@ -1,21 +1,21 @@
 {
-    "name": "learning-path-builder",
+    "name": "flashlearn-ai",
     "version": "1.0.0",
-    "description": "Monorepo pour Learning Path Builder avec backend Node.js et frontend React",
+    "description": "Monorepo pour FlashLearn AI - Système d'apprentissage adaptatif avec flashcards et quiz IA",
     "private": true,
     "workspaces": [
         "packages/*"
     ],
     "scripts": {
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "dev:backend": "npm run dev --workspace=@learning-path-builder/backend",
-        "dev:frontend": "npm run dev --workspace=@learning-path-builder/frontend",
-        "build": "npm run build --workspace=@learning-path-builder/backend && npm run build --workspace=@learning-path-builder/frontend",
-        "build:backend": "npm run build --workspace=@learning-path-builder/backend",
-        "build:frontend": "npm run build --workspace=@learning-path-builder/frontend",
-        "test": "npm run test --workspace=@learning-path-builder/backend && npm run test --workspace=@learning-path-builder/frontend",
-        "lint": "npm run lint --workspace=@learning-path-builder/backend && npm run lint --workspace=@learning-path-builder/frontend",
-        "clean": "npm run clean --workspace=@learning-path-builder/backend && npm run clean --workspace=@learning-path-builder/frontend",
+        "dev:backend": "npm run dev --workspace=@flashlearn-ai/backend",
+        "dev:frontend": "npm run dev --workspace=@flashlearn-ai/frontend",
+        "build": "npm run build --workspace=@flashlearn-ai/backend && npm run build --workspace=@flashlearn-ai/frontend",
+        "build:backend": "npm run build --workspace=@flashlearn-ai/backend",
+        "build:frontend": "npm run build --workspace=@flashlearn-ai/frontend",
+        "test": "npm run test --workspace=@flashlearn-ai/backend && npm run test --workspace=@flashlearn-ai/frontend",
+        "lint": "npm run lint --workspace=@flashlearn-ai/backend && npm run lint --workspace=@flashlearn-ai/frontend",
+        "clean": "npm run clean --workspace=@flashlearn-ai/backend && npm run clean --workspace=@flashlearn-ai/frontend",
         "docker:build": "docker-compose build",
         "docker:up": "docker-compose up",
         "docker:down": "docker-compose down"
@@ -34,9 +34,13 @@
         "url": "git+https://github.com/your-username/learning-path-builder.git"
     },
     "keywords": [
-        "learning",
-        "path",
-        "builder",
+        "flashlearn",
+        "ai",
+        "adaptive-learning",
+        "flashcards",
+        "quiz",
+        "gemini",
+        "firebase",
         "monorepo",
         "nodejs",
         "react",

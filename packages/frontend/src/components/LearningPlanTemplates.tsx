@@ -1,5 +1,12 @@
 import React from 'react';
-import { SparklesIcon, BookOpenIcon, CodeIcon, ScienceIcon, HistoryIcon, LanguageIcon } from './icons';
+import {
+  SparklesIcon,
+  BookOpenIcon,
+  CodeIcon,
+  ScienceIcon,
+  HistoryIcon,
+  LanguageIcon,
+} from './icons';
 
 interface Template {
   id: string;
@@ -23,16 +30,17 @@ const templates: Template[] = [
     topic: 'React',
     skillLevel: 'beginner',
     icon: <CodeIcon className="w-6 h-6" />,
-    category: 'Programming'
+    category: 'Programming',
   },
   {
     id: 'javascript-es6',
     title: 'JavaScript ES6+',
-    description: 'Master modern JavaScript features like arrow functions, destructuring, and async/await',
+    description:
+      'Master modern JavaScript features like arrow functions, destructuring, and async/await',
     topic: 'JavaScript',
     skillLevel: 'intermediate',
     icon: <CodeIcon className="w-6 h-6" />,
-    category: 'Programming'
+    category: 'Programming',
   },
   {
     id: 'machine-learning',
@@ -41,7 +49,7 @@ const templates: Template[] = [
     topic: 'Machine Learning',
     skillLevel: 'beginner',
     icon: <ScienceIcon className="w-6 h-6" />,
-    category: 'Data Science'
+    category: 'Data Science',
   },
   {
     id: 'french-language',
@@ -50,7 +58,7 @@ const templates: Template[] = [
     topic: 'French',
     skillLevel: 'beginner',
     icon: <LanguageIcon className="w-6 h-6" />,
-    category: 'Languages'
+    category: 'Languages',
   },
   {
     id: 'world-history',
@@ -59,7 +67,7 @@ const templates: Template[] = [
     topic: 'History',
     skillLevel: 'intermediate',
     icon: <HistoryIcon className="w-6 h-6" />,
-    category: 'Social Sciences'
+    category: 'Social Sciences',
   },
   {
     id: 'python-data',
@@ -68,7 +76,7 @@ const templates: Template[] = [
     topic: 'Python',
     skillLevel: 'intermediate',
     icon: <CodeIcon className="w-6 h-6" />,
-    category: 'Programming'
+    category: 'Programming',
   },
   {
     id: 'web-security',
@@ -77,7 +85,7 @@ const templates: Template[] = [
     topic: 'Cybersecurity',
     skillLevel: 'advanced',
     icon: <ScienceIcon className="w-6 h-6" />,
-    category: 'Security'
+    category: 'Security',
   },
   {
     id: 'spanish-language',
@@ -86,8 +94,8 @@ const templates: Template[] = [
     topic: 'Spanish',
     skillLevel: 'beginner',
     icon: <LanguageIcon className="w-6 h-6" />,
-    category: 'Languages'
-  }
+    category: 'Languages',
+  },
 ];
 
 const LearningPlanTemplates: React.FC<LearningPlanTemplatesProps> = ({ onSelectTemplate }) => {
@@ -104,9 +112,7 @@ const LearningPlanTemplates: React.FC<LearningPlanTemplatesProps> = ({ onSelectT
 
       {categories.map(category => (
         <div key={category} className="space-y-3">
-          <h4 className="text-sm font-medium text-slate-700 uppercase tracking-wide">
-            {category}
-          </h4>
+          <h4 className="text-sm font-medium text-slate-700 uppercase tracking-wide">{category}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {templates
               .filter(template => template.category === category)

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LearningPlan, User } from '@/types';
+import { LearningPlan } from '../types';
 import CreatePlanModal from './CreatePlanModal';
 import EditPlanModal from './EditPlanModal';
 import ConfirmationModal from './ConfirmationModal';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import LearningObjectivesDashboard from './LearningObjectivesDashboard';
 import {
   PlusIcon,
   BookOpenIcon,
@@ -13,7 +15,6 @@ import {
 } from './icons';
 
 interface DashboardProps {
-  user: User;
   plans: LearningPlan[];
   onStartStudy: (plan: LearningPlan, mode: 'flashcards' | 'quiz') => void;
   onCreatePlan: (planData: {
@@ -27,9 +28,6 @@ interface DashboardProps {
   }) => void;
   onUpdatePlan: (planId: string, data: Partial<LearningPlan>) => void;
   onDeletePlan: (planId: string) => void;
-  onUpdateUser: (updatedUser: User) => void;
-  onDeleteAccount: () => void;
-  onBackToDashboard: () => void;
 }
 
 interface PlanCardProps {
@@ -138,15 +136,11 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onStartStudy, onEdit, onDelet
 };
 
 const Dashboard: React.FC<DashboardProps> = ({
-  user,
   plans,
   onStartStudy,
   onCreatePlan,
   onUpdatePlan,
   onDeletePlan,
-  onUpdateUser,
-  onDeleteAccount,
-  onBackToDashboard,
 }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [planToEdit, setPlanToEdit] = useState<LearningPlan | null>(null);
@@ -159,7 +153,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       plan.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleUpdateAndClose = (title: string, skillLevel: string, topic?: string) => {
+  const handleUpdateAndClose = (
+    title: string,
+    skillLevel: 'beginner' | 'intermediate' | 'advanced',
+    topic?: string
+  ) => {
     if (planToEdit) {
       onUpdatePlan(planToEdit.id, { title, skillLevel, topic });
     }
@@ -185,6 +183,12 @@ const Dashboard: React.FC<DashboardProps> = ({
           Create New Plan
         </button>
       </div>
+
+      {/* Analytics Dashboard */}
+      <AnalyticsDashboard className="mb-8" />
+
+      {/* Learning Objectives Dashboard */}
+      <LearningObjectivesDashboard className="mb-8" />
 
       <div className="mb-8">
         <div className="relative">

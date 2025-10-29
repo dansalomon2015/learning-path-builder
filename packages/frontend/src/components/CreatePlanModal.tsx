@@ -114,7 +114,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                   <BookOpenIcon className="w-5 h-5 text-indigo-600" />
                   <span>Basic Information</span>
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -131,9 +131,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Topic *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Topic *</label>
                     <input
                       type="text"
                       value={topic}
@@ -165,7 +163,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                   <SparklesIcon className="w-5 h-5 text-indigo-600" />
                   <span>Learning Configuration</span>
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -222,7 +220,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                   <FileTextIcon className="w-5 h-5 text-indigo-600" />
                   <span>AI Generation Options</span>
                 </h3>
-                
+
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <input
@@ -237,17 +235,21 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     </label>
                   </div>
                   <p className="text-sm text-slate-600">
-                    Upload a PDF or text document and let AI extract key concepts to create flashcards automatically.
+                    Upload a PDF or text document and let AI extract key concepts to create
+                    flashcards automatically.
                   </p>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <SparklesIcon className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">AI-Powered Content Generation</span>
+                    <span className="text-sm font-medium text-green-800">
+                      AI-Powered Content Generation
+                    </span>
                   </div>
                   <p className="text-sm text-green-700">
-                    Our AI will automatically generate {cardCount} high-quality flashcards and quiz questions based on your topic and skill level.
+                    Our AI will automatically generate {cardCount} high-quality flashcards and quiz
+                    questions based on your topic and skill level.
                   </p>
                 </div>
               </div>
