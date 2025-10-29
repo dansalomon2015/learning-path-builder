@@ -64,42 +64,57 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
+// Login user with password verification via Firebase Identity Toolkit REST API
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body as { email: string; password: string };
 
-    // Verify credentials with Firebase Auth
-    const userRecord = await firebaseService.auth.getUserByEmail(email);
+    const apiKey = process.env['FIREBASE_API_KEY'];
+    if (!apiKey) {
+      return res.status(500).json({ success: false, message: 'FIREBASE_API_KEY not configured' });
+    }
 
-    // Note: Firebase Admin SDK doesn't have a direct password verification method
-    // You would need to use Firebase Client SDK for this, or implement custom auth
-    // For now, we'll create a custom token and let the client verify
+    // Verify email/password with Identity Toolkit (server-side)
+    const resp = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, returnSecureToken: true }),
+      }
+    );
 
-    const customToken = await firebaseService.createCustomToken(userRecord.uid);
+    if (!resp.ok) {
+      const text = await resp.text();
+      logger.warn(`Password verification failed for ${email}: ${text}`);
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { uid: userRecord.uid, email: userRecord.email },
+    const data = (await resp.json()) as { localId: string };
+    const uid = data.localId;
+
+    // Ensure user exists (and load basic profile fields)
+    const userRecord = await firebaseService.auth.getUser(uid);
+
+    // Issue backend JWT used for protected API access
+    const jwtToken = jwt.sign(
+      { uid, email: userRecord.email },
       process.env['JWT_SECRET'] || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
-    res.json({
+    return res.json({
       success: true,
-      token,
+      jwtToken,
       user: {
-        uid: userRecord.uid,
+        id: uid,
         email: userRecord.email,
         name: userRecord.displayName,
       },
     });
   } catch (error: any) {
     logger.error('Login error:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Invalid credentials',
-    });
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 

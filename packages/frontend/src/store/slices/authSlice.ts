@@ -31,7 +31,8 @@ export const signIn = createAsyncThunk(
       }
       return user as User;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Sign in failed');
+      const message = error?.response?.data?.message || error?.message || 'Invalid credentials';
+      return rejectWithValue(message);
     }
   }
 );
@@ -70,7 +71,8 @@ export const signUp = createAsyncThunk(
       };
       return mappedUser;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Sign up failed');
+      const message = error?.response?.data?.message || error?.message || 'Sign up failed';
+      return rejectWithValue(message);
     }
   }
 );
