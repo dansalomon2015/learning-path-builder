@@ -12,6 +12,10 @@ import {
   LearningProgress,
 } from '@/types';
 import { AuthService } from './firebase';
+import { toast } from 'react-hot-toast';
+import Cookies from 'universal-cookie';
+
+const cookies = new Cookies();
 
 class ApiService {
   private api: AxiosInstance;
@@ -29,9 +33,14 @@ class ApiService {
     this.api.interceptors.request.use(
       async config => {
         // Only use backend JWT for protected routes
-        const backendJwt = localStorage.getItem('jwtToken');
+        const backendJwt = cookies.get('jwtToken') || localStorage.getItem('jwtToken');
         if (backendJwt) {
           config.headers.Authorization = `Bearer ${backendJwt}`;
+        } else if (config.url && !config.url.includes('/auth/')) {
+          // No token for a protected route → warn for easier debugging
+          // (Creation endpoints like /objectives are protected)
+          // Don't block the request; backend will 401 and the response interceptor will handle UX.
+          console.warn('No JWT found when calling', config.url);
         }
         return config;
       },
@@ -47,10 +56,11 @@ class ApiService {
       },
       error => {
         if (error.response?.status === 401) {
-          // Remove invalid backend token and let callers handle UX
           try {
-            localStorage.removeItem('jwtToken');
+            // localStorage.removeItem('jwtToken');
+            // cookies.remove('jwtToken', { path: '/' });
           } catch {}
+          toast.error('Session expirée. Veuillez vous reconnecter.');
         }
         return Promise.reject(error);
       }
@@ -60,7 +70,14 @@ class ApiService {
   // Auth
   async backendLogin(email: string, password: string): Promise<{ jwtToken: string; user?: any }> {
     const response = await this.api.post('/auth/login', { email, password });
-    return { jwtToken: response.data?.jwtToken, user: response.data?.user };
+    const jwt = response.data?.jwtToken;
+    if (jwt) {
+      cookies.set('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
+      try {
+        localStorage.setItem('jwtToken', jwt);
+      } catch {}
+    }
+    return { jwtToken: jwt, user: response.data?.user };
   }
 
   async backendRegister(
@@ -69,7 +86,25 @@ class ApiService {
     password: string
   ): Promise<{ jwtToken: string; user?: any }> {
     const response = await this.api.post('/auth/register', { name, email, password });
-    return { jwtToken: response.data?.jwtToken || response.data?.token, user: response.data?.user };
+    const jwt = response.data?.jwtToken || response.data?.token;
+    if (jwt) {
+      cookies.set('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
+      try {
+        localStorage.setItem('jwtToken', jwt);
+      } catch {}
+    }
+    return { jwtToken: jwt, user: response.data?.user };
+  }
+
+  // Objectives
+  async createObjective(data: any): Promise<ApiResponse<any>> {
+    const response = await this.api.post('/objectives', data);
+    return response.data;
+  }
+
+  async getObjectives(): Promise<ApiResponse<any[]>> {
+    const response = await this.api.get('/objectives');
+    return response.data;
   }
 
   // Learning Plans

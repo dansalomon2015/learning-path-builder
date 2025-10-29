@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LearningObjective, Assessment, AssessmentResult } from '../types';
 import CreateObjectiveModal from './CreateObjectiveModal';
+import { apiService } from '../services/api';
+import { toast } from 'react-hot-toast';
 import {
   PlusIcon,
   TargetIcon,
@@ -214,113 +216,19 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Mock data for demonstration
+  // Load objectives from backend
   useEffect(() => {
-    const mockObjectives: LearningObjective[] = [
-      {
-        id: 'obj-1',
-        userId: 'user-1',
-        title: 'Become Senior Java Developer',
-        description:
-          'Master advanced Java concepts, Spring Framework, microservices, and system design to become a senior-level Java developer.',
-        category: 'Programming',
-        targetRole: 'Senior Java Developer',
-        targetTimeline: 6,
-        currentLevel: 'intermediate',
-        targetLevel: 'expert',
-        status: 'in_progress',
-        progress: 35,
-        createdAt: '2024-01-15T00:00:00Z',
-        updatedAt: '2024-01-20T00:00:00Z',
-        milestones: [
-          {
-            id: 'mil-1',
-            title: 'Core Java Mastery',
-            description: 'Complete advanced Java concepts and OOP principles',
-            targetDate: '2024-02-15',
-            completedDate: '2024-02-10',
-            isCompleted: true,
-            skills: ['Java', 'OOP', 'Collections'],
-            learningPaths: ['path-1'],
-          },
-          {
-            id: 'mil-2',
-            title: 'Spring Framework',
-            description: 'Learn Spring Boot, Spring Security, and Spring Data',
-            targetDate: '2024-03-15',
-            isCompleted: false,
-            skills: ['Spring Boot', 'Spring Security', 'Spring Data'],
-            learningPaths: ['path-2'],
-          },
-          {
-            id: 'mil-3',
-            title: 'Microservices Architecture',
-            description: 'Design and implement microservices with Spring Cloud',
-            targetDate: '2024-04-15',
-            isCompleted: false,
-            skills: ['Microservices', 'Spring Cloud', 'Docker'],
-            learningPaths: ['path-3'],
-          },
-        ],
-        learningPaths: [
-          {
-            id: 'path-1',
-            objectiveId: 'obj-1',
-            title: 'Advanced Java Fundamentals',
-            description: 'Deep dive into Java 8+ features, concurrency, and performance',
-            category: 'Programming',
-            difficulty: 'intermediate',
-            estimatedDuration: 4,
-            prerequisites: ['Basic Java knowledge'],
-            skills: ['Java 8+', 'Concurrency', 'Performance'],
-            modules: [],
-            isCompleted: true,
-            progress: 100,
-            createdAt: '2024-01-15T00:00:00Z',
-            updatedAt: '2024-02-10T00:00:00Z',
-          },
-          {
-            id: 'path-2',
-            objectiveId: 'obj-1',
-            title: 'Spring Boot Mastery',
-            description: 'Build RESTful APIs and web applications with Spring Boot',
-            category: 'Programming',
-            difficulty: 'intermediate',
-            estimatedDuration: 6,
-            prerequisites: ['Java fundamentals'],
-            skills: ['Spring Boot', 'REST APIs', 'JPA'],
-            modules: [],
-            isCompleted: false,
-            progress: 25,
-            createdAt: '2024-01-15T00:00:00Z',
-            updatedAt: '2024-01-20T00:00:00Z',
-          },
-        ],
-      },
-      {
-        id: 'obj-2',
-        userId: 'user-1',
-        title: 'Master React Development',
-        description:
-          'Become proficient in React, Redux, and modern frontend development practices.',
-        category: 'Frontend Development',
-        targetRole: 'Senior React Developer',
-        targetTimeline: 4,
-        currentLevel: 'beginner',
-        targetLevel: 'advanced',
-        status: 'planning',
-        progress: 0,
-        createdAt: '2024-01-20T00:00:00Z',
-        updatedAt: '2024-01-20T00:00:00Z',
-        milestones: [],
-        learningPaths: [],
-      },
-    ];
-
-    setTimeout(() => {
-      setObjectives(mockObjectives);
-      setLoading(false);
-    }, 1000);
+    const load = async () => {
+      try {
+        const res = await apiService.getObjectives();
+        setObjectives(res.data as any[] as LearningObjective[]);
+      } catch (e) {
+        console.error('Failed to load objectives', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const handleStartAssessment = (objectiveId: string) => {
@@ -350,31 +258,23 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
     targetTimeline: number;
     currentLevel: 'beginner' | 'intermediate' | 'advanced';
     targetLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  }) => {
-    // TODO: Create objective via API
-    console.log('Creating objective:', objectiveData);
-
-    // For now, add to local state
-    const newObjective: LearningObjective = {
-      id: `obj-${Date.now()}`,
-      userId: 'user-1',
-      title: objectiveData.title,
-      description: objectiveData.description,
-      category: objectiveData.category,
-      targetRole: objectiveData.targetRole,
-      targetTimeline: objectiveData.targetTimeline,
-      currentLevel: objectiveData.currentLevel,
-      targetLevel: objectiveData.targetLevel,
-      status: 'planning',
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      milestones: [],
-      learningPaths: [],
-    };
-
-    setObjectives(prev => [newObjective, ...prev]);
-    setShowCreateModal(false);
+  }): Promise<boolean> => {
+    try {
+      const res = await apiService.createObjective(objectiveData);
+      if (res.success && res.data) {
+        setObjectives(prev => [res.data as any, ...prev]);
+        toast.success('Objective created');
+        return true;
+      } else {
+        toast.error(res?.error?.message || 'Failed to create objective');
+        return false;
+      }
+    } catch (e: any) {
+      console.error('Create objective failed', e);
+      const msg = e?.response?.data?.message || 'Failed to create objective';
+      toast.error(msg);
+      return false;
+    }
   };
 
   if (loading) {

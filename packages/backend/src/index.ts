@@ -17,6 +17,7 @@ import { logger } from '@/utils/logger';
 import { learningPlanRoutes } from '@/routes/learningPlan';
 import { documentRoutes } from '@/routes/document';
 import authRoutes from '@/routes/auth';
+import objectivesRoutes from '@/routes/objectives';
 import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 
@@ -71,6 +72,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/learning-plans', authMiddleware, learningPlanRoutes);
 app.use('/api/documents', authMiddleware, documentRoutes);
+app.use('/api/objectives', authMiddleware, objectivesRoutes);
 
 // Health check endpoint with service status
 app.get('/health', async (req, res) => {

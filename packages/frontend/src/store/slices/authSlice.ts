@@ -23,9 +23,7 @@ export const signIn = createAsyncThunk(
     try {
       // Backend login: email + password (no token required)
       const { jwtToken, user } = await apiService.backendLogin(email, password);
-      if (jwtToken) {
-        localStorage.setItem('jwtToken', jwtToken);
-      }
+      // Cookie is set in apiService; localStorage mirror is also handled there
       if (!user) {
         throw new Error('User data missing from login response');
       }
@@ -45,9 +43,7 @@ export const signUp = createAsyncThunk(
   ) => {
     try {
       const { jwtToken, user } = await apiService.backendRegister(name, email, password);
-      if (jwtToken) {
-        localStorage.setItem('jwtToken', jwtToken);
-      }
+      // Cookie is set in apiService; localStorage mirror is also handled there
       if (!user) {
         throw new Error('User data missing from register response');
       }
@@ -80,6 +76,8 @@ export const signUp = createAsyncThunk(
 export const signOut = createAsyncThunk('auth/signOut', async () => {
   try {
     localStorage.removeItem('jwtToken');
+    // Also clear cookie
+    document.cookie = 'jwtToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
     return null;
   } catch {
     return null;

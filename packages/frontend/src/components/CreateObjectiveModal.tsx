@@ -13,7 +13,7 @@ interface CreateObjectiveModalProps {
     targetTimeline: number;
     currentLevel: 'beginner' | 'intermediate' | 'advanced';
     targetLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  }) => void;
+  }) => Promise<boolean> | boolean;
 }
 
 const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
@@ -96,8 +96,10 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
 
     setIsCreating(true);
     try {
-      await onCreate(formData);
-      handleClose();
+      const created = await onCreate(formData);
+      if (created) {
+        handleClose();
+      }
     } catch (error) {
       console.error('Error creating objective:', error);
     } finally {
