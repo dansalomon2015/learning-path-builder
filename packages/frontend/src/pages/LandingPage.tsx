@@ -1,12 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpenIcon, SparklesIcon, TrophyIcon } from '../components/icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleLogin = () => {
-    navigate('/auth');
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
   };
 
   const handleSignUp = () => {
@@ -28,10 +34,16 @@ const LandingPage: React.FC = () => {
                 onClick={handleLogin}
                 className="text-slate-600 hover:text-slate-900 font-medium"
               >
-                Se connecter
+                {isAuthenticated ? 'Tableau de bord' : 'Se connecter'}
               </button>
-              <button onClick={handleSignUp} className="btn btn-primary">
-                Créer un compte
+              <button
+                onClick={handleSignUp}
+                className="relative inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_10px_20px_-10px_rgba(79,70,229,0.7)] hover:from-indigo-500 hover:to-purple-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <span className="mr-2">Créer un compte</span>
+                <span className="inline-block rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                  Gratuit
+                </span>
               </button>
             </div>
           </div>
@@ -50,11 +62,14 @@ const LandingPage: React.FC = () => {
             d'apprentissage adaptatif.
           </p>
           <div className="flex justify-center space-x-4">
-            <button onClick={handleSignUp} className="btn btn-primary btn-lg">
-              Commencer gratuitement
-            </button>
-            <button onClick={handleLogin} className="btn btn-secondary btn-lg">
-              Se connecter
+            <button
+              onClick={handleSignUp}
+              className="group relative inline-flex items-center justify-center px-7 py-3.5 rounded-2xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_20px_35px_-15px_rgba(79,70,229,0.8)] hover:from-indigo-500 hover:to-purple-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <span className="mr-2">Commencer gratuitement</span>
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/20 group-hover:bg-white/30 transition">
+                →
+              </span>
             </button>
           </div>
         </div>
