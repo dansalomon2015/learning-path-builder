@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LearningObjective, Assessment, AssessmentResult } from '../types';
 import CreateObjectiveModal from './CreateObjectiveModal';
-import { apiService } from '../services/api';
+import SkillAssessment from './SkillAssessment';
 import { toast } from 'react-hot-toast';
+import { apiService } from '../services/api';
 import {
   PlusIcon,
   TargetIcon,
@@ -15,6 +17,7 @@ import {
   TrendingUpIcon,
   LightBulbIcon,
 } from './icons';
+import { TrashIcon } from './icons';
 
 interface LearningObjectivesDashboardProps {
   className?: string;
@@ -25,6 +28,8 @@ interface ObjectiveCardProps {
   onStartAssessment: (objectiveId: string) => void;
   onViewDetails: (objectiveId: string) => void;
   onStartLearning: (objectiveId: string) => void;
+  onDelete: (objectiveId: string) => void;
+  isStarting?: boolean;
 }
 
 const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
@@ -32,6 +37,8 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
   onStartAssessment,
   onViewDetails,
   onStartLearning,
+  onDelete,
+  isStarting = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -56,6 +63,15 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
   const completedMilestones = objective.milestones.filter(m => m.isCompleted).length;
   const totalMilestones = objective.milestones.length;
+  const hasPaths = (objective.learningPaths && objective.learningPaths.length > 0) || false;
+  const completedPaths = objective.learningPaths.filter(p => p.isCompleted).length;
+  const avgPathProgress =
+    objective.learningPaths.length > 0
+      ? Math.round(
+          objective.learningPaths.reduce((sum, p) => sum + (p.progress || 0), 0) /
+            objective.learningPaths.length
+        )
+      : 0;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
@@ -75,6 +91,15 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
               <TrophyIcon className="w-4 h-4" />
               <span>{objective.targetRole}</span>
             </span>
+            {(objective as any).lastAssessment && (
+              <span className="flex items-center space-x-1">
+                <ChartBarIcon className="w-4 h-4" />
+                <span>
+                  {(objective as any).lastAssessment.score}% ·{' '}
+                  {(objective as any).lastAssessment.skillLevel}
+                </span>
+              </span>
+            )}
           </div>
         </div>
         <div
@@ -84,6 +109,13 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
         >
           {objective.status.replace('_', ' ')}
         </div>
+        <button
+          onClick={() => onDelete(objective.id)}
+          className="ml-3 text-slate-400 hover:text-red-600 cursor-pointer"
+          title="Delete objective"
+        >
+          <TrashIcon className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Progress Section */}
@@ -155,19 +187,71 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
         </div>
       </div>
 
+      {/* Objective Stats & Analytics (compact) */}
+      {hasPaths && (
+        <div className="mb-4 grid grid-cols-3 gap-3">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-indigo-600">
+              {objective.learningPaths.length}
+            </div>
+            <div className="text-xs text-slate-600">Paths</div>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-green-600">{completedPaths}</div>
+            <div className="text-xs text-slate-600">Completed</div>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-purple-600">{avgPathProgress}%</div>
+            <div className="text-xs text-slate-600">Avg Progress</div>
+          </div>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex space-x-2">
-        {objective.status === 'planning' && (
+        {objective.status === 'planning' && !hasPaths && (
           <button
             onClick={() => onStartAssessment(objective.id)}
-            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+            disabled={isStarting}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              isStarting
+                ? 'bg-indigo-400 text-white cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
           >
-            <PlayIcon className="w-4 h-4" />
-            <span>Start Assessment</span>
+            {isStarting ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                <span>Preparing assessment…</span>
+              </>
+            ) : (
+              <>
+                <PlayIcon className="w-4 h-4" />
+                <span>Start Assessment</span>
+              </>
+            )}
           </button>
         )}
 
-        {objective.status === 'in_progress' && (
+        {/* If learning paths exist, show jump-to-objective and continue learning */}
+        {hasPaths && (
+          <>
+            <button
+              onClick={() => onViewDetails(objective.id)}
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+            >
+              <span>Go to Objective</span>
+            </button>
+            <button
+              onClick={() => onStartLearning(objective.id)}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Continue Learning
+            </button>
+          </>
+        )}
+
+        {objective.status === 'in_progress' && !hasPaths && (
           <>
             <button
               onClick={() => onStartLearning(objective.id)}
@@ -215,39 +299,169 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   const [objectives, setObjectives] = useState<LearningObjective[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeAssessment, setActiveAssessment] = useState<Assessment | null>(null);
+  const [showAssessment, setShowAssessment] = useState(false);
+  const [startingObjectiveId, setStartingObjectiveId] = useState<string | null>(null);
+  const [selectedObjective, setSelectedObjective] = useState<LearningObjective | null>(null);
+  const navigate = useNavigate();
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteTitle, setConfirmDeleteTitle] = useState<string>('');
+  const [setupLoading, setSetupLoading] = useState(false);
+
+  const fetchObjectives = async () => {
+    try {
+      const res = await apiService.getObjectives();
+      setObjectives(res.data as any[] as LearningObjective[]);
+    } catch (e) {
+      console.error('Failed to load objectives', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Load objectives from backend
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await apiService.getObjectives();
-        setObjectives(res.data as any[] as LearningObjective[]);
-      } catch (e) {
-        console.error('Failed to load objectives', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    fetchObjectives();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleStartAssessment = (objectiveId: string) => {
-    console.log('Starting assessment for objective:', objectiveId);
-    // TODO: Navigate to assessment page
+  const handleStartAssessment = async (objectiveId: string) => {
+    try {
+      setStartingObjectiveId(objectiveId);
+      const res = await apiService.startAssessment({ objectiveId });
+      if (res.success && res.data) {
+        setActiveAssessment(res.data as Assessment);
+        setShowAssessment(true);
+        toast.success('Assessment started');
+      } else {
+        toast.error(res?.error?.message || 'Failed to start assessment');
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Failed to start assessment';
+      toast.error(msg);
+      console.error('Start assessment failed', e);
+    } finally {
+      setStartingObjectiveId(null);
+    }
+  };
+
+  const handleSubmitAssessmentResult = async (
+    assessmentId: string,
+    answers: { questionId: string; selectedAnswer: number }[],
+    timeSpent: number
+  ) => {
+    try {
+      const res = await apiService.submitAssessment(assessmentId, answers, timeSpent);
+      if (res.success && res.data) {
+        toast.success('Assessment completed!');
+        console.log('Assessment result:', res.data);
+        // TODO: Update objective progress based on result
+      } else {
+        toast.error(res?.error?.message || 'Failed to submit assessment');
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Failed to submit assessment';
+      toast.error(msg);
+      console.error('Submit assessment failed', e);
+    }
+  };
+
+  const handleBackFromAssessment = () => {
+    setShowAssessment(false);
+    setActiveAssessment(null);
+    // Refresh objectives to reflect newly generated learning paths
+    setLoading(true);
+    fetchObjectives();
+  };
+
+  // Setup learning path (generate paths + modules) with loading modal
+  const setupLearningPath = async (objectiveId: string) => {
+    console.log('setupLearningPath called with objectiveId:', objectiveId);
+    try {
+      setShowAssessment(false);
+      setSetupLoading(true);
+      console.log('Calling generateLearningPaths API...');
+      const pathsRes = await apiService.generateLearningPaths(objectiveId);
+      console.log('generateLearningPaths response:', pathsRes);
+
+      if (!pathsRes.success) {
+        const errorMsg = pathsRes?.error?.message || pathsRes?.message || 'Paths generation failed';
+        console.error('Paths generation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const paths = (pathsRes.data as any[]) || [];
+      console.log('Generated paths:', paths);
+      const first = paths[0];
+
+      if (first) {
+        console.log('Generating modules for first path:', first.id);
+        try {
+          await apiService.generatePathModules(objectiveId, first.id);
+        } catch (moduleError) {
+          console.warn('Module generation failed (non-critical):', moduleError);
+        }
+        console.log('Navigating to path:', `/objectives/${objectiveId}/paths/${first.id}`);
+        navigate(`/objectives/${objectiveId}/paths/${first.id}`);
+      } else {
+        console.error('No paths in response');
+        toast.error('No path generated');
+      }
+    } catch (e: any) {
+      console.error('setupLearningPath error:', e);
+      console.error('Error stack:', e?.stack);
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        e?.message ||
+        'Failed to set up learning path';
+      toast.error(msg);
+    } finally {
+      setSetupLoading(false);
+    }
   };
 
   const handleViewDetails = (objectiveId: string) => {
-    console.log('Viewing details for objective:', objectiveId);
-    // TODO: Navigate to objective details page
+    const obj = objectives.find(o => o.id === objectiveId) || null;
+    setSelectedObjective(obj);
   };
 
   const handleStartLearning = (objectiveId: string) => {
-    console.log('Starting learning for objective:', objectiveId);
-    // TODO: Navigate to learning path
+    const obj = objectives.find(o => o.id === objectiveId) || null;
+    setSelectedObjective(obj);
   };
 
   const handleCreateObjective = () => {
     setShowCreateModal(true);
+  };
+
+  const openDeleteConfirm = (objectiveId: string) => {
+    const obj = objectives.find(o => o.id === objectiveId);
+    setConfirmDeleteId(objectiveId);
+    setConfirmDeleteTitle(obj?.title || 'this objective');
+  };
+
+  const closeDeleteConfirm = () => {
+    setConfirmDeleteId(null);
+    setConfirmDeleteTitle('');
+  };
+
+  const confirmDeleteObjective = async () => {
+    if (!confirmDeleteId) return;
+    try {
+      const res = await apiService.deleteObjective(confirmDeleteId);
+      if (res.success) {
+        setObjectives(prev => prev.filter(o => o.id !== confirmDeleteId));
+        toast.success('Objective deleted');
+      } else {
+        toast.error(res?.error?.message || 'Failed to delete objective');
+      }
+    } catch (e) {
+      toast.error('Failed to delete objective');
+    } finally {
+      closeDeleteConfirm();
+    }
   };
 
   const handleCreateObjectiveSubmit = async (objectiveData: {
@@ -292,8 +506,124 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
     );
   }
 
+  // Show assessment if active
+  if (showAssessment && activeAssessment) {
+    return (
+      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
+        <SkillAssessment
+          assessment={activeAssessment}
+          onComplete={result => {
+            console.log('Assessment completed:', result);
+            // The SkillAssessment component will handle the backend submission internally
+          }}
+          onSubmitResult={handleSubmitAssessmentResult}
+          onBack={handleBackFromAssessment}
+          onSetupLearningPath={(objectiveId: string) => setupLearningPath(objectiveId)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
+      {/* Objective Details Modal */}
+      {selectedObjective && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-2xl">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">{selectedObjective.title}</h3>
+                <p className="text-slate-600 text-sm">{selectedObjective.description}</p>
+              </div>
+              <button
+                onClick={() => setSelectedObjective(null)}
+                className="px-3 py-1 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mb-4 grid grid-cols-3 gap-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-indigo-600">
+                  {selectedObjective.learningPaths.length}
+                </div>
+                <div className="text-xs text-slate-600">Paths</div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-green-600">
+                  {selectedObjective.learningPaths.filter(p => p.isCompleted).length}
+                </div>
+                <div className="text-xs text-slate-600">Completed</div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-purple-600">
+                  {selectedObjective.learningPaths.length > 0
+                    ? Math.round(
+                        selectedObjective.learningPaths.reduce((s, p) => s + (p.progress || 0), 0) /
+                          selectedObjective.learningPaths.length
+                      )
+                    : 0}
+                  %
+                </div>
+                <div className="text-xs text-slate-600">Avg Progress</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-2">Learning Paths</h4>
+              <div className="space-y-2 max-h-80 overflow-auto pr-1">
+                {selectedObjective.learningPaths.map(path => (
+                  <div
+                    key={path.id}
+                    className="flex items-center justify-between border border-slate-200 rounded-lg p-3"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">{path.title}</div>
+                      <div className="text-xs text-slate-500">{path.description}</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-20 bg-slate-200 rounded-full h-1">
+                        <div
+                          className="bg-indigo-500 h-1 rounded-full"
+                          style={{ width: `${path.progress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-500">{path.progress}%</span>
+                      <button
+                        onClick={() =>
+                          navigate(`/objectives/${selectedObjective.id}/paths/${path.id}`)
+                        }
+                        className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700"
+                      >
+                        Open
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {selectedObjective.learningPaths.length === 0 && (
+                  <div className="text-sm text-slate-500">No learning paths yet.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Starting Assessment Modal */}
+      {startingObjectiveId && !showAssessment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
+            <div className="flex items-center space-x-3 mb-3">
+              <span className="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <h3 className="text-lg font-semibold text-slate-800">Preparing your assessment…</h3>
+            </div>
+            <p className="text-sm text-slate-600">
+              We’re generating tailored questions based on your objective. This can take up to a
+              minute. Please wait.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Learning Objectives</h2>
@@ -329,6 +659,8 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
               onStartAssessment={handleStartAssessment}
               onViewDetails={handleViewDetails}
               onStartLearning={handleStartLearning}
+              onDelete={openDeleteConfirm}
+              isStarting={startingObjectiveId === objective.id}
             />
           ))}
         </div>
@@ -361,6 +693,50 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
               </div>
               <div className="text-sm text-slate-600">Avg Progress</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Delete objective</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Are you sure you want to delete{' '}
+              <span className="font-semibold">{confirmDeleteTitle}</span>? This will also remove
+              related assessments and results. This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeDeleteConfirm}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteObjective}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Setup Loading Modal */}
+      {setupLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
+            <div className="flex items-center space-x-3 mb-2">
+              <span className="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <h3 className="text-lg font-bold text-slate-800">Setting up your learning path…</h3>
+            </div>
+            <p className="text-sm text-slate-600">
+              We are generating your paths and modules based on your assessment. This may take a
+              moment.
+            </p>
           </div>
         </div>
       )}

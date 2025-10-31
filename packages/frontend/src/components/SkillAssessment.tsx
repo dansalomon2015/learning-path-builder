@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Assessment, AssessmentQuestion, AssessmentAnswer } from '../types';
+import { apiService } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -14,6 +17,12 @@ interface SkillAssessmentProps {
   assessment: Assessment;
   onComplete: (result: AssessmentResult) => void;
   onBack: () => void;
+  onSubmitResult?: (
+    assessmentId: string,
+    answers: { questionId: string; selectedAnswer: number }[],
+    timeSpentMinutes: number
+  ) => Promise<void> | void;
+  onSetupLearningPath?: (objectiveId: string) => Promise<void> | void;
 }
 
 interface AssessmentResult {
@@ -102,7 +111,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
         {/* Skills */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {question.skills.map(skill => (
+          {(question.skills || []).map(skill => (
             <span
               key={skill}
               className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full"
@@ -115,7 +124,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
       {/* Answer Options */}
       <div className="space-y-3">
-        {question.options?.map((option, index) => {
+        {(question.options || []).map((option, index) => {
           const isSelected = selectedAnswer === option || selectedAnswer === index;
           return (
             <button
@@ -145,9 +154,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question Type Indicator */}
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex items-center space-x-2 text-sm text-slate-500">
-          <span className="capitalize">{question.type.replace('_', ' ')}</span>
+          <span className="capitalize">
+            {((question.type as string) || 'multiple_choice').replace('_', ' ')}
+          </span>
           <span>•</span>
-          <span>{question.category}</span>
+          <span>{question.category || 'general'}</span>
         </div>
       </div>
     </div>
@@ -267,7 +278,14 @@ const AssessmentComplete: React.FC<AssessmentCompleteProps> = ({
   );
 };
 
-const SkillAssessment: React.FC<SkillAssessmentProps> = ({ assessment, onComplete, onBack }) => {
+const SkillAssessment: React.FC<SkillAssessmentProps> = ({
+  assessment,
+  onComplete,
+  onBack,
+  onSubmitResult,
+  onSetupLearningPath,
+}) => {
+  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<AssessmentAnswer[]>([]);
   const [startTime] = useState(Date.now());
@@ -367,6 +385,17 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({ assessment, onComplet
       recommendations,
     };
 
+    // Fire-and-forget backend submit if provided
+    try {
+      if (onSubmitResult) {
+        const compact = answers.map(a => ({
+          questionId: a.questionId,
+          selectedAnswer: typeof a.selectedAnswer === 'number' ? (a.selectedAnswer as number) : 0,
+        }));
+        Promise.resolve(onSubmitResult(assessment.id, compact, totalTimeSpent)).catch(() => {});
+      }
+    } catch {}
+
     setResult(assessmentResult);
     setIsComplete(true);
     onComplete(assessmentResult);
@@ -386,9 +415,61 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({ assessment, onComplet
         result={result}
         assessment={assessment}
         onRetake={handleRetake}
-        onContinue={() => {
-          // TODO: Navigate to learning path
-          console.log('Continue to learning path');
+        onContinue={async () => {
+          console.log('Continue to Learning Path clicked');
+          console.log('Assessment:', assessment);
+          try {
+            const objectiveId = (assessment as any).objectiveId;
+            console.log(
+              'ObjectiveId:',
+              objectiveId,
+              'onSetupLearningPath available:',
+              !!onSetupLearningPath
+            );
+
+            if (objectiveId && onSetupLearningPath) {
+              console.log('Calling onSetupLearningPath...');
+              try {
+                await onSetupLearningPath(objectiveId);
+                console.log('onSetupLearningPath completed');
+                return;
+              } catch (setupError) {
+                console.error('Error in onSetupLearningPath:', setupError);
+                throw setupError;
+              }
+            }
+
+            if (objectiveId) {
+              console.log('Falling back to direct API call');
+              const res = await apiService.generateLearningPaths(objectiveId);
+              console.log('API response:', res);
+              if (res.success) {
+                toast.success('Learning paths generated');
+                const paths = (res.data as any[]) || [];
+                const first = paths[0];
+                if (first) {
+                  navigate(`/objectives/${objectiveId}/paths/${first.id}`);
+                  return;
+                }
+                onBack();
+              } else {
+                toast.error(res?.error?.message || 'Failed to generate learning paths');
+              }
+            } else {
+              console.error('No objectiveId in assessment');
+              toast.error('Objective ID not found');
+              onBack();
+            }
+          } catch (e: any) {
+            console.error('Error in onContinue:', e);
+            const errorMsg =
+              e?.response?.data?.error?.message ||
+              e?.response?.data?.message ||
+              e?.message ||
+              'Failed to generate learning paths. Please try again.';
+            toast.error(errorMsg);
+            // stay on completion view, allow user to retry clicking Continue
+          }
         }}
       />
     );

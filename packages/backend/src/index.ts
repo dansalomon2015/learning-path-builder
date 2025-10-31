@@ -18,6 +18,7 @@ import { learningPlanRoutes } from '@/routes/learningPlan';
 import { documentRoutes } from '@/routes/document';
 import authRoutes from '@/routes/auth';
 import objectivesRoutes from '@/routes/objectives';
+import assessmentsRoutes from '@/routes/assessments';
 import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 
@@ -73,6 +74,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/learning-plans', authMiddleware, learningPlanRoutes);
 app.use('/api/documents', authMiddleware, documentRoutes);
 app.use('/api/objectives', authMiddleware, objectivesRoutes);
+app.use('/api/assessments', authMiddleware, assessmentsRoutes);
 
 // Health check endpoint with service status
 app.get('/health', async (req, res) => {
@@ -109,12 +111,27 @@ app.get('/health', async (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
+// Start server with extended timeouts for long-running requests (e.g., AI generation)
+const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
 });
+
+// Increase default Node HTTP server timeouts
+// Timeouts (in ms)
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const HEADERS_TIMEOUT_MS = REQUEST_TIMEOUT_MS + 30 * 1000; // headers timeout slightly above
+const KEEP_ALIVE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes keep-alive
+
+// Allow long processing before timing out the socket
+server.setTimeout(REQUEST_TIMEOUT_MS);
+// Time allowed for the server to receive HTTP headers
+// @ts-ignore node types may vary across versions
+server.headersTimeout = HEADERS_TIMEOUT_MS;
+// How long to keep idle keep-alive connections open
+// @ts-ignore node types may vary across versions
+server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

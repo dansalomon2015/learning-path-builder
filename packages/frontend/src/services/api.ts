@@ -23,7 +23,7 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: import.meta.env.VITE_API_URL || '/api',
-      timeout: 10000,
+      timeout: 300000, // allow up to 5 minutes for long-running AI generations
       headers: {
         'Content-Type': 'application/json',
       },
@@ -104,6 +104,57 @@ class ApiService {
 
   async getObjectives(): Promise<ApiResponse<any[]>> {
     const response = await this.api.get('/objectives');
+    return response.data;
+  }
+
+  async getObjective(id: string): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/objectives/${id}`);
+    return response.data;
+  }
+
+  async deleteObjective(id: string): Promise<ApiResponse<any>> {
+    const response = await this.api.delete(`/objectives/${id}`);
+    return response.data;
+  }
+
+  // Assessments
+  async startAssessment(payload: {
+    objectiveId: string;
+    topic?: string;
+    level?: 'beginner' | 'intermediate' | 'advanced';
+    count?: number;
+  }): Promise<ApiResponse<any>> {
+    const response = await this.api.post('/assessments/start', payload);
+    return response.data;
+  }
+
+  async submitAssessment(
+    assessmentId: string,
+    answers: { questionId: string; selectedAnswer: number }[],
+    timeSpent: number
+  ): Promise<ApiResponse<any>> {
+    const response = await this.api.post(`/assessments/${assessmentId}/submit`, {
+      answers,
+      timeSpent,
+    });
+    return response.data;
+  }
+
+  async getAssessmentResult(resultId: string): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/assessments/results/${resultId}`);
+    return response.data;
+  }
+
+  // Objectives → Generate learning paths
+  async generateLearningPaths(objectiveId: string): Promise<ApiResponse<any>> {
+    const response = await this.api.post(`/objectives/${objectiveId}/generate-paths`);
+    return response.data;
+  }
+
+  async generatePathModules(objectiveId: string, pathId: string): Promise<ApiResponse<any>> {
+    const response = await this.api.post(
+      `/objectives/${objectiveId}/paths/${pathId}/generate-modules`
+    );
     return response.data;
   }
 

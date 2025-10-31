@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { logger } from '@/utils/logger';
-import { GeminiRequest, GeminiResponse, Flashcard, QuizQuestion } from '@/types';
+import { Flashcard, QuizQuestion } from '@/types';
 
 class GeminiService {
   private genAI: GoogleGenAI;
@@ -96,15 +96,110 @@ class GeminiService {
     }
   }
 
+  async generateAssessment(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    count: number = 25
+  ): Promise<QuizQuestion[]> {
+    try {
+      const prompt = this.buildAssessmentPrompt(objective, count);
+      const response = await this.callGeminiAPI(prompt);
+
+      return this.parseQuizQuestionsFromResponse(response);
+    } catch (error) {
+      logger.error('Error generating assessment:', error);
+      throw error;
+    }
+  }
+
+  async generateLearningPaths(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    count: number = 3
+  ): Promise<
+    Array<{
+      title: string;
+      description: string;
+      category: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+      estimatedDuration: number;
+      prerequisites: string[];
+      skills: string[];
+    }>
+  > {
+    try {
+      logger.info('Building learning paths prompt...');
+      const prompt = this.buildLearningPathsPrompt(objective, count);
+      logger.info('Calling Gemini API for learning paths...');
+      const response = await this.callGeminiAPI(prompt);
+      logger.info('Gemini API response received, length:', response.length);
+      if (response.length > 0) {
+        logger.debug('Raw Gemini response (first 500 chars):', response.substring(0, 500));
+      } else {
+        logger.warn('Gemini API returned empty response');
+      }
+      const parsed = this.parseLearningPathsFromResponse(response);
+      logger.info(`Successfully parsed ${parsed.length} learning paths`);
+      return parsed;
+    } catch (error) {
+      logger.error('Error in generateLearningPaths:', error);
+      logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
+  }
+
+  async generatePathModules(
+    objective: {
+      title: string;
+      category: string;
+      targetRole: string;
+    },
+    pathTitle: string,
+    count: number = 4
+  ): Promise<
+    Array<{
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+      duration: number;
+    }>
+  > {
+    const prompt = this.buildModulesPrompt(objective, pathTitle, count);
+    const response = await this.callGeminiAPI(prompt);
+    return this.parseModulesFromResponse(response);
+  }
+
   private async callGeminiAPI(prompt: string): Promise<string> {
     try {
+      logger.debug('Calling Gemini API with prompt length:', prompt.length);
       const response = await this.genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
       });
-      return response.text || '';
+      const text = response.text || '';
+      logger.debug('Gemini API response length:', text.length);
+      if (!text) {
+        logger.warn('Gemini API returned empty response');
+      }
+      return text;
     } catch (error) {
       logger.error('Error calling Gemini API:', error);
+      if (error instanceof Error) {
+        logger.error('Error message:', error.message);
+        logger.error('Error stack:', error.stack);
+      }
       throw error;
     }
   }
@@ -262,6 +357,111 @@ Keep the explanation encouraging and educational.
         `.trim();
   }
 
+  private buildAssessmentPrompt(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    count: number
+  ): string {
+    return `
+Generate ${count} interview-style multiple-choice questions to precisely evaluate the user's level.
+
+Objective Details:
+- Title: ${objective.title}
+- Description: ${objective.description}
+- Category: ${objective.category}
+- Target Role: ${objective.targetRole}
+- Current Level: ${objective.currentLevel}
+- Target Level: ${objective.targetLevel}
+
+Create questions that:
+1. Mirror real interview scenarios for a ${objective.targetRole}
+2. Cover skills needed to progress from ${objective.currentLevel} to ${objective.targetLevel}
+3. Are practical, job-relevant, and unambiguous
+4. Include realistic pitfalls, not trick questions
+5. Vary in difficulty and scope (frameworks, core, tooling, performance, testing)
+
+Format the response as JSON:
+{
+  "questions": [
+    {
+      "question": "What is...?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "The correct answer is...",
+      "difficulty": "easy|medium|hard",
+      "category": "category name",
+      "skills": ["skill1", "skill2"],
+      "usageExample": "In practice, this means..."
+    }
+  ]
+}
+
+STRICT INSTRUCTIONS:
+- Respond ONLY with valid JSON, no prose, no markdown, no code fences.
+- Ensure the top-level object has a "questions" array exactly as specified.
+- Do not include trailing commas.
+
+Make questions specific to ${objective.category} and relevant for ${objective.targetRole} role.
+        `.trim();
+  }
+
+  private buildLearningPathsPrompt(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    count: number
+  ): string {
+    return `
+Generate ${count} learning paths for this objective, tailored to interview-level preparation.
+
+Objective:
+- Title: ${objective.title}
+- Description: ${objective.description}
+- Category: ${objective.category}
+- Target Role: ${objective.targetRole}
+- Current Level: ${objective.currentLevel}
+- Target Level: ${objective.targetLevel}
+
+Each path should include:
+- title (string)
+- description (string)
+- category (string)
+- difficulty (beginner|intermediate|advanced)
+- estimatedDuration (number, weeks)
+- prerequisites (string[])
+- skills (string[])
+
+Respond ONLY with JSON in this format:
+{ "paths": [ { "title": "...", "description": "...", "category": "...", "difficulty": "beginner|intermediate|advanced", "estimatedDuration": 6, "prerequisites": ["..."], "skills": ["..."] } ] }
+`.trim();
+  }
+
+  private buildModulesPrompt(
+    objective: { title: string; category: string; targetRole: string },
+    pathTitle: string,
+    count: number
+  ): string {
+    return `
+Generate ${count} modules for the learning path "${pathTitle}" toward ${objective.targetRole}.
+Mix theory, practice, project, assessment types.
+Return fields per module: title, description, type (theory|practice|project|assessment), duration (hours).
+
+Respond ONLY with JSON in this format:
+{ "modules": [ { "title": "...", "description": "...", "type": "theory|practice|project|assessment", "duration": 6 } ] }
+`.trim();
+  }
+
   private parseFlashcardsFromResponse(response: string): Flashcard[] {
     try {
       const parsed = JSON.parse(response);
@@ -284,22 +484,150 @@ Keep the explanation encouraging and educational.
   }
 
   private parseQuizQuestionsFromResponse(response: string): QuizQuestion[] {
-    try {
-      const parsed = JSON.parse(response);
-      return parsed.questions.map((q: any, index: number) => ({
-        id: `quiz_${Date.now()}_${index}`,
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        explanation: q.explanation,
-        difficulty: q.difficulty || 'medium',
-        category: q.category || 'general',
-        usageExample: q.usageExample,
-      }));
-    } catch (error) {
-      logger.error('Error parsing quiz questions from Gemini response:', error);
+    const normalize = (raw: string): string => {
+      // Extract JSON inside code fences if present
+      const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
+      if (codeFenceMatch && codeFenceMatch[1]) return codeFenceMatch[1].trim();
+
+      // If extra prose exists, try to find the first '{' and last '}'
+      const firstBrace = raw.indexOf('{');
+      const lastBrace = raw.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        return raw.slice(firstBrace, lastBrace + 1);
+      }
+      return raw.trim();
+    };
+
+    const tryParse = (raw: string): any | null => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    };
+
+    const cleaned = normalize(response);
+    let parsed = tryParse(cleaned);
+
+    if (!parsed) {
+      // Try to coerce common issues: single quotes → double quotes
+      const coerced = cleaned.replace(/'([^']*)'/g, '"$1"');
+      parsed = tryParse(coerced);
+    }
+
+    if (!parsed || !Array.isArray(parsed.questions)) {
+      logger.error(
+        'Gemini response JSON parse failed. Raw response sample:',
+        cleaned.slice(0, 400)
+      );
       throw new Error('Failed to parse quiz questions from AI response');
     }
+
+    return parsed.questions.map((q: any, index: number) => ({
+      id: `quiz_${Date.now()}_${index}`,
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+      difficulty: q.difficulty || 'medium',
+      category: q.category || 'general',
+      usageExample: q.usageExample,
+      skills: q.skills || [],
+    }));
+  }
+
+  private normalizeJson(raw: string): string {
+    const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
+    if (codeFenceMatch && codeFenceMatch[1]) return codeFenceMatch[1].trim();
+    const firstBrace = raw.indexOf('{');
+    const lastBrace = raw.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return raw.slice(firstBrace, lastBrace + 1);
+    }
+    return raw.trim();
+  }
+
+  private safeParse<T = any>(raw: string): T | null {
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      try {
+        const coerced = raw.replace(/'([^']*)'/g, '"$1"');
+        return JSON.parse(coerced) as T;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  private parseLearningPathsFromResponse(response: string): Array<{
+    title: string;
+    description: string;
+    category: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    estimatedDuration: number;
+    prerequisites: string[];
+    skills: string[];
+  }> {
+    logger.info('Parsing learning paths response...');
+    const cleaned = this.normalizeJson(response);
+    logger.debug('Cleaned JSON (first 500 chars):', cleaned.substring(0, 500));
+    const parsed = this.safeParse<any>(cleaned);
+
+    if (!parsed) {
+      logger.error(
+        'Failed to parse JSON. Cleaned response (first 1000 chars):',
+        cleaned.substring(0, 1000)
+      );
+      throw new Error('Failed to parse learning paths JSON - invalid JSON format');
+    }
+
+    if (!Array.isArray(parsed.paths)) {
+      logger.error(
+        'Parsed JSON does not contain paths array. Parsed object keys:',
+        Object.keys(parsed)
+      );
+      logger.error(
+        'Full parsed object (first 1000 chars):',
+        JSON.stringify(parsed, null, 2).substring(0, 1000)
+      );
+      throw new Error(
+        `Failed to parse learning paths - expected 'paths' array, got keys: ${Object.keys(
+          parsed
+        ).join(', ')}`
+      );
+    }
+
+    logger.info(`Found ${parsed.paths.length} paths in response`);
+    return parsed.paths.map((p: any) => ({
+      title: p.title || 'Untitled Path',
+      description: p.description || '',
+      category: p.category || 'general',
+      difficulty: (p.difficulty || 'intermediate') as 'beginner' | 'intermediate' | 'advanced',
+      estimatedDuration: Number(p.estimatedDuration) || 6,
+      prerequisites: Array.isArray(p.prerequisites) ? p.prerequisites : [],
+      skills: Array.isArray(p.skills) ? p.skills : [],
+    }));
+  }
+
+  private parseModulesFromResponse(response: string): Array<{
+    title: string;
+    description: string;
+    type: 'theory' | 'practice' | 'project' | 'assessment';
+    duration: number;
+  }> {
+    const cleaned = this.normalizeJson(response);
+    const parsed = this.safeParse<any>(cleaned);
+    if (!parsed || !Array.isArray(parsed.modules)) {
+      logger.error('Failed to parse modules JSON:', cleaned.slice(0, 400));
+      throw new Error('Failed to parse modules from AI response');
+    }
+    return parsed.modules.map((m: any) => ({
+      title: m.title,
+      description: m.description,
+      type: m.type || 'theory',
+      duration: Number(m.duration) || 4,
+    }));
   }
 
   private parseDocumentProcessingResponse(response: string): {
