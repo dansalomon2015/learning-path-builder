@@ -22,7 +22,10 @@ class FirebaseService {
       let projectId: string = 'gen-lang-client-0438922965';
 
       // Extract service account from firebase-config
-      if (firebaseConfig['serviceAccount'] != null && typeof firebaseConfig['serviceAccount'] === 'object') {
+      if (
+        firebaseConfig['serviceAccount'] != null &&
+        typeof firebaseConfig['serviceAccount'] === 'object'
+      ) {
         serviceAccountData = firebaseConfig['serviceAccount'] as Record<string, unknown>;
       } else if (firebaseConfig['project_id'] != null) {
         // If firebase-config contains service account fields directly
@@ -30,9 +33,15 @@ class FirebaseService {
       }
 
       // Extract project_id from firebase-config
-      if (firebaseConfig['project_id'] != null && typeof firebaseConfig['project_id'] === 'string') {
+      if (
+        firebaseConfig['project_id'] != null &&
+        typeof firebaseConfig['project_id'] === 'string'
+      ) {
         projectId = firebaseConfig['project_id'];
-      } else if (serviceAccountData['project_id'] != null && typeof serviceAccountData['project_id'] === 'string') {
+      } else if (
+        serviceAccountData['project_id'] != null &&
+        typeof serviceAccountData['project_id'] === 'string'
+      ) {
         projectId = serviceAccountData['project_id'];
       }
 
@@ -63,7 +72,10 @@ class FirebaseService {
   private loadServiceAccountFromFile(): Record<string, unknown> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-      const serviceAccountData = require('./firebase-service-account.json') as Record<string, unknown>;
+      const serviceAccountData = require('./firebase-service-account.json') as Record<
+        string,
+        unknown
+      >;
       logger.info('Loaded Firebase service account from file');
       return serviceAccountData;
     } catch {
@@ -75,7 +87,8 @@ class FirebaseService {
   constructor() {
     try {
       // Try to load from FIREBASE_CONFIG first (from Secret Manager)
-      let { serviceAccount: serviceAccountData, projectId } = this.loadServiceAccountFromFirebaseConfig();
+      let { serviceAccount: serviceAccountData, projectId } =
+        this.loadServiceAccountFromFirebaseConfig();
 
       // Fallback to FIREBASE_SERVICE_ACCOUNT if available
       if (Object.keys(serviceAccountData).length === 0) {
@@ -85,14 +98,23 @@ class FirebaseService {
       // Fallback to file if environment variables not set (local development)
       if (Object.keys(serviceAccountData).length === 0) {
         serviceAccountData = this.loadServiceAccountFromFile();
+        // Extract project_id from service account file if available
+        if (projectId == null && serviceAccountData['project_id'] != null && typeof serviceAccountData['project_id'] === 'string') {
+          projectId = serviceAccountData['project_id'];
+        }
       }
 
       // Use FIREBASE_PROJECT_ID if projectId not set from firebase-config
-      if (projectId === 'gen-lang-client-0438922965') {
+      if (projectId == null) {
         const projectIdEnv: string | undefined = process.env['FIREBASE_PROJECT_ID'];
         if (projectIdEnv != null && projectIdEnv !== '') {
           projectId = projectIdEnv;
         }
+      }
+
+      // Ensure projectId is set
+      if (projectId == null || projectId === '') {
+        throw new Error('Firebase project_id is required. Set FIREBASE_CONFIG, FIREBASE_PROJECT_ID, or use a service account file with project_id.');
       }
 
       this.serviceAccount = serviceAccountData;
