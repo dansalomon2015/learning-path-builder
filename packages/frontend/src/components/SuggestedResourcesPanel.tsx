@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { SuggestedResource } from '../types';
+import { ResourceType, SkillLevel } from '../types';
 import {
   BookOpen,
   FileText,
@@ -39,16 +40,16 @@ const SuggestedResourcesPanel: React.FC<SuggestedResourcesPanelProps> = ({
 
   const getResourceIcon = (type: SuggestedResource['type']): JSX.Element => {
     switch (type) {
-      case 'documentation':
+      case ResourceType.DOCUMENTATION:
         return <FileText className="w-4 h-4" />;
-      case 'book':
+      case ResourceType.BOOK:
         return <BookOpen className="w-4 h-4" />;
-      case 'video':
+      case ResourceType.VIDEO:
         return <Video className="w-4 h-4" />;
-      case 'tutorial':
-      case 'official_guide':
+      case ResourceType.TUTORIAL:
+      case ResourceType.OFFICIAL_GUIDE:
         return <GraduationCap className="w-4 h-4" />;
-      case 'article':
+      case ResourceType.ARTICLE:
         return <FileText className="w-4 h-4" />;
       default:
         return <FileText className="w-4 h-4" />;
@@ -115,9 +116,9 @@ const SuggestedResourcesPanel: React.FC<SuggestedResourcesPanelProps> = ({
                   <div className="flex items-center space-x-3">
                     <span
                       className={`px-1.5 py-0.5 rounded text-xs ${
-                        resource.difficulty === 'beginner'
+                        resource.difficulty === SkillLevel.BEGINNER
                           ? 'bg-green-100 text-green-700'
-                          : resource.difficulty === 'intermediate'
+                          : resource.difficulty === SkillLevel.INTERMEDIATE
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
                       }`}

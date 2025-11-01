@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import type { User, LearningObjective, LearningPath } from '../types';
+import { ObjectiveStatus } from '../types';
 import { ArrowLeftIcon, BarChartIcon, UserIcon, AlertTriangleIcon } from './icons';
 import { apiService } from '../services/api';
 
@@ -335,10 +336,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   // Calculate statistics from objectives
   const totalObjectives: number = objectives.length;
   const completedObjectives: number = objectives.filter(
-    (obj: LearningObjective): boolean => obj.status === 'completed'
+    (obj: LearningObjective): boolean => obj.status === ObjectiveStatus.COMPLETED
   ).length;
   const inProgressObjectives: number = objectives.filter(
-    (obj: LearningObjective): boolean => obj.status === 'in_progress'
+    (obj: LearningObjective): boolean => obj.status === ObjectiveStatus.IN_PROGRESS
   ).length;
   const averageProgress: number =
     objectives.length > 0

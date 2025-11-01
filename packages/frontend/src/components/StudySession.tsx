@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { LearningPlan } from '../types';
+import { Difficulty, StudyMode, DifficultyAdjustment } from '../types';
 import { sessionService } from '../services/sessionService';
 import type { SessionProgress, SessionStats } from '../services/sessionService';
 import {
@@ -229,9 +230,9 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({
               <div className="mb-4">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    currentCard.difficulty === 'easy'
+                    currentCard.difficulty === Difficulty.EASY
                       ? 'bg-green-100 text-green-700'
-                      : currentCard.difficulty === 'medium'
+                      : currentCard.difficulty === Difficulty.MEDIUM
                       ? 'bg-yellow-100 text-yellow-700'
                       : 'bg-red-100 text-red-700'
                   }`}
@@ -368,9 +369,9 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }): JSX.E
           <div className="flex items-center justify-between mb-4">
             <span
               className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                currentCard.difficulty === 'easy'
+                currentCard.difficulty === Difficulty.EASY
                   ? 'bg-green-100 text-green-700'
-                  : currentCard.difficulty === 'medium'
+                  : currentCard.difficulty === Difficulty.MEDIUM
                   ? 'bg-yellow-100 text-yellow-700'
                   : 'bg-red-100 text-red-700'
               }`}
@@ -532,13 +533,15 @@ const SessionComplete: React.FC<SessionCompleteProps> = ({
         </div>
       </div>
 
-      {recommendations.difficultyAdjustment !== 'maintain' && (
+      {recommendations.difficultyAdjustment !== DifficultyAdjustment.MAINTAIN && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-semibold text-indigo-800 mb-2">AI Recommendation</h3>
           <p className="text-sm text-indigo-700">
             Based on your performance, we suggest{' '}
             <strong>
-              {recommendations.difficultyAdjustment === 'increase' ? 'increasing' : 'decreasing'}
+              {recommendations.difficultyAdjustment === DifficultyAdjustment.INCREASE
+                ? 'increasing'
+                : 'decreasing'}
             </strong>{' '}
             the difficulty level for your next session.
           </p>
@@ -658,7 +661,7 @@ const StudySession: React.FC<StudySessionProps> = ({
         onResume={handleResume}
       />
 
-      {mode === 'quiz' ? (
+      {mode === StudyMode.QUIZ ? (
         <QuizMode plan={plan} session={session} onComplete={handleComplete} />
       ) : (
         <FlashcardMode plan={plan} session={session} onComplete={handleComplete} />

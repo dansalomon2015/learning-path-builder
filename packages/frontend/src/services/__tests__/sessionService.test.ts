@@ -6,7 +6,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { sessionService } from '../sessionService';
 import { type LearningPlan, SkillLevel, Difficulty, StudyMode } from '../../types';
 
-describe('SessionService - Critical Functions', () => {
+// eslint-disable-next-line max-lines-per-function
+describe('SessionService - Critical Functions', (): void => {
   const mockPlan: LearningPlan = {
     id: 'plan1',
     userId: 'user1',
@@ -45,13 +46,13 @@ describe('SessionService - Critical Functions', () => {
     masteredCards: 0,
   };
 
-  beforeEach(() => {
+  beforeEach((): void => {
     localStorage.clear();
     // Note: SessionService is a singleton, so we work with the instance
   });
 
-  describe('startSession', () => {
-    it('should create a new session with correct initial state', () => {
+  describe('startSession', (): void => {
+    it('should create a new session with correct initial state', (): void => {
       const session = sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
 
       expect(session).toBeDefined();
@@ -65,7 +66,7 @@ describe('SessionService - Critical Functions', () => {
       expect(session.isPaused).toBe(false);
     });
 
-    it('should create session with quiz mode', () => {
+    it('should create session with quiz mode', (): void => {
       const session = sessionService.startSession(mockPlan, StudyMode.QUIZ);
 
       expect(session.mode).toBe(StudyMode.QUIZ);
@@ -73,8 +74,8 @@ describe('SessionService - Critical Functions', () => {
     });
   });
 
-  describe('recordCardInteraction', () => {
-    it('should increment correct answers for correct response', () => {
+  describe('recordCardInteraction', (): void => {
+    it('should increment correct answers for correct response', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.recordCardInteraction('card1', true, 5, Difficulty.EASY);
 
@@ -83,7 +84,7 @@ describe('SessionService - Critical Functions', () => {
       expect(session?.incorrectAnswers).toBe(0);
     });
 
-    it('should increment incorrect answers for incorrect response', () => {
+    it('should increment incorrect answers for incorrect response', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.recordCardInteraction('card1', false, 10, Difficulty.EASY);
 
@@ -92,7 +93,7 @@ describe('SessionService - Critical Functions', () => {
       expect(session?.incorrectAnswers).toBe(1);
     });
 
-    it('should track multiple interactions correctly', () => {
+    it('should track multiple interactions correctly', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.recordCardInteraction('card1', true, 5, Difficulty.EASY);
       sessionService.recordCardInteraction('card2', true, 6, Difficulty.EASY);
@@ -104,8 +105,8 @@ describe('SessionService - Critical Functions', () => {
     });
   });
 
-  describe('nextCard', () => {
-    it('should increment current card index', () => {
+  describe('nextCard', (): void => {
+    it('should increment current card index', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       const initialIndex = sessionService.getCurrentSession()?.currentCardIndex ?? 0;
 
@@ -115,7 +116,7 @@ describe('SessionService - Critical Functions', () => {
       expect(newIndex).toBe(initialIndex + 1);
     });
 
-    it('should not exceed total cards', () => {
+    it('should not exceed total cards', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.nextCard(); // Index 1
       sessionService.nextCard(); // Index 2 (should not exceed)
@@ -125,8 +126,8 @@ describe('SessionService - Critical Functions', () => {
     });
   });
 
-  describe('completeSession', () => {
-    it('should return session stats after completion', () => {
+  describe('completeSession', (): void => {
+    it('should return session stats after completion', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.recordCardInteraction('card1', true, 5, Difficulty.EASY);
       sessionService.recordCardInteraction('card2', true, 6, Difficulty.EASY);
@@ -138,14 +139,14 @@ describe('SessionService - Critical Functions', () => {
       expect(completedSession?.totalQuestions).toBe(2);
     });
 
-    it('should return null if no session exists', () => {
+    it('should return null if no session exists', (): void => {
       const completedSession = sessionService.completeSession();
       expect(completedSession).toBeNull();
     });
   });
 
-  describe('getSessionStats', () => {
-    it('should calculate accurate statistics', () => {
+  describe('getSessionStats', (): void => {
+    it('should calculate accurate statistics', (): void => {
       sessionService.startSession(mockPlan, StudyMode.FLASHCARDS);
       sessionService.recordCardInteraction('card1', true, 5, Difficulty.EASY);
       sessionService.recordCardInteraction('card2', true, 6, Difficulty.EASY);
@@ -160,8 +161,8 @@ describe('SessionService - Critical Functions', () => {
     });
   });
 
-  describe('getAdaptiveRecommendations', () => {
-    it('should return recommendations object', () => {
+  describe('getAdaptiveRecommendations', (): void => {
+    it('should return recommendations object', (): void => {
       const recommendations = sessionService.getAdaptiveRecommendations();
 
       expect(recommendations).toBeDefined();

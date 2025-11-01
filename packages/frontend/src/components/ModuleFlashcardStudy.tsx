@@ -127,13 +127,14 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
             flashcards.length > 0 ? Math.round((updated.size / flashcards.length) * 100) : 0;
           const masteredCardIdsArray = Array.from(updated);
 
-          // Save immediately
-          setTimeout((): void => {
+          // Save immediately (using setTimeout to avoid blocking UI)
+          const handleSaveProgress = (): void => {
             saveProgress(newMastery, masteredCardIdsArray).catch((err: unknown): undefined => {
               console.error('Error saving progress:', err);
               return undefined;
             });
-          }, 100);
+          };
+          setTimeout(handleSaveProgress, 100);
 
           return updated;
         });

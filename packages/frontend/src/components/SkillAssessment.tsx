@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import type { Assessment, AssessmentQuestion, AssessmentAnswer } from '../types';
+import { AssessmentQuestionType } from '../types';
 import { apiService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -129,7 +130,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               <button
                 key={index}
                 onClick={(): void => {
-                  onAnswer(question.type === 'multiple_choice' ? option : index);
+                  onAnswer(question.type === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index);
                 }}
                 className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ${
                   isSelected

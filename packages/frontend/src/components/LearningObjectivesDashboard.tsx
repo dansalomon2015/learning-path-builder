@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { LearningObjective, Assessment } from '../types';
+import { ObjectiveStatus } from '../types';
 import CreateObjectiveModal from './CreateObjectiveModal';
 import SkillAssessment from './SkillAssessment';
 import { toast } from 'react-hot-toast';
@@ -233,7 +234,7 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
       {/* Action Buttons */}
       <div className="flex space-x-2">
-        {objective.status === 'planning' && hasPaths === false && (
+        {objective.status === ObjectiveStatus.PLANNING && hasPaths === false && (
           <button
             onClick={(): void => {
               onStartAssessment(objective.id);
@@ -281,7 +282,7 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           </>
         )}
 
-        {objective.status === 'in_progress' && hasPaths === false && (
+        {objective.status === ObjectiveStatus.IN_PROGRESS && hasPaths === false && (
           <>
             <button
               onClick={(): void => {
@@ -303,7 +304,7 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           </>
         )}
 
-        {objective.status === 'completed' && (
+        {objective.status === ObjectiveStatus.COMPLETED && (
           <button
             onClick={(): void => {
               onViewDetails(objective.id);
@@ -749,13 +750,13 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {objectives.filter((o): boolean => o.status === 'in_progress').length}
+                {objectives.filter((o): boolean => o.status === ObjectiveStatus.IN_PROGRESS).length}
               </div>
               <div className="text-sm text-slate-600">In Progress</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {objectives.filter((o): boolean => o.status === 'completed').length}
+                {objectives.filter((o): boolean => o.status === ObjectiveStatus.COMPLETED).length}
               </div>
               <div className="text-sm text-slate-600">Completed</div>
             </div>

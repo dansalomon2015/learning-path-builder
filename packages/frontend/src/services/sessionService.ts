@@ -1,4 +1,5 @@
 import type { StudySession, LearningPlan } from '../types';
+import { StudyMode } from '../types';
 
 export interface SessionStats {
   totalSessions: number;
@@ -331,9 +332,11 @@ class SessionService {
 
       // Suggest mode based on performance
       const flashcardSessions = recentSessions.filter(
-        (s: StudySession): boolean => s.mode === 'flashcards'
+        (s: StudySession): boolean => s.mode === StudyMode.FLASHCARDS
       );
-      const quizSessions = recentSessions.filter((s: StudySession): boolean => s.mode === 'quiz');
+      const quizSessions = recentSessions.filter(
+        (s: StudySession): boolean => s.mode === StudyMode.QUIZ
+      );
 
       if (flashcardSessions.length > quizSessions.length) {
         suggestedMode = 'quiz';
