@@ -130,7 +130,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               <button
                 key={index}
                 onClick={(): void => {
-                  onAnswer(question.type === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index);
+                  onAnswer(
+                    question.type === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index
+                  );
                 }}
                 className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ${
                   isSelected

@@ -57,7 +57,6 @@ describe('ModuleFlashcardStudy - Critical Functions', (): void => {
     it('should add card to mastered set when knewIt is true', (): void => {
       const mastered = new Set<string>(['card1']);
       const cardId = 'card2';
-      const knewIt = true;
 
       const updated = new Set(mastered);
       updated.add(cardId);
@@ -69,7 +68,6 @@ describe('ModuleFlashcardStudy - Critical Functions', (): void => {
     it('should remove card from mastered set when knewIt is false', (): void => {
       const mastered = new Set<string>(['card1', 'card2']);
       const cardId = 'card1';
-      const knewIt = false;
 
       const updated = new Set(mastered);
       updated.delete(cardId);
@@ -81,7 +79,6 @@ describe('ModuleFlashcardStudy - Critical Functions', (): void => {
     it('should handle removing non-existent card gracefully', (): void => {
       const mastered = new Set<string>(['card1']);
       const cardId = 'card2';
-      const knewIt = false;
 
       const updated = new Set(mastered);
       updated.delete(cardId);

@@ -316,7 +316,7 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           </button>
         )}
 
-        {objective.status === 'paused' && (
+        {objective.status === ObjectiveStatus.PAUSED && (
           <button
             onClick={(): void => {
               onStartLearning(objective.id);
