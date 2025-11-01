@@ -13,7 +13,7 @@ router.use('/users', userRoutes);
 router.use('/analytics', analyticsRoutes);
 
 // API info endpoint
-router.get('/', (req: Request, res: Response): Response => {
+router.get('/', (_req: Request, res: Response): Response => {
   return res.json({
     message: 'FlashLearn AI API',
     version: '1.0.0',

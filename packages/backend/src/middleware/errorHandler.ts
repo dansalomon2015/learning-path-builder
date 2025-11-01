@@ -29,7 +29,7 @@ export const errorHandler = (
 
   // Don't leak error details in production
   const responseMessage =
-    process.env.NODE_ENV === 'production'
+    process.env['NODE_ENV'] === 'production'
       ? statusCode === 500
         ? 'Internal Server Error'
         : message
@@ -39,7 +39,7 @@ export const errorHandler = (
     success: false,
     error: {
       message: responseMessage,
-      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+      ...(process.env['NODE_ENV'] !== 'production' && { stack: error.stack }),
     },
     timestamp: new Date().toISOString(),
     path: req.url,

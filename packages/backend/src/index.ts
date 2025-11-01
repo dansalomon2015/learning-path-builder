@@ -35,7 +35,7 @@ app.use(
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000',
-      process.env.FRONTEND_URL || 'http://localhost:5173',
+      process.env['FRONTEND_URL'] ?? 'http://localhost:5173',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -77,7 +77,7 @@ app.use('/api/objectives', authMiddleware, objectivesRoutes);
 app.use('/api/assessments', authMiddleware, assessmentsRoutes);
 
 // Health check endpoint with service status
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
   try {
     const firebaseHealthy = await firebaseService.healthCheck();
     const geminiHealthy = await geminiService.healthCheck();
@@ -86,13 +86,13 @@ app.get('/health', async (req, res) => {
       status: firebaseHealthy && geminiHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env['NODE_ENV'] ?? 'development',
       services: {
         firebase: firebaseHealthy,
         gemini: geminiHealthy,
         firestore: firebaseHealthy,
       },
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env['npm_package_version'] ?? '1.0.0',
     };
 
     const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
@@ -114,7 +114,7 @@ app.use(errorHandler);
 // Start server with extended timeouts for long-running requests (e.g., AI generation)
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`📊 Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
   logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
 });
 

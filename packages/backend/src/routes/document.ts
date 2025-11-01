@@ -17,7 +17,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback): void => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback): void => {
     const allowedMimes = ['application/pdf', 'text/plain', 'text/markdown'];
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
@@ -77,7 +77,7 @@ router.post(
 
     const uploadId: string = await firebaseService.createDocument(
       'documentUploads',
-      documentUpload
+      documentUpload as unknown as Record<string, unknown>
     );
 
     // Process document with Gemini AI
@@ -173,19 +173,19 @@ const getUserInfo = (
   skillLevel: string;
 } => {
   const userName: string =
-    user != null && typeof user === 'object' && 'name' in user && typeof user.name === 'string'
-      ? user.name
+    user != null && typeof user === 'object' && 'name' in user && typeof user['name'] === 'string'
+      ? user['name']
       : 'N/A';
   const userEmail: string =
-    user != null && typeof user === 'object' && 'email' in user && typeof user.email === 'string'
-      ? user.email
+    user != null && typeof user === 'object' && 'email' in user && typeof user['email'] === 'string'
+      ? user['email']
       : 'N/A';
   const userSkillLevel: string =
     user != null &&
     typeof user === 'object' &&
     'skillLevel' in user &&
-    typeof user.skillLevel === 'string'
-      ? user.skillLevel
+    typeof user['skillLevel'] === 'string'
+      ? user['skillLevel']
       : 'N/A';
   return { name: userName, email: userEmail, skillLevel: userSkillLevel };
 };

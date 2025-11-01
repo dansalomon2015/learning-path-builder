@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express';
 import { firebaseService } from '@/services/firebase';
 import { adaptiveLearningService } from '@/services/adaptiveLearning';
 import { logger } from '@/utils/logger';
+import type { Flashcard } from '@/types';
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ router.get('/profile', async (req: Request, res: Response): Promise<Response | v
     }
     const progress = await adaptiveLearningService.calculateLearningProgress(
       firstPlanId !== '' ? firstPlanId : '',
-      flashcards as Array<{ masteryLevel: number }>
+      flashcards as unknown as Flashcard[]
     );
 
     return res.json({
@@ -122,7 +123,7 @@ router.get('/learning-progress', async (req: Request, res: Response): Promise<Re
     }
     const progress = await adaptiveLearningService.calculateLearningProgress(
       firstPlanId !== '' ? firstPlanId : '',
-      flashcards as Array<{ masteryLevel: number }>
+      flashcards as unknown as Flashcard[]
     );
 
     return res.json({
@@ -140,8 +141,8 @@ router.get('/learning-progress', async (req: Request, res: Response): Promise<Re
 router.get('/study-sessions', async (req: Request, res: Response): Promise<Response | void> => {
   try {
     const userId: string | undefined = req.user?.uid;
-    const limitValue: unknown = req.query.limit;
-    const offsetValue: unknown = req.query.offset;
+    const limitValue: unknown = req.query['limit'];
+    const offsetValue: unknown = req.query['offset'];
     const limit: number =
       typeof limitValue === 'string'
         ? parseInt(limitValue, 10)
