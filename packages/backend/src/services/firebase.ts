@@ -11,7 +11,7 @@ class FirebaseService {
     serviceAccount: Record<string, unknown>;
     projectId: string | undefined;
   } {
-    const firebaseConfigEnv = process.env['FIREBASE_CONFIG'];
+    const firebaseConfigEnv = process.env['firebase-config'];
     if (firebaseConfigEnv == null || firebaseConfigEnv === '') {
       return { serviceAccount: {}, projectId: undefined };
     }
@@ -19,7 +19,7 @@ class FirebaseService {
     try {
       const firebaseConfig = JSON.parse(firebaseConfigEnv) as Record<string, unknown>;
       let serviceAccountData: Record<string, unknown> = {};
-      let projectId: string | undefined;
+      let projectId: string | undefined = process.env['firebase-project-id'];
 
       // Extract service account from firebase-config
       if (
@@ -115,7 +115,7 @@ class FirebaseService {
 
       // Use FIREBASE_PROJECT_ID or firebase-project-id if projectId not set from firebase-config
       if (projectId == null) {
-        const projectIdEnv: string | undefined = 
+        const projectIdEnv: string | undefined =
           process.env['FIREBASE_PROJECT_ID'] ?? process.env['firebase-project-id'];
         if (projectIdEnv != null && projectIdEnv !== '') {
           projectId = projectIdEnv;
