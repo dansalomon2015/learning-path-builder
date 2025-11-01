@@ -11,7 +11,7 @@ class FirebaseService {
     serviceAccount: Record<string, unknown>;
     projectId: string | undefined;
   } {
-    const firebaseConfigEnv = process.env['firebase-config'];
+    const firebaseConfigEnv = process.env['FIREBASE_CONFIG'];
     if (firebaseConfigEnv == null || firebaseConfigEnv === '') {
       return { serviceAccount: {}, projectId: undefined };
     }
