@@ -87,6 +87,11 @@ jobs:
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
 
+          gcloud secrets add-iam-policy-binding firebase-project-id \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
           gcloud secrets add-iam-policy-binding gemini-api-key \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
@@ -99,6 +104,7 @@ jobs:
         continue-on-error: true
         run: |
           if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null && \
+             gcloud secrets describe firebase-project-id --project=${{ env.PROJECT_ID }} &>/dev/null && \
              gcloud secrets describe gemini-api-key --project=${{ env.PROJECT_ID }} &>/dev/null; then
             echo "secrets_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Secrets exist in Secret Manager"
@@ -125,7 +131,7 @@ jobs:
             --max-instances 10 \
             --timeout 300 \
             --set-env-vars NODE_ENV=production \
-            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_CONFIG=firebase-config:latest,GEMINI_API_KEY=gemini-api-key:latest" || echo "") \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_CONFIG=firebase-config:latest,firebase-project-id=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest" || echo "") \
             --format="value(status.url)")
 
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT

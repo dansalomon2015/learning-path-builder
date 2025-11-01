@@ -87,7 +87,10 @@ class FirebaseService {
   constructor() {
     try {
       // Try to load from FIREBASE_CONFIG first (from Secret Manager)
-      let { serviceAccount: serviceAccountData, projectId }: {
+      let {
+        serviceAccount: serviceAccountData,
+        projectId,
+      }: {
         serviceAccount: Record<string, unknown>;
         projectId: string | undefined;
       } = this.loadServiceAccountFromFirebaseConfig();
@@ -110,9 +113,10 @@ class FirebaseService {
         }
       }
 
-      // Use FIREBASE_PROJECT_ID if projectId not set from firebase-config
+      // Use FIREBASE_PROJECT_ID or firebase-project-id if projectId not set from firebase-config
       if (projectId == null) {
-        const projectIdEnv: string | undefined = process.env['FIREBASE_PROJECT_ID'];
+        const projectIdEnv: string | undefined = 
+          process.env['FIREBASE_PROJECT_ID'] ?? process.env['firebase-project-id'];
         if (projectIdEnv != null && projectIdEnv !== '') {
           projectId = projectIdEnv;
         }
