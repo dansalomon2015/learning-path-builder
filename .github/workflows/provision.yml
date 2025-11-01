@@ -38,7 +38,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
 
       - name: Validate required secrets
         run: |
