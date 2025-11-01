@@ -82,7 +82,7 @@ jobs:
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
           CLOUD_RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
-          gcloud secrets add-iam-policy-binding firebase-project-id \
+          gcloud secrets add-iam-policy-binding firebase-config \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
@@ -92,19 +92,13 @@ jobs:
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
 
-          gcloud secrets add-iam-policy-binding firebase-service-account \
-            --member="serviceAccount:${CLOUD_RUN_SA}" \
-            --role="roles/secretmanager.secretAccessor" \
-            --project=${{ env.PROJECT_ID }} || true
-          
           echo "✅ Permissions verified"
 
       - name: Check if secrets exist
         id: check-secrets
         continue-on-error: true
         run: |
-          if gcloud secrets describe firebase-project-id --project=${{ env.PROJECT_ID }} &>/dev/null && \
-             gcloud secrets describe firebase-service-account --project=${{ env.PROJECT_ID }} &>/dev/null && \
+          if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null && \
              gcloud secrets describe gemini-api-key --project=${{ env.PROJECT_ID }} &>/dev/null; then
             echo "secrets_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Secrets exist in Secret Manager"
@@ -131,7 +125,7 @@ jobs:
             --max-instances 10 \
             --timeout 300 \
             --set-env-vars NODE_ENV=production \
-            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_PROJECT_ID=firebase-project-id:latest,FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest,GEMINI_API_KEY=gemini-api-key:latest" || echo "") \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_CONFIG=firebase-config:latest,GEMINI_API_KEY=gemini-api-key:latest" || echo "") \
             --format="value(status.url)")
 
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT

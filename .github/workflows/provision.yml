@@ -70,14 +70,14 @@ jobs:
         run: |
           echo "🔐 Setting up secrets in Secret Manager..."
 
-          # Check and create firebase-project-id secret
-          if ! gcloud secrets describe firebase-project-id --project=${{ env.PROJECT_ID }} &>/dev/null; then
-            echo "Creating firebase-project-id secret (placeholder)..."
-            echo -n 'your-firebase-project-id' | gcloud secrets create firebase-project-id \
+          # Check and create firebase-config secret
+          if ! gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "Creating firebase-config secret (placeholder)..."
+            echo -n '{"project_id":"your-project-id","serviceAccount":{}}' | gcloud secrets create firebase-config \
               --data-file=- \
               --replication-policy="automatic" \
               --project=${{ env.PROJECT_ID }}
-            echo "⚠️  Note: Update firebase-project-id secret with actual value"
+            echo "⚠️  Note: Update firebase-config secret with actual Firebase config JSON"
           fi
 
           # Check and create gemini-api-key secret
@@ -90,16 +90,6 @@ jobs:
             echo "⚠️  Note: Update gemini-api-key secret with actual value"
           fi
 
-          # Check and create firebase-service-account secret
-          if ! gcloud secrets describe firebase-service-account --project=${{ env.PROJECT_ID }} &>/dev/null; then
-            echo "Creating firebase-service-account secret (placeholder)..."
-            echo -n '{}' | gcloud secrets create firebase-service-account \
-              --data-file=- \
-              --replication-policy="automatic" \
-              --project=${{ env.PROJECT_ID }}
-            echo "⚠️  Note: Update firebase-service-account secret with actual Firebase service account JSON"
-          fi
-
           echo "✅ Secrets created/verified"
 
       - name: Update secret versions from GitHub secrets
@@ -107,9 +97,8 @@ jobs:
           echo "📝 Updating secret versions from GitHub secrets..."
 
           echo "⚠️  Manual step required: Update secret values using:"
-          echo "   echo -n 'your-actual-project-id' | gcloud secrets versions add firebase-project-id --data-file=-"
+          echo "   cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-"
           echo "   echo -n 'your-actual-api-key' | gcloud secrets versions add gemini-api-key --data-file=-"
-          echo "   cat firebase-service-account.json | gcloud secrets versions add firebase-service-account --data-file=-"
 
       - name: Grant Cloud Run access to secrets
         run: |
@@ -120,17 +109,12 @@ jobs:
           CLOUD_RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
           # Grant access to secrets
-          gcloud secrets add-iam-policy-binding firebase-project-id \
+          gcloud secrets add-iam-policy-binding firebase-config \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
 
           gcloud secrets add-iam-policy-binding gemini-api-key \
-            --member="serviceAccount:${CLOUD_RUN_SA}" \
-            --role="roles/secretmanager.secretAccessor" \
-            --project=${{ env.PROJECT_ID }} || true
-
-          gcloud secrets add-iam-policy-binding firebase-service-account \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
@@ -239,7 +223,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📝 Next steps:" >> $GITHUB_STEP_SUMMARY
           echo "1. Update secret values (if using placeholders):" >> $GITHUB_STEP_SUMMARY
-          echo "   - firebase-project-id: \`echo -n 'your-project-id' | gcloud secrets versions add firebase-project-id --data-file=-\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - firebase-config: \`cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "   - gemini-api-key: \`echo -n 'your-api-key' | gcloud secrets versions add gemini-api-key --data-file=-\`" >> $GITHUB_STEP_SUMMARY
-          echo "   - firebase-service-account: \`cat firebase-service-account.json | gcloud secrets versions add firebase-service-account --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "2. Run the deploy workflow to build and deploy your application" >> $GITHUB_STEP_SUMMARY
