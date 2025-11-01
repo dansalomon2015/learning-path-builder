@@ -9,15 +9,34 @@ class FirebaseService {
 
   constructor() {
     try {
-      // Load service account from file
-      let serviceAccountData: Record<string, unknown>;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-        serviceAccountData = require('./firebase-service-account.json') as Record<string, unknown>;
-      } catch {
-        // If file doesn't exist, use environment variables or empty object
-        serviceAccountData = {};
+      // Load service account from environment variable (JSON string) or file
+      let serviceAccountData: Record<string, unknown> = {};
+
+      // Try to load from environment variable first (from Secret Manager)
+      const serviceAccountEnv = process.env['FIREBASE_SERVICE_ACCOUNT'];
+      if (serviceAccountEnv != null && serviceAccountEnv !== '') {
+        try {
+          serviceAccountData = JSON.parse(serviceAccountEnv) as Record<string, unknown>;
+          logger.info('Loaded Firebase service account from environment variable');
+        } catch (parseError) {
+          logger.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT from environment:', parseError);
+        }
       }
+
+      // Fallback to file if environment variable not set (local development)
+      if (Object.keys(serviceAccountData).length === 0) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+          serviceAccountData = require('./firebase-service-account.json') as Record<
+            string,
+            unknown
+          >;
+          logger.info('Loaded Firebase service account from file');
+        } catch {
+          logger.warn('Firebase service account file not found, using environment variables only');
+        }
+      }
+
       this.serviceAccount = serviceAccountData;
 
       const projectIdEnv: string | undefined = process.env['FIREBASE_PROJECT_ID'];
@@ -35,7 +54,7 @@ class FirebaseService {
 
       logger.info('Firebase Admin SDK initialized successfully');
     } catch (error: unknown) {
-      logger.error('Failed to initialize Firebase Admin SDK:', process.env['FIREBASE_PROJECT_ID']);
+      logger.error('Failed to initialize Firebase Admin SDK:', error);
       throw error;
     }
   }
