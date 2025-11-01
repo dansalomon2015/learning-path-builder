@@ -75,13 +75,6 @@ jobs:
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
 
-      - name: Enable required APIs
-        run: |
-          gcloud services enable cloudbuild.googleapis.com || true
-          gcloud services enable run.googleapis.com || true
-          gcloud services enable containerregistry.googleapis.com || true
-          gcloud services enable secretmanager.googleapis.com || true
-
       - name: Ensure Cloud Run service account has secret access
         run: |
           echo "🔑 Ensuring Cloud Run service account has secret access..."
