@@ -9,17 +9,17 @@ class FirebaseService {
 
   private loadServiceAccountFromFirebaseConfig(): {
     serviceAccount: Record<string, unknown>;
-    projectId: string;
+    projectId: string | undefined;
   } {
     const firebaseConfigEnv = process.env['FIREBASE_CONFIG'];
     if (firebaseConfigEnv == null || firebaseConfigEnv === '') {
-      return { serviceAccount: {}, projectId: 'gen-lang-client-0438922965' };
+      return { serviceAccount: {}, projectId: undefined };
     }
 
     try {
       const firebaseConfig = JSON.parse(firebaseConfigEnv) as Record<string, unknown>;
       let serviceAccountData: Record<string, unknown> = {};
-      let projectId: string = 'gen-lang-client-0438922965';
+      let projectId: string | undefined;
 
       // Extract service account from firebase-config
       if (
@@ -49,7 +49,7 @@ class FirebaseService {
       return { serviceAccount: serviceAccountData, projectId };
     } catch (parseError) {
       logger.warn('Failed to parse FIREBASE_CONFIG from environment:', parseError);
-      return { serviceAccount: {}, projectId: 'gen-lang-client-0438922965' };
+      return { serviceAccount: {}, projectId: undefined };
     }
   }
 
@@ -99,7 +99,11 @@ class FirebaseService {
       if (Object.keys(serviceAccountData).length === 0) {
         serviceAccountData = this.loadServiceAccountFromFile();
         // Extract project_id from service account file if available
-        if (projectId == null && serviceAccountData['project_id'] != null && typeof serviceAccountData['project_id'] === 'string') {
+        if (
+          projectId == null &&
+          serviceAccountData['project_id'] != null &&
+          typeof serviceAccountData['project_id'] === 'string'
+        ) {
           projectId = serviceAccountData['project_id'];
         }
       }
@@ -114,7 +118,9 @@ class FirebaseService {
 
       // Ensure projectId is set
       if (projectId == null || projectId === '') {
-        throw new Error('Firebase project_id is required. Set FIREBASE_CONFIG, FIREBASE_PROJECT_ID, or use a service account file with project_id.');
+        throw new Error(
+          'Firebase project_id is required. Set FIREBASE_CONFIG, FIREBASE_PROJECT_ID, or use a service account file with project_id.'
+        );
       }
 
       this.serviceAccount = serviceAccountData;
