@@ -82,12 +82,31 @@ jobs:
           gcloud services enable containerregistry.googleapis.com || true
           gcloud services enable secretmanager.googleapis.com || true
 
+      - name: Ensure Cloud Run service account has secret access
+        run: |
+          echo "🔑 Ensuring Cloud Run service account has secret access..."
+
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
+          CLOUD_RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+          gcloud secrets add-iam-policy-binding firebase-project-id \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          gcloud secrets add-iam-policy-binding gemini-api-key \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          echo "✅ Permissions verified"
+
       - name: Check if secrets exist
         id: check-secrets
         continue-on-error: true
         run: |
-          if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null && \
-             gcloud secrets describe gemini-config --project=${{ env.PROJECT_ID }} &>/dev/null; then
+          if gcloud secrets describe firebase-project-id --project=${{ env.PROJECT_ID }} &>/dev/null && \
+             gcloud secrets describe gemini-api-key --project=${{ env.PROJECT_ID }} &>/dev/null; then
             echo "secrets_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Secrets exist in Secret Manager"
           else
@@ -100,7 +119,7 @@ jobs:
         run: |
           # Build base deploy command arguments
           set -e
-          
+
           BACKEND_URL=$(gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --image gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
             --platform managed \
@@ -113,12 +132,12 @@ jobs:
             --max-instances 10 \
             --timeout 300 \
             --set-env-vars NODE_ENV=production \
-            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_PROJECT_ID=firebase-config:project_id,GEMINI_API_KEY=gemini-config:api_key" || echo "") \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_PROJECT_ID=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest" || echo "") \
             --format="value(status.url)")
-          
+
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
           echo "✅ Backend deployed at: $BACKEND_URL"
-          
+
           if [ "${{ steps.check-secrets.outputs.secrets_exist }}" != "true" ]; then
             echo "⚠️  Deployed without secrets. Configure them manually after deployment."
           fi
@@ -212,7 +231,7 @@ jobs:
         run: |
           # Get backend URL
           set -e
-          
+
           BACKEND_URL="${{ steps.backend-url.outputs.url }}"
           if [ -z "$BACKEND_URL" ]; then
             BACKEND_URL="${{ needs.deploy-backend.outputs.url }}"
@@ -232,10 +251,10 @@ jobs:
             --set-env-vars VITE_API_URL=$BACKEND_URL/api \
             $([ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_API_KEY=firebase-config:api_key,FIREBASE_AUTH_DOMAIN=firebase-config:auth_domain,FIREBASE_PROJECT_ID=firebase-config:project_id,FIREBASE_STORAGE_BUCKET=firebase-config:storage_bucket,FIREBASE_MESSAGING_SENDER_ID=firebase-config:messaging_sender_id,FIREBASE_APP_ID=firebase-config:app_id,FIREBASE_MEASUREMENT_ID=firebase-config:measurement_id" || echo "") \
             --format="value(status.url)")
-          
+
           echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
           echo "✅ Frontend deployed at: $FRONTEND_URL"
-          
+
           if [ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" != "true" ]; then
             echo "⚠️  Deployed without Firebase secrets. Configure them manually after deployment."
           fi
