@@ -169,6 +169,15 @@ jobs:
               --project=${{ env.PROJECT_ID }} \
               --format="value(status.url)")
             echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+            
+            # Ensure service is publicly accessible
+            echo "🔓 Ensuring frontend service is publicly accessible..."
+            gcloud run services add-iam-policy-binding ${{ env.FRONTEND_SERVICE }} \
+              --region=${{ env.REGION }} \
+              --project=${{ env.PROJECT_ID }} \
+              --member="allUsers" \
+              --role="roles/run.invoker" \
+              || echo "⚠️  Service may already be public or IAM update failed"
           else
             echo "Creating frontend service (placeholder image)..."
             # Use a placeholder image for initial provisioning
