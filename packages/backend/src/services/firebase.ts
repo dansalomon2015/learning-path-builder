@@ -18,22 +18,31 @@ class FirebaseService {
       if (firebaseConfigEnv != null && firebaseConfigEnv !== '') {
         try {
           const firebaseConfig = JSON.parse(firebaseConfigEnv) as Record<string, unknown>;
-          
+
           // Extract service account from firebase-config
-          if (firebaseConfig['serviceAccount'] != null && typeof firebaseConfig['serviceAccount'] === 'object') {
+          if (
+            firebaseConfig['serviceAccount'] != null &&
+            typeof firebaseConfig['serviceAccount'] === 'object'
+          ) {
             serviceAccountData = firebaseConfig['serviceAccount'] as Record<string, unknown>;
           } else if (firebaseConfig['project_id'] != null) {
             // If firebase-config contains service account fields directly
             serviceAccountData = firebaseConfig;
           }
-          
+
           // Extract project_id from firebase-config
-          if (firebaseConfig['project_id'] != null && typeof firebaseConfig['project_id'] === 'string') {
+          if (
+            firebaseConfig['project_id'] != null &&
+            typeof firebaseConfig['project_id'] === 'string'
+          ) {
             projectId = firebaseConfig['project_id'];
-          } else if (serviceAccountData['project_id'] != null && typeof serviceAccountData['project_id'] === 'string') {
+          } else if (
+            serviceAccountData['project_id'] != null &&
+            typeof serviceAccountData['project_id'] === 'string'
+          ) {
             projectId = serviceAccountData['project_id'];
           }
-          
+
           logger.info('Loaded Firebase config from FIREBASE_CONFIG environment variable');
         } catch (parseError) {
           logger.warn('Failed to parse FIREBASE_CONFIG from environment:', parseError);
