@@ -66,15 +66,6 @@ const SuggestedResourcesPanel: React.FC<SuggestedResourcesPanelProps> = ({
     return 'text-slate-600 bg-slate-50 border-slate-200';
   };
 
-  const _getPriorityLabel = (priority: number): string => {
-    if (priority <= 2) {
-      return 'High Priority';
-    }
-    if (priority === 3) {
-      return 'Recommended';
-    }
-    return 'Optional';
-  };
 
   const renderResourceGroup = (
     group: SuggestedResource[],

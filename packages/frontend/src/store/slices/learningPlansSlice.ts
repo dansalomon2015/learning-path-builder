@@ -58,6 +58,9 @@ export const createLearningPlan = createAsyncThunk<
   ): Promise<LearningPlan | ReturnType<typeof rejectWithValue>> => {
     try {
       const response = await apiService.createLearningPlan(planData);
+      if (response.data == null) {
+        return rejectWithValue('No data returned from server');
+      }
       return response.data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create learning plan';
@@ -78,6 +81,9 @@ export const updateLearningPlan = createAsyncThunk<
   ): Promise<LearningPlan | ReturnType<typeof rejectWithValue>> => {
     try {
       const response = await apiService.updateLearningPlan(planId, planData);
+      if (response.data == null) {
+        return rejectWithValue('No data returned from server');
+      }
       return response.data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update learning plan';

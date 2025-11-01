@@ -103,7 +103,7 @@ const SpacedRepetitionMode: React.FC<{
           }}
         >
           <div className="absolute w-full h-full bg-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [backface-visibility:hidden] cursor-pointer">
-            <p className="text-2xl md:text-3xl font-semibold text-slate-800">{card.question}</p>
+            <p className="text-2xl md:text-3xl font-semibold text-slate-800">{card?.question ?? ''}</p>
           </div>
           <div className="absolute w-full h-full bg-indigo-500 text-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [transform:rotateY(180deg)] [backface-visibility:hidden] cursor-pointer">
             <div>

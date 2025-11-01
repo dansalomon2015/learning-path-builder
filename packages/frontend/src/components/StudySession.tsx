@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { LearningPlan } from '../types';
-import { Difficulty, StudyMode, DifficultyAdjustment } from '../types';
+import { Difficulty, StudyMode, DifficultyAdjustmentAction } from '../types';
 import { sessionService } from '../services/sessionService';
 import type { SessionProgress, SessionStats } from '../services/sessionService';
 import {
@@ -533,13 +533,13 @@ const SessionComplete: React.FC<SessionCompleteProps> = ({
         </div>
       </div>
 
-      {recommendations.difficultyAdjustment !== DifficultyAdjustment.MAINTAIN && (
+      {recommendations.difficultyAdjustment !== DifficultyAdjustmentAction.MAINTAIN && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-semibold text-indigo-800 mb-2">AI Recommendation</h3>
           <p className="text-sm text-indigo-700">
             Based on your performance, we suggest{' '}
             <strong>
-              {recommendations.difficultyAdjustment === DifficultyAdjustment.INCREASE
+              {recommendations.difficultyAdjustment === DifficultyAdjustmentAction.INCREASE
                 ? 'increasing'
                 : 'decreasing'}
             </strong>{' '}

@@ -35,7 +35,7 @@ export const signIn = createAsyncThunk<
       if (user == null) {
         throw new Error('User data missing from login response');
       }
-      return user as User;
+      return user as unknown as User;
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } }; message?: string };
       const message = error.response?.data?.message ?? error.message ?? 'Invalid credentials';
@@ -103,7 +103,7 @@ export const signOut = createAsyncThunk<null, void, { rejectValue: string }>(
 
 export const loadUserProfile = createAsyncThunk<User | null, string, { rejectValue: string }>(
   'auth/loadUserProfile',
-  (userId: string, { rejectWithValue }): User | null | ReturnType<typeof rejectWithValue> => {
+  (_userId: string, { rejectWithValue }): User | null | ReturnType<typeof rejectWithValue> => {
     try {
       // TODO: Implement API call to load user profile
       // For now, return null as this is not currently used

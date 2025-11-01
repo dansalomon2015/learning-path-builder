@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import type { LearningPlan } from '@/types';
+import { SkillLevel } from '@/types';
 import { XIcon } from './icons';
 
 interface EditPlanModalProps {
@@ -65,7 +66,7 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({
             <select
               value={skillLevel}
               onChange={(e): void => {
-                setSkillLevel(e.target.value);
+                setSkillLevel(e.target.value as SkillLevel);
               }}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >

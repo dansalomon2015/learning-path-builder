@@ -165,7 +165,7 @@ class SessionService {
       id: this.currentSession.sessionId,
       userId: 'current-user', // This should come from auth context
       learningPlanId: this.currentSession.planId,
-      mode: this.currentSession.mode,
+      mode: this.currentSession.mode as StudyMode,
       startTime: new Date(this.currentSession.startTime).toISOString(),
       endTime: new Date().toISOString(),
       duration: Math.floor((Date.now() - this.currentSession.startTime) / 1000),
