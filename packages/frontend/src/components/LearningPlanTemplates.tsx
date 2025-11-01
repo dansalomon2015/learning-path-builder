@@ -1,12 +1,5 @@
-import React from 'react';
-import {
-  SparklesIcon,
-  BookOpenIcon,
-  CodeIcon,
-  ScienceIcon,
-  HistoryIcon,
-  LanguageIcon,
-} from './icons';
+import type React from 'react';
+import { CodeIcon, ScienceIcon, HistoryIcon, LanguageIcon } from './icons';
 
 interface Template {
   id: string;
@@ -98,8 +91,10 @@ const templates: Template[] = [
   },
 ];
 
-const LearningPlanTemplates: React.FC<LearningPlanTemplatesProps> = ({ onSelectTemplate }) => {
-  const categories = Array.from(new Set(templates.map(t => t.category)));
+const LearningPlanTemplates: React.FC<LearningPlanTemplatesProps> = ({
+  onSelectTemplate,
+}): JSX.Element => {
+  const categories = Array.from(new Set(templates.map((t): string => t.category)));
 
   return (
     <div className="space-y-6">
@@ -110,48 +105,56 @@ const LearningPlanTemplates: React.FC<LearningPlanTemplatesProps> = ({ onSelectT
         </p>
       </div>
 
-      {categories.map(category => (
-        <div key={category} className="space-y-3">
-          <h4 className="text-sm font-medium text-slate-700 uppercase tracking-wide">{category}</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {templates
-              .filter(template => template.category === category)
-              .map(template => (
-                <button
-                  key={template.id}
-                  onClick={() => onSelectTemplate(template)}
-                  className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 text-left group"
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                      {template.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-slate-800 group-hover:text-indigo-800">
-                        {template.title}
-                      </h5>
-                      <p className="text-sm text-slate-600 mt-1 line-clamp-2">
-                        {template.description}
-                      </p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-slate-500 capitalize">
-                          {template.skillLevel}
-                        </span>
-                        <span className="text-xs text-indigo-600 font-medium">
-                          {template.topic}
-                        </span>
+      {categories.map(
+        (category: string): JSX.Element => (
+          <div key={category} className="space-y-3">
+            <h4 className="text-sm font-medium text-slate-700 uppercase tracking-wide">
+              {category}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {templates
+                .filter((template: Template): boolean => template.category === category)
+                .map(
+                  (template: Template): JSX.Element => (
+                    <button
+                      key={template.id}
+                      onClick={(): void => {
+                        onSelectTemplate(template);
+                      }}
+                      className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 text-left group"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                          {template.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-medium text-slate-800 group-hover:text-indigo-800">
+                            {template.title}
+                          </h5>
+                          <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                            {template.description}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-slate-500 capitalize">
+                              {template.skillLevel}
+                            </span>
+                            <span className="text-xs text-indigo-600 font-medium">
+                              {template.topic}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                    </button>
+                  )
+                )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      )}
 
       <div className="text-center pt-4 border-t border-slate-200">
         <p className="text-sm text-slate-600">
-          Don't see what you're looking for? Create a custom plan below.
+          Don&apos;t see what you&apos;re looking for? Create a custom plan below.
         </p>
       </div>
     </div>

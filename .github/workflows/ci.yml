@@ -37,14 +37,10 @@ jobs:
           npm run lint || echo "⚠️ Linting issues found"
 
       - name: Test backend
-        run: |
-          cd packages/backend
-          npm run test || echo "⚠️ Tests failed"
+        run: npm run test:ci --workspace=@flashlearn-ai/backend
 
       - name: Test frontend
-        run: |
-          cd packages/frontend
-          npm run test || echo "⚠️ Tests failed"
+        run: npm run test:ci --workspace=@flashlearn-ai/frontend
 
       - name: Build backend
         run: |

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { LearningPlan } from '@/types';
+import type React from 'react';
+import { useState } from 'react';
+import type { LearningPlan } from '@/types';
 import { XIcon } from './icons';
 
 interface EditPlanModalProps {
@@ -9,20 +10,27 @@ interface EditPlanModalProps {
   plan: LearningPlan;
 }
 
-const EditPlanModal: React.FC<EditPlanModalProps> = ({ isOpen, onClose, onUpdate, plan }) => {
+const EditPlanModal: React.FC<EditPlanModalProps> = ({
+  isOpen,
+  onClose,
+  onUpdate,
+  plan,
+}): JSX.Element | null => {
   const [title, setTitle] = useState(plan.title);
   const [skillLevel, setSkillLevel] = useState(plan.skillLevel);
   const [topic, setTopic] = useState(plan.topic);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (title.trim()) {
-      onUpdate(title.trim(), skillLevel, topic.trim() || undefined);
+    if (title.trim() !== '') {
+      onUpdate(title.trim(), skillLevel, topic.trim() !== '' ? topic.trim() : undefined);
       onClose();
     }
   };
 
-  if (!isOpen) return null;
+  if (isOpen !== true) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -43,7 +51,9 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({ isOpen, onClose, onUpdate
             <input
               type="text"
               value={title}
-              onChange={e => setTitle(e.target.value)}
+              onChange={(e): void => {
+                setTitle(e.target.value);
+              }}
               placeholder="e.g., React Hooks, Machine Learning Basics"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
@@ -54,7 +64,9 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({ isOpen, onClose, onUpdate
             <label className="block text-sm font-medium text-slate-700 mb-2">Skill Level</label>
             <select
               value={skillLevel}
-              onChange={e => setSkillLevel(e.target.value)}
+              onChange={(e): void => {
+                setSkillLevel(e.target.value);
+              }}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="beginner">Beginner</option>
@@ -68,7 +80,9 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({ isOpen, onClose, onUpdate
             <input
               type="text"
               value={topic}
-              onChange={e => setTopic(e.target.value)}
+              onChange={(e): void => {
+                setTopic(e.target.value);
+              }}
               placeholder="e.g., JavaScript, Python, History"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />

@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { XIcon, SparklesIcon, BookOpenIcon, FileTextIcon } from './icons';
 import LearningPlanTemplates from './LearningPlanTemplates';
+
+interface LearningPlanTemplate {
+  title: string;
+  description: string;
+  topic: string;
+  skillLevel: string;
+}
 
 interface CreatePlanModalProps {
   isOpen: boolean;
@@ -16,7 +24,12 @@ interface CreatePlanModalProps {
   }) => void;
 }
 
-const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCreate }) => {
+// eslint-disable-next-line max-lines-per-function
+const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
+  isOpen,
+  onClose,
+  onCreate,
+}): JSX.Element | null => {
   const [showTemplates, setShowTemplates] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -27,7 +40,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
   const [isFromDocument, setIsFromDocument] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (template: LearningPlanTemplate): void => {
     setTitle(template.title);
     setDescription(template.description);
     setTopic(template.topic);
@@ -35,14 +48,17 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
     setShowTemplates(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    if (title.trim() && topic.trim()) {
+    if (title.trim() !== '' && topic.trim() !== '') {
       setIsGenerating(true);
       try {
-        await onCreate({
+        onCreate({
           title: title.trim(),
-          description: description.trim() || `Plan d'apprentissage pour ${title.trim()}`,
+          description:
+            description.trim() !== ''
+              ? description.trim()
+              : `Plan d'apprentissage pour ${title.trim()}`,
           topic: topic.trim(),
           skillLevel,
           mode,
@@ -58,7 +74,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
         setCardCount(10);
         setIsFromDocument(false);
         onClose();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error creating learning plan:', error);
       } finally {
         setIsGenerating(false);
@@ -66,7 +82,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
     }
   };
 
-  if (!isOpen) return null;
+  if (isOpen !== true) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -93,7 +111,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
               <div className="flex justify-between items-center">
                 <button
                   type="button"
-                  onClick={() => setShowTemplates(true)}
+                  onClick={(): void => {
+                    setShowTemplates(true);
+                  }}
                   className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
                 >
                   <span>←</span>
@@ -101,7 +121,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowTemplates(true)}
+                  onClick={(): void => {
+                    setShowTemplates(true);
+                  }}
                   className="text-sm text-slate-600 hover:text-slate-800"
                 >
                   Start Over
@@ -123,7 +145,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     <input
                       type="text"
                       value={title}
-                      onChange={e => setTitle(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        setTitle(e.target.value);
+                      }}
                       placeholder="e.g., React Hooks, Machine Learning Basics"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       required
@@ -135,7 +159,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     <input
                       type="text"
                       value={topic}
-                      onChange={e => setTopic(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        setTopic(e.target.value);
+                      }}
                       placeholder="e.g., JavaScript, Python, History"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       required
@@ -149,7 +175,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                   </label>
                   <textarea
                     value={description}
-                    onChange={e => setDescription(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+                      setDescription(e.target.value);
+                    }}
                     placeholder="Describe what you want to learn..."
                     rows={3}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -171,7 +199,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     </label>
                     <select
                       value={skillLevel}
-                      onChange={e => setSkillLevel(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => {
+                        setSkillLevel(e.target.value);
+                      }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="beginner">Beginner</option>
@@ -186,7 +216,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     </label>
                     <select
                       value={mode}
-                      onChange={e => setMode(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => {
+                        setMode(e.target.value);
+                      }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="mixed">Mixed (Flashcards + Quiz)</option>
@@ -201,7 +233,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                     </label>
                     <select
                       value={cardCount}
-                      onChange={e => setCardCount(Number(e.target.value))}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => {
+                        setCardCount(Number.parseInt(e.target.value, 10));
+                      }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value={5}>5 cards</option>
@@ -227,7 +261,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
                       type="checkbox"
                       id="fromDocument"
                       checked={isFromDocument}
-                      onChange={e => setIsFromDocument(e.target.checked)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                        setIsFromDocument(e.target.checked);
+                      }}
                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <label htmlFor="fromDocument" className="text-sm font-medium text-slate-700">
@@ -256,24 +292,24 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ isOpen, onClose, onCr
             </>
           )}
 
-          {!showTemplates && (
+          {showTemplates === false && (
             <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200">
               <button
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
-                disabled={isGenerating}
+                disabled={isGenerating === true}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isGenerating || !title.trim() || !topic.trim()}
+                disabled={isGenerating === true || title.trim() === '' || topic.trim() === ''}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                {isGenerating ? (
+                {isGenerating === true ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                     <span>Generating...</span>
                   </>
                 ) : (

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
@@ -8,15 +9,16 @@ interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }) => {
-  const { signIn, signUp, isLoading, error, clearError } = useAuth();
+// eslint-disable-next-line max-lines-per-function
+const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): JSX.Element => {
+  const { signIn, signUp, isLoading, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     clearError();
 
@@ -28,13 +30,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }) =>
       }
       toast.success(mode === 'login' ? 'Connexion réussie !' : 'Compte créé avec succès !');
       onSuccess();
-    } catch (error: any) {
-      toast.error(error || 'Une erreur est survenue.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue.';
+      toast.error(errorMessage);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFormData((prev): typeof formData => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -83,7 +86,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }) =>
                   id="name"
                   name="name"
                   type="text"
-                  required={mode === 'register'}
+                  required
                   value={formData.name}
                   onChange={handleInputChange}
                   className="input"
@@ -132,7 +135,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }) =>
             <button type="submit" disabled={isLoading} className="btn btn-primary btn-lg w-full">
               {isLoading ? (
                 <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
                   {mode === 'login' ? 'Connexion...' : 'Création...'}
                 </div>
               ) : mode === 'login' ? (

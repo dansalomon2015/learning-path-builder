@@ -1,3 +1,81 @@
+// Enums for type safety
+export enum SkillLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+  EXPERT = 'expert',
+}
+
+export enum Difficulty {
+  EASY = 'easy',
+  MEDIUM = 'medium',
+  HARD = 'hard',
+}
+
+export enum StudyMode {
+  FLASHCARDS = 'flashcards',
+  QUIZ = 'quiz',
+  MIXED = 'mixed',
+}
+
+export enum DifficultyAdjustment {
+  AUTOMATIC = 'automatic',
+  MANUAL = 'manual',
+}
+
+export enum DifficultyAdjustmentAction {
+  INCREASE = 'increase',
+  DECREASE = 'decrease',
+  MAINTAIN = 'maintain',
+}
+
+export enum AssessmentQuestionType {
+  MULTIPLE_CHOICE = 'multiple_choice',
+  TRUE_FALSE = 'true_false',
+  CODE_REVIEW = 'code_review',
+  PRACTICAL = 'practical',
+}
+
+export enum ModuleType {
+  THEORY = 'theory',
+  PRACTICE = 'practice',
+  PROJECT = 'project',
+  ASSESSMENT = 'assessment',
+}
+
+export enum ResourceType {
+  DOCUMENTATION = 'documentation',
+  BOOK = 'book',
+  ARTICLE = 'article',
+  VIDEO = 'video',
+  TUTORIAL = 'tutorial',
+  OFFICIAL_GUIDE = 'official_guide',
+}
+
+export enum ObjectiveStatus {
+  PLANNING = 'planning',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  PAUSED = 'paused',
+}
+
+export enum DocumentStatus {
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+export enum ExportFormat {
+  CSV = 'csv',
+  PDF = 'pdf',
+}
+
+export enum PerformanceTrend {
+  PROGRESSION = 'progression',
+  REGRESSION = 'regression',
+  STABLE = 'stable',
+}
+
 export interface User {
   id: string;
   email: string;
@@ -11,8 +89,8 @@ export interface User {
 }
 
 export interface UserPreferences {
-  studyMode: 'flashcards' | 'quiz' | 'mixed';
-  difficultyAdjustment: 'automatic' | 'manual';
+  studyMode: StudyMode;
+  difficultyAdjustment: DifficultyAdjustment;
   sessionLength: number; // in minutes
   notifications: boolean;
   language: string;
@@ -24,7 +102,7 @@ export interface LearningPlan {
   title: string;
   description: string;
   topic: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  skillLevel: SkillLevel;
   flashcards: Flashcard[];
   createdAt: string;
   updatedAt: string;
@@ -38,7 +116,7 @@ export interface Flashcard {
   question: string;
   answer: string;
   explanation?: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   category: string;
   tags: string[];
   createdAt: string;
@@ -54,7 +132,7 @@ export interface QuizQuestion {
   options: string[];
   correctAnswer: number;
   explanation: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   category: string;
   usageExample?: string;
 }
@@ -63,7 +141,7 @@ export interface StudySession {
   id: string;
   userId: string;
   learningPlanId: string;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   startTime: string;
   endTime?: string;
   duration?: number; // in seconds
@@ -92,14 +170,14 @@ export interface DocumentUpload {
   size: number;
   content: string;
   processedAt: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: DocumentStatus;
   extractedTopics: string[];
   generatedFlashcards: number;
 }
 
 export interface ExportData {
   userId: string;
-  format: 'csv' | 'pdf';
+  format: ExportFormat;
   dateRange: {
     start: string;
     end: string;
@@ -109,7 +187,7 @@ export interface ExportData {
   includeFlashcards: boolean;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
@@ -150,7 +228,7 @@ export interface AdaptiveRecommendations {
   weakAreas: string[];
   strongAreas: string[];
   suggestions: string[];
-  difficultyAdjustment: 'increase' | 'decrease' | 'maintain';
+  difficultyAdjustment: DifficultyAdjustmentAction;
 }
 
 // Learning Objectives System
@@ -162,9 +240,9 @@ export interface LearningObjective {
   category: string; // e.g., "Programming", "Design", "Management"
   targetRole: string; // e.g., "Senior Java Developer", "UX Designer"
   targetTimeline: number; // months
-  currentLevel: 'beginner' | 'intermediate' | 'advanced';
-  targetLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  status: 'planning' | 'in_progress' | 'completed' | 'paused';
+  currentLevel: SkillLevel;
+  targetLevel: SkillLevel;
+  status: ObjectiveStatus;
   progress: number; // 0-100
   createdAt: string;
   updatedAt: string;
@@ -190,13 +268,13 @@ export interface LearningPath {
   title: string;
   description: string;
   category: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: SkillLevel;
   estimatedDuration: number; // weeks
   prerequisites: string[];
   skills: string[];
   modules: LearningModule[];
   isCompleted: boolean;
-  isEnabled: boolean; // Active par défaut seulement pour le premier path
+  isEnabled: boolean; // Enabled by default only for the first path
   progress: number; // 0-100
   createdAt: string;
   updatedAt: string;
@@ -215,41 +293,41 @@ export interface LearningModule {
   id: string;
   title: string;
   description: string;
-  type: 'theory' | 'practice' | 'project' | 'assessment';
+  type: ModuleType;
   duration: number; // hours
-  flashcards: Flashcard[]; // Remplace content[] - Flashcards générées par IA
-  validationQuiz?: QuizQuestion[]; // Quiz généré après maîtrise flashcards
-  suggestedResources?: SuggestedResource[]; // Ressources officielles suggérées
+  flashcards: Flashcard[]; // Replaces content[] - AI-generated flashcards
+  validationQuiz?: QuizQuestion[]; // Quiz generated after mastering flashcards
+  suggestedResources?: SuggestedResource[]; // Suggested official resources
   isCompleted: boolean;
-  isEnabled: boolean; // Active par défaut seulement pour le premier module
-  hasFlashcards: boolean; // Remplace hasContent - Indique si flashcards ont été générées
-  hasValidationQuiz: boolean; // Indique si le quiz de validation a été généré
-  hasSuggestedResources: boolean; // Indique si les ressources suggérées ont été générées
-  progress: number; // 0-100 pour afficher le pourcentage d'avancement
+  isEnabled: boolean; // Enabled by default only for the first module
+  hasFlashcards: boolean; // Replaces hasContent - Indicates if flashcards have been generated
+  hasValidationQuiz: boolean; // Indicates if validation quiz has been generated
+  hasSuggestedResources: boolean; // Indicates if suggested resources have been generated
+  progress: number; // 0-100 to display progress percentage
   order: number;
   dueDate?: string;
-  masteredCardIds?: string[]; // IDs des cartes maîtrisées
-  performanceHistory?: ModulePerformanceHistory[]; // Historique des tentatives
-  trend?: 'progression' | 'regression' | 'stable'; // Tendance basée sur les performances
-  lastAttemptScore?: number; // Dernier score obtenu
-  previousAttemptScore?: number; // Score de la tentative précédente
-  // Deprecated: content: ModuleContent[] - Utiliser flashcards à la place
+  masteredCardIds?: string[]; // IDs of mastered cards
+  performanceHistory?: ModulePerformanceHistory[]; // Attempt history
+  trend?: PerformanceTrend; // Trend based on performance
+  lastAttemptScore?: number; // Last score obtained
+  previousAttemptScore?: number; // Previous attempt score
+  // Deprecated: content: ModuleContent[] - Use flashcards instead
 }
 
 export interface SuggestedResource {
   id: string;
-  type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+  type: ResourceType;
   title: string;
   description: string;
   url?: string;
   author?: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: SkillLevel;
   estimatedTime: number; // minutes
-  priority: number; // 1-5 (1 = haute priorité)
+  priority: number; // 1-5 (1 = high priority)
   isOptional: boolean;
 }
 
-// Deprecated: ModuleContent - Utiliser flashcards et suggestedResources à la place
+// Deprecated: ModuleContent - Use flashcards and suggestedResources instead
 export interface ModuleContent {
   id: string;
   type: 'video' | 'article' | 'exercise' | 'quiz' | 'project';
@@ -266,7 +344,7 @@ export interface Assessment {
   title: string;
   description: string;
   category: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  skillLevel: SkillLevel;
   questions: AssessmentQuestion[];
   duration: number; // minutes
   passingScore: number; // percentage
@@ -276,11 +354,11 @@ export interface Assessment {
 export interface AssessmentQuestion {
   id: string;
   question: string;
-  type: 'multiple_choice' | 'true_false' | 'code_review' | 'practical';
+  type: AssessmentQuestionType;
   options?: string[];
   correctAnswer: string | number;
   explanation: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   category: string;
   skills: string[];
 }
@@ -296,7 +374,7 @@ export interface AssessmentResult {
   timeSpent: number; // minutes
   answers: AssessmentAnswer[];
   completedAt: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  skillLevel: SkillLevel;
   recommendations: string[];
 }
 
@@ -316,6 +394,6 @@ export interface EnhancedLearningPlan extends LearningPlan {
   prerequisites: string[];
   skills: string[];
   estimatedDuration: number; // hours
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   learningOutcomes: string[];
 }

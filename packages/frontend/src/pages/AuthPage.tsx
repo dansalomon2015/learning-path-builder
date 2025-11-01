@@ -1,24 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from '../components/AuthForm';
 import { useAuth } from '../contexts/AuthContext';
 
-const AuthPage: React.FC = () => {
+const AuthPage: React.FC = (): JSX.Element => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (): void => {
     navigate('/dashboard');
   };
 
-  const handleSwitchMode = () => {
-    setAuthMode(prev => (prev === 'login' ? 'register' : 'login'));
+  const handleSwitchMode = (): void => {
+    setAuthMode((prev: 'login' | 'register'): 'login' | 'register' =>
+      prev === 'login' ? 'register' : 'login'
+    );
   };
 
   // If already authenticated, redirect to dashboard (including on refresh)
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+  useEffect((): void => {
+    if (isLoading === false && isAuthenticated === true) {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);

@@ -55,6 +55,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run tests
+        run: npm run test:ci
+
       - name: Build backend
         run: |
           cd packages/backend
@@ -107,7 +110,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars NODE_ENV=production,PORT=3000"
+            --set-env-vars NODE_ENV=production"
 
           # Add secrets if they exist
           if [ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ]; then
@@ -162,6 +165,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run tests
+        run: npm run test:ci
 
       - name: Get backend URL for frontend build
         id: backend-url

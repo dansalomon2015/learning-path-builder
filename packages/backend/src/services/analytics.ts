@@ -57,17 +57,34 @@ export class AnalyticsService {
 
       // Calculate analytics
       const totalStudyTime = studySessions.reduce(
-        (sum, session) => sum + (session.duration || 0),
+        (sum: number, session: Record<string, unknown>): number => {
+          const duration: unknown = session['duration'];
+          return sum + (typeof duration === 'number' ? duration : 0);
+        },
         0
       );
       const averageScore =
         studySessions.length > 0
-          ? studySessions.reduce((sum, session) => sum + (session.score || 0), 0) /
-            studySessions.length
+          ? studySessions.reduce((sum: number, session: Record<string, unknown>): number => {
+              const score: unknown = session['score'];
+              return sum + (typeof score === 'number' ? score : 0);
+            }, 0) / studySessions.length
           : 0;
 
-      const totalCards = learningPlans.reduce((sum, plan) => sum + plan.totalCards, 0);
-      const masteredCards = learningPlans.reduce((sum, plan) => sum + plan.masteredCards, 0);
+      const totalCards = learningPlans.reduce(
+        (sum: number, plan: Record<string, unknown>): number => {
+          const totalCardsValue: unknown = plan['totalCards'];
+          return sum + (typeof totalCardsValue === 'number' ? totalCardsValue : 0);
+        },
+        0
+      );
+      const masteredCards = learningPlans.reduce(
+        (sum: number, plan: Record<string, unknown>): number => {
+          const masteredCardsValue: unknown = plan['masteredCards'];
+          return sum + (typeof masteredCardsValue === 'number' ? masteredCardsValue : 0);
+        },
+        0
+      );
       const masteryLevel = totalCards > 0 ? (masteredCards / totalCards) * 100 : 0;
 
       // Analyze weak and strong areas
@@ -101,7 +118,7 @@ export class AnalyticsService {
         retentionRate: Math.round(retentionRate),
         recommendations,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting user analytics:', error);
       throw error;
     }
@@ -131,21 +148,44 @@ export class AnalyticsService {
         evening: 0,
         night: 0,
       };
-      studySessions.forEach(session => {
-        const hour = new Date(session.startTime).getHours();
-        if (hour >= 6 && hour < 12) timeOfDayCounts.morning++;
-        else if (hour >= 12 && hour < 18) timeOfDayCounts.afternoon++;
-        else if (hour >= 18 && hour < 22) timeOfDayCounts.evening++;
-        else timeOfDayCounts.night++;
+      studySessions.forEach((session: Record<string, unknown>): void => {
+        const startTime: unknown = session['startTime'];
+        if (
+          startTime instanceof Date ||
+          typeof startTime === 'string' ||
+          typeof startTime === 'number'
+        ) {
+          const hour: number = new Date(startTime).getHours();
+          const morningCount: number = timeOfDayCounts['morning'] ?? 0;
+          const afternoonCount: number = timeOfDayCounts['afternoon'] ?? 0;
+          const eveningCount: number = timeOfDayCounts['evening'] ?? 0;
+          const nightCount: number = timeOfDayCounts['night'] ?? 0;
+          if (hour >= 6 && hour < 12) {
+            timeOfDayCounts['morning'] = morningCount + 1;
+          } else if (hour >= 12 && hour < 18) {
+            timeOfDayCounts['afternoon'] = afternoonCount + 1;
+          } else if (hour >= 18 && hour < 22) {
+            timeOfDayCounts['evening'] = eveningCount + 1;
+          } else {
+            timeOfDayCounts['night'] = nightCount + 1;
+          }
+        }
       });
 
-      const preferredTimeOfDay = Object.entries(timeOfDayCounts).reduce((a, b) =>
-        timeOfDayCounts[a[0]] > timeOfDayCounts[b[0]] ? a : b
+      const preferredTimeOfDay = Object.entries(timeOfDayCounts).reduce(
+        (a: [string, number], b: [string, number]): [string, number] => {
+          const aCount: number = timeOfDayCounts[a[0]] ?? 0;
+          const bCount: number = timeOfDayCounts[b[0]] ?? 0;
+          return aCount > bCount ? a : b;
+        }
       )[0];
 
       // Calculate average session length
       const averageSessionLength = Math.round(
-        studySessions.reduce((sum, session) => sum + (session.duration || 0), 0) /
+        studySessions.reduce((sum: number, session: Record<string, unknown>): number => {
+          const duration: unknown = session['duration'];
+          return sum + (typeof duration === 'number' ? duration : 0);
+        }, 0) /
           studySessions.length /
           60
       );
@@ -154,21 +194,35 @@ export class AnalyticsService {
       const modeScores: { [key: string]: number } = { flashcards: 0, quiz: 0, mixed: 0 };
       const modeCounts: { [key: string]: number } = { flashcards: 0, quiz: 0, mixed: 0 };
 
-      studySessions.forEach(session => {
-        const mode = session.mode || 'mixed';
-        modeScores[mode] += session.score || 0;
-        modeCounts[mode]++;
+      studySessions.forEach((session: Record<string, unknown>): void => {
+        const modeValue: unknown = session['mode'];
+        const mode: string =
+          typeof modeValue === 'string' &&
+          (modeValue === 'flashcards' || modeValue === 'quiz' || modeValue === 'mixed')
+            ? modeValue
+            : 'mixed';
+        const score: unknown = session['score'];
+        const currentModeScore: number = modeScores[mode] ?? 0;
+        const currentModeCount: number = modeCounts[mode] ?? 0;
+        modeScores[mode] = currentModeScore + (typeof score === 'number' ? score : 0);
+        modeCounts[mode] = currentModeCount + 1;
       });
 
       const mostEffectiveMode = Object.entries(modeScores)
-        .map(([mode, totalScore]) => ({
-          mode,
-          averageScore: modeCounts[mode] > 0 ? totalScore / modeCounts[mode] : 0,
-        }))
-        .reduce((a, b) => (a.averageScore > b.averageScore ? a : b)).mode as
-        | 'flashcards'
-        | 'quiz'
-        | 'mixed';
+        .map((entry: [string, number]): { mode: string; averageScore: number } => {
+          const mode: string = entry[0];
+          const totalScore: number = entry[1];
+          return {
+            mode,
+            averageScore: (modeCounts[mode] ?? 0) > 0 ? totalScore / (modeCounts[mode] ?? 1) : 0,
+          };
+        })
+        .reduce(
+          (
+            a: { mode: string; averageScore: number },
+            b: { mode: string; averageScore: number }
+          ): { mode: string; averageScore: number } => (a.averageScore > b.averageScore ? a : b)
+        ).mode as 'flashcards' | 'quiz' | 'mixed';
 
       // Calculate difficulty progression
       const difficultyProgression = await this.calculateDifficultyProgression(
@@ -182,7 +236,7 @@ export class AnalyticsService {
         mostEffectiveMode,
         difficultyProgression,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error analyzing study patterns:', error);
       throw error;
     }
@@ -190,7 +244,7 @@ export class AnalyticsService {
 
   // Generate personalized learning recommendations
   async generateRecommendations(
-    userId: string,
+    _userId: string,
     analytics: Partial<LearningAnalytics>
   ): Promise<string[]> {
     try {
@@ -216,9 +270,9 @@ export class AnalyticsService {
         Return only the recommendations, one per line, without numbering.
       `;
 
-      const response = await geminiService.generateContent(prompt);
-      return response.split('\n').filter(line => line.trim().length > 0);
-    } catch (error) {
+      const response: string = await geminiService.generateText(prompt);
+      return response.split('\n').filter((line: string): boolean => line.trim().length > 0);
+    } catch (error: unknown) {
       logger.error('Error generating recommendations:', error);
       // Fallback recommendations
       return [
@@ -232,63 +286,126 @@ export class AnalyticsService {
   }
 
   // Private helper methods
-  private async analyzeWeakAreas(userId: string, sessions: any[]): Promise<string[]> {
+  private analyzeWeakAreas(
+    userId: string,
+    _sessions: Array<Record<string, unknown>>
+  ): Promise<string[]> {
     // Analyze flashcards with low mastery levels
-    const learningPlans = await firebaseService.queryDocuments('learningPlans', [
-      { field: 'userId', operator: '==', value: userId },
-    ]);
+    return firebaseService
+      .queryDocuments('learningPlans', [{ field: 'userId', operator: '==', value: userId }])
+      .then((learningPlans: Array<Record<string, unknown>>): string[] => {
+        const weakCards: Array<Record<string, unknown>> = learningPlans.flatMap(
+          (plan: Record<string, unknown>): Array<Record<string, unknown>> => {
+            const flashcards: unknown = plan['flashcards'];
+            if (Array.isArray(flashcards)) {
+              return (flashcards as Array<Record<string, unknown>>).filter(
+                (card: Record<string, unknown>): boolean => {
+                  const masteryLevel: unknown = card['masteryLevel'];
+                  return typeof masteryLevel === 'number' && masteryLevel < 50;
+                }
+              );
+            }
+            return [];
+          }
+        );
 
-    const weakCards = learningPlans.flatMap(plan =>
-      plan.flashcards.filter((card: any) => card.masteryLevel < 50)
-    );
-
-    const weakCategories = [...new Set(weakCards.map(card => card.category))];
-    return weakCategories.slice(0, 3); // Top 3 weak areas
+        const weakCategories: string[] = [
+          ...new Set(
+            weakCards.map((card: Record<string, unknown>): string => {
+              const category: unknown = card['category'];
+              return typeof category === 'string' ? category : 'general';
+            })
+          ),
+        ];
+        return weakCategories.slice(0, 3); // Top 3 weak areas
+      });
   }
 
-  private async analyzeStrongAreas(userId: string, sessions: any[]): Promise<string[]> {
-    const learningPlans = await firebaseService.queryDocuments('learningPlans', [
-      { field: 'userId', operator: '==', value: userId },
-    ]);
+  private analyzeStrongAreas(
+    userId: string,
+    _sessions: Array<Record<string, unknown>>
+  ): Promise<string[]> {
+    return firebaseService
+      .queryDocuments('learningPlans', [{ field: 'userId', operator: '==', value: userId }])
+      .then((learningPlans: Array<Record<string, unknown>>): string[] => {
+        const strongCards: Array<Record<string, unknown>> = learningPlans.flatMap(
+          (plan: Record<string, unknown>): Array<Record<string, unknown>> => {
+            const flashcards: unknown = plan['flashcards'];
+            if (Array.isArray(flashcards)) {
+              return (flashcards as Array<Record<string, unknown>>).filter(
+                (card: Record<string, unknown>): boolean => {
+                  const masteryLevel: unknown = card['masteryLevel'];
+                  return typeof masteryLevel === 'number' && masteryLevel >= 80;
+                }
+              );
+            }
+            return [];
+          }
+        );
 
-    const strongCards = learningPlans.flatMap(plan =>
-      plan.flashcards.filter((card: any) => card.masteryLevel >= 80)
-    );
-
-    const strongCategories = [...new Set(strongCards.map(card => card.category))];
-    return strongCategories.slice(0, 3); // Top 3 strong areas
+        const strongCategories: string[] = [
+          ...new Set(
+            strongCards.map((card: Record<string, unknown>): string => {
+              const category: unknown = card['category'];
+              return typeof category === 'string' ? category : 'general';
+            })
+          ),
+        ];
+        return strongCategories.slice(0, 3); // Top 3 strong areas
+      });
   }
 
-  private async calculateRetentionRate(userId: string, sessions: any[]): Promise<number> {
+  private calculateRetentionRate(
+    _userId: string,
+    sessions: Array<Record<string, unknown>>
+  ): Promise<number> {
     // Calculate retention based on spaced repetition effectiveness
     const recentSessions = sessions.slice(-10); // Last 10 sessions
-    if (recentSessions.length === 0) return 0;
+    if (recentSessions.length === 0) {
+      return Promise.resolve(0);
+    }
 
     const totalQuestions = recentSessions.reduce(
-      (sum, session) => sum + (session.totalQuestions || 0),
+      (sum: number, session: Record<string, unknown>): number => {
+        const totalQuestionsValue: unknown = session['totalQuestions'];
+        return sum + (typeof totalQuestionsValue === 'number' ? totalQuestionsValue : 0);
+      },
       0
     );
     const correctAnswers = recentSessions.reduce(
-      (sum, session) => sum + (session.correctAnswers || 0),
+      (sum: number, session: Record<string, unknown>): number => {
+        const correctAnswersValue: unknown = session['correctAnswers'];
+        return sum + (typeof correctAnswersValue === 'number' ? correctAnswersValue : 0);
+      },
       0
     );
 
-    return totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+    return Promise.resolve(totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0);
   }
 
-  private async calculateDifficultyProgression(userId: string, sessions: any[]): Promise<number> {
-    if (sessions.length < 2) return 0;
+  private calculateDifficultyProgression(
+    _userId: string,
+    sessions: Array<Record<string, unknown>>
+  ): Promise<number> {
+    if (sessions.length < 2) {
+      return Promise.resolve(0);
+    }
 
     const recentSessions = sessions.slice(-5); // Last 5 sessions
     const olderSessions = sessions.slice(-10, -5); // Previous 5 sessions
 
     const recentAvgScore =
-      recentSessions.reduce((sum, session) => sum + (session.score || 0), 0) /
-      recentSessions.length;
+      recentSessions.reduce((sum: number, session: Record<string, unknown>): number => {
+        const score: unknown = session['score'];
+        return sum + (typeof score === 'number' ? score : 0);
+      }, 0) / recentSessions.length;
     const olderAvgScore =
-      olderSessions.reduce((sum, session) => sum + (session.score || 0), 0) / olderSessions.length;
+      olderSessions.reduce((sum: number, session: Record<string, unknown>): number => {
+        const score: unknown = session['score'];
+        return sum + (typeof score === 'number' ? score : 0);
+      }, 0) / olderSessions.length;
 
-    return recentAvgScore - olderAvgScore; // Positive means improvement
+    return Promise.resolve(recentAvgScore - olderAvgScore); // Positive means improvement
   }
 }
 

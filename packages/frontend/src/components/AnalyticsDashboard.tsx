@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { sessionService, SessionStats } from '../services/sessionService';
+import type React from 'react';
+import { useState, useEffect } from 'react';
+import { sessionService } from '../services/sessionService';
+import type { SessionStats } from '../services/sessionService';
 import {
   ChartBarIcon,
   ClockIcon,
@@ -14,16 +16,17 @@ interface AnalyticsDashboardProps {
   className?: string;
 }
 
-const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' }) => {
+// eslint-disable-next-line max-lines-per-function
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' }): JSX.Element => {
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadStats = () => {
+  useEffect((): void => {
+    const loadStats = (): void => {
       try {
         const sessionStats = sessionService.getSessionStats();
         setStats(sessionStats);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error loading session stats:', error);
       } finally {
         setLoading(false);
@@ -33,7 +36,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     loadStats();
   }, []);
 
-  const formatTime = (minutes: number) => {
+  const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours > 0) {
@@ -42,7 +45,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     return `${mins}m`;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -54,10 +57,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     return (
       <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
         <div className="animate-pulse">
-          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
+          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-slate-200 rounded-lg"></div>
+            {Array.from({ length: 4 }, (_unused: unknown, i: number): JSX.Element => (
+              <div key={i} className="h-24 bg-slate-200 rounded-lg" />
             ))}
           </div>
         </div>
@@ -65,7 +68,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
     );
   }
 
-  if (!stats) {
+  if (stats == null) {
     return (
       <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Study Analytics</h3>
@@ -87,7 +90,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
         <div className="flex items-center space-x-2 text-sm text-slate-600">
           <CalendarIcon className="w-4 h-4" />
           <span>
-            Last updated: {stats.lastStudyDate ? formatDate(stats.lastStudyDate) : 'Never'}
+            Last updated:{' '}
+            {stats.lastStudyDate != null && stats.lastStudyDate !== ''
+              ? formatDate(stats.lastStudyDate)
+              : 'Never'}
           </span>
         </div>
       </div>
@@ -213,7 +219,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ className = '' 
               <p>🎯 Great job! Your accuracy is excellent. Consider increasing difficulty.</p>
             )}
             {stats.currentStreak >= 7 && (
-              <p>🔥 Amazing streak! You're building a strong learning habit.</p>
+              <p>🔥 Amazing streak! You&apos;re building a strong learning habit.</p>
             )}
             {stats.averageSessionLength < 10 && (
               <p>⏱️ Try longer study sessions for better retention.</p>

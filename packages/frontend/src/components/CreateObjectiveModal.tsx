@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { LearningObjective } from '../types';
+import type React from 'react';
+import { useState } from 'react';
 import { XIcon, TargetIcon, CalendarIcon, TrophyIcon } from './icons';
 
 interface CreateObjectiveModalProps {
@@ -16,11 +16,12 @@ interface CreateObjectiveModalProps {
   }) => Promise<boolean> | boolean;
 }
 
+// eslint-disable-next-line max-lines-per-function
 const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
   isOpen,
   onClose,
   onCreate,
-}) => {
+}): JSX.Element | null => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -88,26 +89,31 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
     ],
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    if (!formData.title || !formData.description || !formData.category || !formData.targetRole) {
+    if (
+      formData.title === '' ||
+      formData.description === '' ||
+      formData.category === '' ||
+      formData.targetRole === ''
+    ) {
       return;
     }
 
     setIsCreating(true);
     try {
       const created = await onCreate(formData);
-      if (created) {
+      if (created === true) {
         handleClose();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating objective:', error);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     setFormData({
       title: '',
       description: '',
@@ -120,15 +126,17 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
     onClose();
   };
 
-  const handleCategoryChange = (category: string) => {
-    setFormData(prev => ({
+  const handleCategoryChange = (category: string): void => {
+    setFormData((prev): typeof formData => ({
       ...prev,
       category,
       targetRole: '', // Reset target role when category changes
     }));
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -160,7 +168,9 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
               <input
                 type="text"
                 value={formData.title}
-                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e): void => {
+                  setFormData((prev): typeof formData => ({ ...prev, title: e.target.value }));
+                }}
                 placeholder="e.g., Become Senior Java Developer"
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 required
@@ -171,7 +181,12 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
               <label className="block text-sm font-medium text-slate-700 mb-2">Description *</label>
               <textarea
                 value={formData.description}
-                onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e): void => {
+                  setFormData((prev): typeof formData => ({
+                    ...prev,
+                    description: e.target.value,
+                  }));
+                }}
                 placeholder="Describe what you want to achieve and why it's important to you..."
                 rows={3}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
@@ -188,41 +203,50 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
               <label className="block text-sm font-medium text-slate-700 mb-2">Category *</label>
               <select
                 value={formData.category}
-                onChange={e => handleCategoryChange(e.target.value)}
+                onChange={(e): void => handleCategoryChange(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 required
               >
                 <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
+                {categories.map(
+                  (category: string): JSX.Element => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
-            {formData.category && popularRoles[formData.category as keyof typeof popularRoles] && (
+            {formData.category !== '' && formData.category in popularRoles && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Target Role *
                 </label>
                 <select
                   value={formData.targetRole}
-                  onChange={e => setFormData(prev => ({ ...prev, targetRole: e.target.value }))}
+                  onChange={(e): void => {
+                    setFormData((prev): typeof formData => ({
+                      ...prev,
+                      targetRole: e.target.value,
+                    }));
+                  }}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   required
                 >
                   <option value="">Select a role</option>
-                  {popularRoles[formData.category as keyof typeof popularRoles].map(role => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
+                  {popularRoles[formData.category as keyof typeof popularRoles].map(
+                    (role: string): JSX.Element => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
             )}
 
-            {formData.category && !popularRoles[formData.category as keyof typeof popularRoles] && (
+            {formData.category !== '' && !(formData.category in popularRoles) && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Target Role *
@@ -230,7 +254,12 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
                 <input
                   type="text"
                   value={formData.targetRole}
-                  onChange={e => setFormData(prev => ({ ...prev, targetRole: e.target.value }))}
+                  onChange={(e): void => {
+                    setFormData((prev): typeof formData => ({
+                      ...prev,
+                      targetRole: e.target.value,
+                    }));
+                  }}
                   placeholder="Enter your target role"
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   required
@@ -253,9 +282,12 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
                   min="1"
                   max="24"
                   value={formData.targetTimeline}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, targetTimeline: parseInt(e.target.value) }))
-                  }
+                  onChange={(e): void => {
+                    setFormData((prev): typeof formData => ({
+                      ...prev,
+                      targetTimeline: parseInt(e.target.value, 10),
+                    }));
+                  }}
                   className="flex-1"
                 />
                 <div className="flex items-center space-x-2 text-slate-600">
@@ -272,9 +304,12 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
                 </label>
                 <select
                   value={formData.currentLevel}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, currentLevel: e.target.value as any }))
-                  }
+                  onChange={(e): void => {
+                    const value = e.target.value;
+                    if (value === 'beginner' || value === 'intermediate' || value === 'advanced') {
+                      setFormData((prev): typeof formData => ({ ...prev, currentLevel: value }));
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 >
                   <option value="beginner">Beginner</option>
@@ -289,9 +324,17 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
                 </label>
                 <select
                   value={formData.targetLevel}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, targetLevel: e.target.value as any }))
-                  }
+                  onChange={(e): void => {
+                    const value = e.target.value;
+                    if (
+                      value === 'beginner' ||
+                      value === 'intermediate' ||
+                      value === 'advanced' ||
+                      value === 'expert'
+                    ) {
+                      setFormData((prev): typeof formData => ({ ...prev, targetLevel: value }));
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 >
                   <option value="beginner">Beginner</option>
@@ -333,17 +376,17 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
             <button
               type="submit"
               disabled={
-                isCreating ||
-                !formData.title ||
-                !formData.description ||
-                !formData.category ||
-                !formData.targetRole
+                isCreating === true ||
+                formData.title === '' ||
+                formData.description === '' ||
+                formData.category === '' ||
+                formData.targetRole === ''
               }
               className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {isCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                   <span>Creating...</span>
                 </>
               ) : (

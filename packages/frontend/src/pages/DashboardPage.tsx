@@ -1,35 +1,37 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Dashboard from '../components/Dashboard';
 import ProfileModal from '../components/ProfileModal';
-import { User } from '../types';
+import type { User } from '../types';
 
-const DashboardPage: React.FC = () => {
+const DashboardPage: React.FC = (): JSX.Element | null => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     try {
       await logout();
       navigate('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Logout error:', error);
     }
   };
 
-  const handleUpdateProfile = (updatedUser: User) => {
+  const handleUpdateProfile = (updatedUser: User): void => {
     // Profile updates are handled by Redux auth slice
+    // eslint-disable-next-line no-console
     console.log('Profile updated:', updatedUser);
   };
 
-  const handleViewProfile = () => {
+  const handleViewProfile = (): void => {
     navigate('/profile');
   };
 
-  if (!user) {
+  if (user == null) {
     return null; // Will redirect
   }
 
@@ -42,11 +44,13 @@ const DashboardPage: React.FC = () => {
       </main>
 
       {/* Profile Modal */}
-      {showProfileModal && (
+      {showProfileModal === true && (
         <ProfileModal
           user={user}
           isOpen={showProfileModal}
-          onClose={() => setShowProfileModal(false)}
+          onClose={(): void => {
+            setShowProfileModal(false);
+          }}
           onUpdate={handleUpdateProfile}
         />
       )}

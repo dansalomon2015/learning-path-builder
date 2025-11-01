@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { LearningPlan } from '@/types';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { LearningPlan } from '@/types';
 import { apiService } from '@/services/api';
 
 interface LearningPlansState {
@@ -17,19 +18,33 @@ const initialState: LearningPlansState = {
 };
 
 // Async thunks for learning plans
-export const fetchLearningPlans = createAsyncThunk(
+export const fetchLearningPlans = createAsyncThunk<LearningPlan[], void, { rejectValue: string }>(
   'learningPlans/fetchLearningPlans',
-  async (_, { rejectWithValue }) => {
+  async (
+    _: void,
+    { rejectWithValue }
+  ): Promise<LearningPlan[] | ReturnType<typeof rejectWithValue>> => {
     try {
       const response = await apiService.getLearningPlans();
-      return response.data || [];
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch learning plans');
+      return response.data ?? [];
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch learning plans';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-export const createLearningPlan = createAsyncThunk(
+export const createLearningPlan = createAsyncThunk<
+  LearningPlan,
+  {
+    title: string;
+    description: string;
+    topic: string;
+    skillLevel: string;
+    mode: string;
+  },
+  { rejectValue: string }
+>(
   'learningPlans/createLearningPlan',
   async (
     planData: {
@@ -40,39 +55,49 @@ export const createLearningPlan = createAsyncThunk(
       mode: string;
     },
     { rejectWithValue }
-  ) => {
+  ): Promise<LearningPlan | ReturnType<typeof rejectWithValue>> => {
     try {
       const response = await apiService.createLearningPlan(planData);
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create learning plan');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create learning plan';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-export const updateLearningPlan = createAsyncThunk(
+export const updateLearningPlan = createAsyncThunk<
+  LearningPlan,
+  { planId: string; planData: Partial<LearningPlan> },
+  { rejectValue: string }
+>(
   'learningPlans/updateLearningPlan',
   async (
     { planId, planData }: { planId: string; planData: Partial<LearningPlan> },
     { rejectWithValue }
-  ) => {
+  ): Promise<LearningPlan | ReturnType<typeof rejectWithValue>> => {
     try {
       const response = await apiService.updateLearningPlan(planId, planData);
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to update learning plan');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update learning plan';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-export const deleteLearningPlan = createAsyncThunk(
+export const deleteLearningPlan = createAsyncThunk<string, string, { rejectValue: string }>(
   'learningPlans/deleteLearningPlan',
-  async (planId: string, { rejectWithValue }) => {
+  async (
+    planId: string,
+    { rejectWithValue }
+  ): Promise<string | ReturnType<typeof rejectWithValue>> => {
     try {
       await apiService.deleteLearningPlan(planId);
       return planId;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to delete learning plan');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete learning plan';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -81,80 +106,83 @@ const learningPlansSlice = createSlice({
   name: 'learningPlans',
   initialState,
   reducers: {
-    clearError: state => {
+    clearError: (state): void => {
       state.error = null;
     },
-    setCurrentPlan: (state, action: PayloadAction<LearningPlan | null>) => {
+    setCurrentPlan: (state, action: PayloadAction<LearningPlan | null>): void => {
       state.currentPlan = action.payload;
     },
-    clearPlans: state => {
+    clearPlans: (state): void => {
       state.plans = [];
       state.currentPlan = null;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder): void => {
     builder
       // Fetch Learning Plans
-      .addCase(fetchLearningPlans.pending, state => {
+      .addCase(fetchLearningPlans.pending, (state): void => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchLearningPlans.fulfilled, (state, action) => {
+      .addCase(fetchLearningPlans.fulfilled, (state, action): void => {
         state.isLoading = false;
         state.plans = action.payload;
         state.error = null;
       })
-      .addCase(fetchLearningPlans.rejected, (state, action) => {
+      .addCase(fetchLearningPlans.rejected, (state, action): void => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
       // Create Learning Plan
-      .addCase(createLearningPlan.pending, state => {
+      .addCase(createLearningPlan.pending, (state): void => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(createLearningPlan.fulfilled, (state, action) => {
+      .addCase(createLearningPlan.fulfilled, (state, action): void => {
         state.isLoading = false;
         state.plans.push(action.payload);
         state.error = null;
       })
-      .addCase(createLearningPlan.rejected, (state, action) => {
+      .addCase(createLearningPlan.rejected, (state, action): void => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
       // Update Learning Plan
-      .addCase(updateLearningPlan.pending, state => {
+      .addCase(updateLearningPlan.pending, (state): void => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(updateLearningPlan.fulfilled, (state, action) => {
+      .addCase(updateLearningPlan.fulfilled, (state, action): void => {
         state.isLoading = false;
-        if (action.payload) {
-          const index = state.plans.findIndex(plan => plan.id === action.payload!.id);
-          if (index !== -1) {
-            state.plans[index] = action.payload!;
-          }
+        const payload = action.payload;
+        const index = state.plans.findIndex(
+          (plan: LearningPlan): boolean => plan.id === payload.id
+        );
+        if (index !== -1) {
+          state.plans[index] = payload;
         }
         state.error = null;
       })
-      .addCase(updateLearningPlan.rejected, (state, action) => {
+      .addCase(updateLearningPlan.rejected, (state, action): void => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
       // Delete Learning Plan
-      .addCase(deleteLearningPlan.pending, state => {
+      .addCase(deleteLearningPlan.pending, (state): void => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(deleteLearningPlan.fulfilled, (state, action) => {
+      .addCase(deleteLearningPlan.fulfilled, (state, action): void => {
         state.isLoading = false;
-        state.plans = state.plans.filter(plan => plan.id !== action.payload);
+        state.plans = state.plans.filter(
+          (plan: LearningPlan): boolean => plan.id !== action.payload
+        );
         if (state.currentPlan?.id === action.payload) {
           state.currentPlan = null;
         }
         state.error = null;
       })
-      .addCase(deleteLearningPlan.rejected, (state, action) => {
+      .addCase(deleteLearningPlan.rejected, (state, action): void => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

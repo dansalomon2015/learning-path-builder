@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -13,7 +13,7 @@ import ObjectivePathPage from './pages/ObjectivePathPage';
 import ModuleLearnPage from './pages/ModuleLearnPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
-const App: React.FC = () => {
+const App: React.FC = (): JSX.Element => {
   return (
     <Provider store={store}>
       <PersistGate loading={<div>Loading...</div>} persistor={persistor}>

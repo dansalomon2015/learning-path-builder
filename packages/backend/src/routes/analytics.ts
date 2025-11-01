@@ -1,15 +1,24 @@
 import { Router } from 'express';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { analyticsService } from '@/services/analytics';
 import { logger } from '@/utils/logger';
 
 const router = Router();
 
 // GET /api/analytics/user/:userId
-router.get('/user/:userId', async (req: Request, res: Response) => {
+router.get('/user/:userId', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { userId } = req.params;
-    const { timeRange = 'month' } = req.query;
+    const userIdParam: string | undefined = req.params['userId'];
+    if (userIdParam == null || userIdParam === '') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'userId is required' },
+      });
+    }
+    const userId: string = userIdParam;
+    const timeRangeParam: unknown = req.query['timeRange'];
+    const timeRange: string =
+      (typeof timeRangeParam === 'string' ? timeRangeParam : undefined) ?? 'month';
 
     // Verify user can access this data
     if (req.user?.uid !== userId) {
@@ -29,16 +38,23 @@ router.get('/user/:userId', async (req: Request, res: Response) => {
       data: analytics,
       message: 'User analytics retrieved successfully',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error getting user analytics:', error);
     throw error;
   }
 });
 
 // GET /api/analytics/patterns/:userId
-router.get('/patterns/:userId', async (req: Request, res: Response) => {
+router.get('/patterns/:userId', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { userId } = req.params;
+    const userIdParam: string | undefined = req.params['userId'];
+    if (userIdParam == null || userIdParam === '') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'userId is required' },
+      });
+    }
+    const userId: string = userIdParam;
 
     // Verify user can access this data
     if (req.user?.uid !== userId) {
@@ -55,17 +71,26 @@ router.get('/patterns/:userId', async (req: Request, res: Response) => {
       data: patterns,
       message: 'Study patterns retrieved successfully',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error getting study patterns:', error);
     throw error;
   }
 });
 
 // GET /api/analytics/recommendations/:userId
-router.get('/recommendations/:userId', async (req: Request, res: Response) => {
+router.get('/recommendations/:userId', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { userId } = req.params;
-    const { timeRange = 'month' } = req.query;
+    const userIdParam: string | undefined = req.params['userId'];
+    if (userIdParam == null || userIdParam === '') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'userId is required' },
+      });
+    }
+    const userId: string = userIdParam;
+    const timeRangeParam: unknown = req.query['timeRange'];
+    const timeRange: string =
+      (typeof timeRangeParam === 'string' ? timeRangeParam : undefined) ?? 'month';
 
     // Verify user can access this data
     if (req.user?.uid !== userId) {
@@ -90,16 +115,23 @@ router.get('/recommendations/:userId', async (req: Request, res: Response) => {
       },
       message: 'Personalized recommendations generated successfully',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error generating recommendations:', error);
     throw error;
   }
 });
 
 // GET /api/analytics/dashboard/:userId
-router.get('/dashboard/:userId', async (req: Request, res: Response) => {
+router.get('/dashboard/:userId', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { userId } = req.params;
+    const userIdParam: string | undefined = req.params['userId'];
+    if (userIdParam == null || userIdParam === '') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'userId is required' },
+      });
+    }
+    const userId: string = userIdParam;
 
     // Verify user can access this data
     if (req.user?.uid !== userId) {
@@ -110,11 +142,14 @@ router.get('/dashboard/:userId', async (req: Request, res: Response) => {
     }
 
     // Get comprehensive dashboard data
-    const [analytics, patterns, recommendations] = await Promise.all([
-      analyticsService.getUserAnalytics(userId, 'month'),
-      analyticsService.getStudyPatterns(userId),
-      analyticsService.generateRecommendations(userId, {}),
-    ]);
+    const analyticsPromise = analyticsService.getUserAnalytics(userId, 'month');
+    const patternsPromise = analyticsService.getStudyPatterns(userId);
+    const recommendationsPromise = analyticsService.generateRecommendations(userId, {});
+    const [analytics, patterns, recommendations]: [
+      Awaited<typeof analyticsPromise>,
+      Awaited<typeof patternsPromise>,
+      Awaited<typeof recommendationsPromise>
+    ] = await Promise.all([analyticsPromise, patternsPromise, recommendationsPromise]);
 
     return res.json({
       success: true,
@@ -126,7 +161,7 @@ router.get('/dashboard/:userId', async (req: Request, res: Response) => {
       },
       message: 'Dashboard data retrieved successfully',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error getting dashboard data:', error);
     throw error;
   }

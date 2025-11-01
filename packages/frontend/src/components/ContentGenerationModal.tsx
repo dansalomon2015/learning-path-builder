@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface ContentGenerationModalProps {
@@ -11,8 +11,10 @@ export const ContentGenerationModal: React.FC<ContentGenerationModalProps> = ({
   isOpen,
   moduleTitle,
   message = "Génération du contenu d'apprentissage en cours...",
-}) => {
-  if (!isOpen) return null;
+}): JSX.Element | null => {
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

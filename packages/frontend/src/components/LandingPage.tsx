@@ -1,11 +1,11 @@
-import React from 'react';
+import type React from 'react';
 
 interface LandingPageProps {
   onLogin: () => void;
   onSignUp: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp }): JSX.Element => {
   return (
     <div className="flex flex-col md:flex-row items-center justify-center min-h-[calc(100vh-10rem)] animate-fade-in">
       <div className="md:w-1/2 text-center md:text-left p-8">

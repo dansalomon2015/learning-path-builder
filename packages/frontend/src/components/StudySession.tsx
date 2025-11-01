@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { LearningPlan, Flashcard } from '../types';
-import { sessionService, SessionProgress, SessionStats } from '../services/sessionService';
+import type React from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { LearningPlan } from '../types';
+import { sessionService } from '../services/sessionService';
+import type { SessionProgress, SessionStats } from '../services/sessionService';
 import {
   ArrowLeftIcon,
   TrophyIcon,
@@ -37,8 +39,8 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
   isPaused,
   onPause,
   onResume,
-}) => {
-  const formatTime = (totalSeconds: number) => {
+}): JSX.Element => {
+  const formatTime = (totalSeconds: number): string => {
     const minutes = Math.floor(totalSeconds / 60)
       .toString()
       .padStart(2, '0');
@@ -57,7 +59,7 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
             <ArrowLeftIcon className="w-5 h-5" />
             Back
           </button>
-          <div className="h-6 w-px bg-slate-300"></div>
+          <div className="h-6 w-px bg-slate-300" />
           <div>
             <h1 className="text-xl font-bold text-slate-800">{plan.title}</h1>
             <p className="text-sm font-medium text-indigo-600 capitalize">
@@ -105,7 +107,12 @@ interface ProgressBarProps {
   incorrect: number;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ current, total, correct, incorrect }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({
+  current,
+  total,
+  correct,
+  incorrect,
+}): JSX.Element => {
   const progressPercentage = (current / total) * 100;
   const accuracyPercentage = current > 0 ? (correct / current) * 100 : 0;
 
@@ -130,11 +137,11 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ current, total, correct, inco
       <div className="flex justify-between mt-2">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="w-3 h-3 bg-green-500 rounded-full" />
             <span className="text-slate-600">Correct: {correct}</span>
           </div>
           <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full" />
             <span className="text-slate-600">Incorrect: {incorrect}</span>
           </div>
         </div>
@@ -149,18 +156,26 @@ interface FlashcardModeProps {
   onComplete: () => void;
 }
 
-const FlashcardMode: React.FC<FlashcardModeProps> = ({ plan, session, onComplete }) => {
+// eslint-disable-next-line max-lines-per-function
+const FlashcardMode: React.FC<FlashcardModeProps> = ({
+  plan,
+  session,
+  onComplete,
+}): JSX.Element => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [cardStartTime, setCardStartTime] = useState(Date.now());
   const [key, setKey] = useState(0);
 
   const currentCard = useMemo(
-    () => plan.flashcards[session.currentCardIndex],
+    (): LearningPlan['flashcards'][number] | undefined => plan.flashcards[session.currentCardIndex],
     [plan.flashcards, session.currentCardIndex]
   );
 
   const handleCardInteraction = useCallback(
-    (knewIt: boolean) => {
+    (knewIt: boolean): void => {
+      if (currentCard == null) {
+        return;
+      }
       const responseTime = (Date.now() - cardStartTime) / 1000;
 
       sessionService.recordCardInteraction(
@@ -173,9 +188,9 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ plan, session, onComplete
       if (session.currentCardIndex < session.totalCards - 1) {
         setIsFlipped(false);
         setCardStartTime(Date.now());
-        setTimeout(() => {
+        setTimeout((): void => {
           sessionService.nextCard();
-          setKey(prev => prev + 1);
+          setKey((prev: number): number => prev + 1);
         }, 150);
       } else {
         onComplete();
@@ -184,11 +199,11 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ plan, session, onComplete
     [currentCard, session, onComplete, cardStartTime]
   );
 
-  const handleFlip = useCallback(() => {
+  const handleFlip = useCallback((): void => {
     setIsFlipped(!isFlipped);
   }, [isFlipped]);
 
-  if (!currentCard) {
+  if (currentCard == null) {
     return <div>Loading...</div>;
   }
 
@@ -234,7 +249,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ plan, session, onComplete
           <div className="absolute w-full h-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-2xl shadow-xl flex items-center justify-center p-8 text-center [transform:rotateY(180deg)] [backface-visibility:hidden]">
             <div>
               <p className="text-xl md:text-2xl font-medium mb-4">{currentCard.answer}</p>
-              {currentCard.explanation && (
+              {currentCard.explanation != null && currentCard.explanation !== '' && (
                 <div className="mt-4 p-4 bg-white bg-opacity-20 rounded-lg">
                   <p className="text-sm opacity-90">{currentCard.explanation}</p>
                 </div>
@@ -251,13 +266,17 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ plan, session, onComplete
       {isFlipped && (
         <div className="flex justify-center gap-4 animate-fade-in">
           <button
-            onClick={() => handleCardInteraction(false)}
+            onClick={(): void => {
+              handleCardInteraction(false);
+            }}
             className="px-8 py-4 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-colors transform hover:scale-105 shadow-sm"
           >
             Again
           </button>
           <button
-            onClick={() => handleCardInteraction(true)}
+            onClick={(): void => {
+              handleCardInteraction(true);
+            }}
             className="px-8 py-4 bg-green-100 text-green-700 rounded-xl font-bold text-lg hover:bg-green-200 transition-colors transform hover:scale-105 shadow-sm"
           >
             Good
@@ -274,30 +293,35 @@ interface QuizModeProps {
   onComplete: () => void;
 }
 
-const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
+// eslint-disable-next-line max-lines-per-function
+const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }): JSX.Element => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   const currentCard = useMemo(
-    () => plan.flashcards[session.currentCardIndex],
+    (): LearningPlan['flashcards'][number] | undefined => plan.flashcards[session.currentCardIndex],
     [plan.flashcards, session.currentCardIndex]
   );
 
-  const quizOptions = useMemo(() => {
-    if (!currentCard) return [];
+  const quizOptions = useMemo((): string[] => {
+    if (currentCard == null) {
+      return [];
+    }
     const correctAnswer = currentCard.answer;
     const distractors = plan.flashcards
-      .filter(fc => fc.id !== currentCard.id)
-      .map(fc => fc.answer)
-      .sort(() => Math.random() - 0.5)
+      .filter((fc: LearningPlan['flashcards'][number]): boolean => fc.id !== currentCard.id)
+      .map((fc: LearningPlan['flashcards'][number]): string => fc.answer)
+      .sort((): number => Math.random() - 0.5)
       .slice(0, 3);
-    return [correctAnswer, ...distractors].sort(() => Math.random() - 0.5);
+    return [correctAnswer, ...distractors].sort((): number => Math.random() - 0.5);
   }, [currentCard, plan.flashcards]);
 
   const handleAnswerSelect = useCallback(
-    (answer: string) => {
-      if (showFeedback) return;
+    (answer: string): void => {
+      if (showFeedback === true || currentCard == null) {
+        return;
+      }
 
       setSelectedAnswer(answer);
       const responseTime = (Date.now() - questionStartTime) / 1000;
@@ -315,7 +339,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
     [showFeedback, currentCard, questionStartTime]
   );
 
-  const handleNextQuestion = useCallback(() => {
+  const handleNextQuestion = useCallback((): void => {
     if (session.currentCardIndex < session.totalCards - 1) {
       setShowFeedback(false);
       setSelectedAnswer(null);
@@ -326,7 +350,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
     }
   }, [session, onComplete]);
 
-  if (!currentCard) {
+  if (currentCard == null) {
     return <div>Loading...</div>;
   }
 
@@ -364,18 +388,18 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {quizOptions.map((option, index) => {
+          {quizOptions.map((option: string, index: number): JSX.Element => {
             const isCorrect = option === currentCard.answer;
             const isSelected = option === selectedAnswer;
 
             let buttonClass =
               'p-4 border-2 border-slate-200 rounded-lg text-left text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200';
 
-            if (showFeedback) {
-              if (isCorrect) {
+            if (showFeedback === true) {
+              if (isCorrect === true) {
                 buttonClass =
                   'p-4 border-2 border-green-500 bg-green-100 rounded-lg text-left text-green-800 font-semibold';
-              } else if (isSelected && !isCorrect) {
+              } else if (isSelected === true) {
                 buttonClass =
                   'p-4 border-2 border-red-500 bg-red-100 rounded-lg text-left text-red-800 font-semibold';
               } else {
@@ -387,8 +411,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
             return (
               <button
                 key={index}
-                onClick={() => handleAnswerSelect(option)}
-                disabled={showFeedback}
+                onClick={(): void => {
+                  handleAnswerSelect(option);
+                }}
+                disabled={showFeedback === true}
                 className={buttonClass}
               >
                 <div className="flex items-center space-x-3">
@@ -401,8 +427,10 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
                         : 'border-slate-300'
                     }`}
                   >
-                    {showFeedback && isCorrect && <span className="text-white text-xs">✓</span>}
-                    {showFeedback && isSelected && !isCorrect && (
+                    {showFeedback === true && isCorrect === true && (
+                      <span className="text-white text-xs">✓</span>
+                    )}
+                    {showFeedback === true && isSelected === true && isCorrect === false && (
                       <span className="text-white text-xs">✗</span>
                     )}
                   </div>
@@ -427,7 +455,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }) => {
             <strong>Answer:</strong> {currentCard.answer}
           </p>
 
-          {currentCard.explanation && (
+          {currentCard.explanation != null && currentCard.explanation !== '' && (
             <div className="mb-4">
               <h4 className="text-sm font-semibold text-slate-600 mb-2">Explanation:</h4>
               <p className="text-slate-700">{currentCard.explanation}</p>
@@ -458,11 +486,11 @@ interface SessionCompleteProps {
 
 const SessionComplete: React.FC<SessionCompleteProps> = ({
   plan,
-  mode,
+  mode: _mode,
   sessionStats,
   onBack,
   onRestart,
-}) => {
+}): JSX.Element => {
   const recommendations = sessionService.getAdaptiveRecommendations();
 
   return (
@@ -479,7 +507,7 @@ const SessionComplete: React.FC<SessionCompleteProps> = ({
             <ChartBarIcon className="w-8 h-8 text-indigo-600" />
           </div>
           <p className="text-2xl font-bold text-indigo-600 mb-1">
-            {Math.round((sessionStats.correctAnswers / sessionStats.totalCards) * 100)}%
+            {Math.round(sessionStats.accuracyRate)}%
           </p>
           <p className="text-sm text-slate-600">Accuracy</p>
         </div>
@@ -535,7 +563,12 @@ const SessionComplete: React.FC<SessionCompleteProps> = ({
   );
 };
 
-const StudySession: React.FC<StudySessionProps> = ({ plan, mode, onBack, onComplete }) => {
+const StudySession: React.FC<StudySessionProps> = ({
+  plan,
+  mode,
+  onBack,
+  onComplete,
+}): JSX.Element => {
   const [session, setSession] = useState<SessionProgress | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -543,42 +576,48 @@ const StudySession: React.FC<StudySessionProps> = ({ plan, mode, onBack, onCompl
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
 
   // Initialize session
-  useEffect(() => {
+  useEffect((): void => {
     const newSession = sessionService.startSession(plan, mode);
     setSession(newSession);
   }, [plan, mode]);
 
   // Timer effect
-  useEffect(() => {
-    if (isPaused || isComplete) return;
+  useEffect((): (() => void) | undefined => {
+    if (isPaused === true || isComplete === true) {
+      return undefined;
+    }
 
-    const timer = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+    const timer = setInterval((): void => {
+      setElapsedTime((prev: number): number => prev + 1);
     }, 1000);
 
-    return () => clearInterval(timer);
+    return (): void => {
+      clearInterval(timer);
+    };
   }, [isPaused, isComplete]);
 
-  const handlePause = useCallback(() => {
+  const handlePause = useCallback((): void => {
     sessionService.pauseSession();
     setIsPaused(true);
   }, []);
 
-  const handleResume = useCallback(() => {
+  const handleResume = useCallback((): void => {
     setIsPaused(false);
   }, []);
 
-  const handleComplete = useCallback(() => {
+  const handleComplete = useCallback((): void => {
     const completedSession = sessionService.completeSession();
-    if (completedSession) {
+    if (completedSession != null) {
       const stats = sessionService.getSessionStats();
       setSessionStats(stats);
       setIsComplete(true);
-      onComplete?.();
+      if (onComplete != null) {
+        onComplete();
+      }
     }
   }, [onComplete]);
 
-  const handleRestart = useCallback(() => {
+  const handleRestart = useCallback((): void => {
     const newSession = sessionService.startSession(plan, mode);
     setSession(newSession);
     setElapsedTime(0);
@@ -587,15 +626,15 @@ const StudySession: React.FC<StudySessionProps> = ({ plan, mode, onBack, onCompl
     setSessionStats(null);
   }, [plan, mode]);
 
-  if (!session) {
+  if (session == null) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
       </div>
     );
   }
 
-  if (isComplete && sessionStats) {
+  if (isComplete === true && sessionStats != null) {
     return (
       <SessionComplete
         plan={plan}

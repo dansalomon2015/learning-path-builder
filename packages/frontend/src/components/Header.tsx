@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { User } from '@/types';
+import type React from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { User } from '@/types';
 import { BookOpenIcon, UserIcon } from './icons';
 
 interface HeaderProps {
@@ -9,18 +10,20 @@ interface HeaderProps {
   onViewProfile: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onViewProfile }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onViewProfile }): JSX.Element => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+  useEffect((): (() => void) => {
+    const handleClickOutside = (event: MouseEvent): void => {
+      if (dropdownRef.current != null && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return (): void => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   return (
@@ -31,23 +34,27 @@ const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onViewProfile 
           <span className="text-xl font-bold text-slate-800">FlashLearn AI</span>
         </div>
         <div>
-          {user ? (
+          {user != null ? (
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={(): void => {
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <span className="text-sm font-medium hidden sm:block">{user.name}</span>
                 <img
-                  src={user.avatar || '/default-avatar.png'}
+                  src={
+                    user.avatar != null && user.avatar !== '' ? user.avatar : '/default-avatar.png'
+                  }
                   alt="User avatar"
                   className="w-9 h-9 rounded-full border-2 border-indigo-200"
                 />
               </button>
-              {isDropdownOpen && (
+              {isDropdownOpen === true && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 animate-fade-in p-2 z-10">
                   <button
-                    onClick={() => {
+                    onClick={(): void => {
                       onViewProfile();
                       setIsDropdownOpen(false);
                     }}
@@ -57,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onViewProfile 
                     Profile
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={(): void => {
                       onLogout();
                       setIsDropdownOpen(false);
                     }}

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { learningPlanRoutes } from './learningPlan';
 import { documentRoutes } from './document';
 import { userRoutes } from './user';
@@ -13,8 +13,8 @@ router.use('/users', userRoutes);
 router.use('/analytics', analyticsRoutes);
 
 // API info endpoint
-router.get('/', (req, res) => {
-  res.json({
+router.get('/', (req: Request, res: Response): Response => {
+  return res.json({
     message: 'FlashLearn AI API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),

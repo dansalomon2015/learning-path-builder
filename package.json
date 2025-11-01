@@ -1,51 +1,55 @@
 {
-    "name": "flashlearn-ai",
-    "version": "1.0.0",
-    "description": "Monorepo pour FlashLearn AI - Système d'apprentissage adaptatif avec flashcards et quiz IA",
-    "private": true,
-    "workspaces": [
-        "packages/*"
-    ],
-    "scripts": {
-        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "dev:backend": "npm run dev --workspace=@flashlearn-ai/backend",
-        "dev:frontend": "npm run dev --workspace=@flashlearn-ai/frontend",
-        "build": "npm run build --workspace=@flashlearn-ai/backend && npm run build --workspace=@flashlearn-ai/frontend",
-        "build:backend": "npm run build --workspace=@flashlearn-ai/backend",
-        "build:frontend": "npm run build --workspace=@flashlearn-ai/frontend",
-        "test": "npm run test --workspace=@flashlearn-ai/backend && npm run test --workspace=@flashlearn-ai/frontend",
-        "lint": "npm run lint --workspace=@flashlearn-ai/backend && npm run lint --workspace=@flashlearn-ai/frontend",
-        "clean": "npm run clean --workspace=@flashlearn-ai/backend && npm run clean --workspace=@flashlearn-ai/frontend",
-        "docker:build": "docker-compose build",
-        "docker:up": "docker-compose up",
-        "docker:down": "docker-compose down"
-    },
-    "devDependencies": {
-        "concurrently": "^8.2.2",
-        "@types/node": "^20.10.0",
-        "typescript": "^5.3.0"
-    },
-    "engines": {
-        "node": ">=22.0.0",
-        "npm": ">=10.0.0"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/your-username/learning-path-builder.git"
-    },
-    "keywords": [
-        "flashlearn",
-        "ai",
-        "adaptive-learning",
-        "flashcards",
-        "quiz",
-        "gemini",
-        "firebase",
-        "monorepo",
-        "nodejs",
-        "react",
-        "typescript"
-    ],
-    "author": "Your Name",
-    "license": "MIT"
+  "name": "flashlearn-ai",
+  "version": "1.0.0",
+  "description": "Monorepo pour FlashLearn AI - Système d'apprentissage adaptatif avec flashcards et quiz IA",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@flashlearn-ai/backend",
+    "dev:frontend": "npm run dev --workspace=@flashlearn-ai/frontend",
+    "build": "npm run build --workspace=@flashlearn-ai/backend && npm run build --workspace=@flashlearn-ai/frontend",
+    "build:backend": "npm run build --workspace=@flashlearn-ai/backend",
+    "build:frontend": "npm run build --workspace=@flashlearn-ai/frontend",
+    "test": "npm run test --workspace=@flashlearn-ai/backend && npm run test --workspace=@flashlearn-ai/frontend",
+    "test:ci": "npm run test:ci --workspace=@flashlearn-ai/backend && npm run test:ci --workspace=@flashlearn-ai/frontend",
+    "lint": "npm run lint --workspace=@flashlearn-ai/backend && npm run lint --workspace=@flashlearn-ai/frontend",
+    "clean": "npm run clean --workspace=@flashlearn-ai/backend && npm run clean --workspace=@flashlearn-ai/frontend",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.1",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/learning-path-builder.git"
+  },
+  "keywords": [
+    "flashlearn",
+    "ai",
+    "adaptive-learning",
+    "flashcards",
+    "quiz",
+    "gemini",
+    "firebase",
+    "monorepo",
+    "nodejs",
+    "react",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }

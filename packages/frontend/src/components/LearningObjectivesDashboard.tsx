@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LearningObjective, Assessment, AssessmentResult } from '../types';
+import type { LearningObjective, Assessment } from '../types';
 import CreateObjectiveModal from './CreateObjectiveModal';
 import SkillAssessment from './SkillAssessment';
 import { toast } from 'react-hot-toast';
@@ -9,13 +10,10 @@ import {
   PlusIcon,
   TargetIcon,
   ChartBarIcon,
-  ClockIcon,
   TrophyIcon,
   PlayIcon,
   CheckCircleIcon,
   CalendarIcon,
-  TrendingUpIcon,
-  LightBulbIcon,
 } from './icons';
 import { TrashIcon } from './icons';
 
@@ -32,6 +30,7 @@ interface ObjectiveCardProps {
   isStarting?: boolean;
 }
 
+// eslint-disable-next-line max-lines-per-function
 const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
   objective,
   onStartAssessment,
@@ -39,8 +38,8 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
   onStartLearning,
   onDelete,
   isStarting = false,
-}) => {
-  const getStatusColor = (status: string) => {
+}): JSX.Element => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'planning':
         return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -55,21 +54,31 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
     }
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return 'bg-green-500';
-    if (progress >= 50) return 'bg-yellow-500';
+  const getProgressColor = (progress: number): string => {
+    if (progress >= 80) {
+      return 'bg-green-500';
+    }
+    if (progress >= 50) {
+      return 'bg-yellow-500';
+    }
     return 'bg-red-500';
   };
 
-  const completedMilestones = objective.milestones.filter(m => m.isCompleted).length;
-  const totalMilestones = objective.milestones.length;
-  const hasPaths = (objective.learningPaths && objective.learningPaths.length > 0) || false;
-  const completedPaths = objective.learningPaths.filter(p => p.isCompleted).length;
-  const avgPathProgress =
+  const completedMilestones: number = objective.milestones.filter(
+    (m): boolean => m.isCompleted === true
+  ).length;
+  const totalMilestones: number = objective.milestones.length;
+  const hasPaths: boolean = objective.learningPaths.length > 0;
+  const completedPaths: number = objective.learningPaths.filter(
+    (p): boolean => p.isCompleted === true
+  ).length;
+  const avgPathProgress: number =
     objective.learningPaths.length > 0
       ? Math.round(
-          objective.learningPaths.reduce((sum, p) => sum + (p.progress || 0), 0) /
-            objective.learningPaths.length
+          objective.learningPaths.reduce((sum: number, p): number => {
+            const progressValue: number = typeof p.progress === 'number' ? p.progress : 0;
+            return sum + progressValue;
+          }, 0) / objective.learningPaths.length
         )
       : 0;
 
@@ -91,15 +100,24 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
               <TrophyIcon className="w-4 h-4" />
               <span>{objective.targetRole}</span>
             </span>
-            {(objective as any).lastAssessment && (
-              <span className="flex items-center space-x-1">
-                <ChartBarIcon className="w-4 h-4" />
-                <span>
-                  {(objective as any).lastAssessment.score}% ·{' '}
-                  {(objective as any).lastAssessment.skillLevel}
-                </span>
-              </span>
-            )}
+            {((): JSX.Element | null => {
+              const lastAssessment = (
+                objective as {
+                  lastAssessment?: { score: number; skillLevel: string };
+                }
+              ).lastAssessment;
+              if (lastAssessment != null) {
+                return (
+                  <span className="flex items-center space-x-1">
+                    <ChartBarIcon className="w-4 h-4" />
+                    <span>
+                      {lastAssessment.score}% · {lastAssessment.skillLevel}
+                    </span>
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
         <div
@@ -110,7 +128,9 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           {objective.status.replace('_', ' ')}
         </div>
         <button
-          onClick={() => onDelete(objective.id)}
+          onClick={(): void => {
+            onDelete(objective.id);
+          }}
           className="ml-3 text-slate-400 hover:text-red-600 cursor-pointer"
           title="Delete objective"
         >
@@ -143,15 +163,17 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           </span>
         </div>
         <div className="flex space-x-1">
-          {objective.milestones.map((milestone, index) => (
-            <div
-              key={milestone.id}
-              className={`h-2 flex-1 rounded ${
-                milestone.isCompleted ? 'bg-green-500' : 'bg-slate-200'
-              }`}
-              title={milestone.title}
-            />
-          ))}
+          {objective.milestones.map(
+            (milestone): JSX.Element => (
+              <div
+                key={milestone.id}
+                className={`h-2 flex-1 rounded ${
+                  milestone.isCompleted === true ? 'bg-green-500' : 'bg-slate-200'
+                }`}
+                title={milestone.title}
+              />
+            )
+          )}
         </div>
       </div>
 
@@ -160,25 +182,27 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-slate-700">Learning Paths</span>
           <span className="text-sm font-semibold text-slate-800">
-            {objective.learningPaths.filter(p => p.isCompleted).length}/
+            {objective.learningPaths.filter((p): boolean => p.isCompleted).length}/
             {objective.learningPaths.length}
           </span>
         </div>
         <div className="space-y-2">
-          {objective.learningPaths.slice(0, 2).map(path => (
-            <div key={path.id} className="flex items-center justify-between">
-              <span className="text-sm text-slate-600 truncate">{path.title}</span>
-              <div className="flex items-center space-x-2">
-                <div className="w-16 bg-slate-200 rounded-full h-1">
-                  <div
-                    className="bg-indigo-500 h-1 rounded-full"
-                    style={{ width: `${path.progress}%` }}
-                  />
+          {objective.learningPaths.slice(0, 2).map(
+            (path): JSX.Element => (
+              <div key={path.id} className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 truncate">{path.title}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-16 bg-slate-200 rounded-full h-1">
+                    <div
+                      className="bg-indigo-500 h-1 rounded-full"
+                      style={{ width: `${path.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500">{path.progress}%</span>
                 </div>
-                <span className="text-xs text-slate-500">{path.progress}%</span>
               </div>
-            </div>
-          ))}
+            )
+          )}
           {objective.learningPaths.length > 2 && (
             <p className="text-xs text-slate-500">
               +{objective.learningPaths.length - 2} more paths
@@ -209,10 +233,12 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
       {/* Action Buttons */}
       <div className="flex space-x-2">
-        {objective.status === 'planning' && !hasPaths && (
+        {objective.status === 'planning' && hasPaths === false && (
           <button
-            onClick={() => onStartAssessment(objective.id)}
-            disabled={isStarting}
+            onClick={(): void => {
+              onStartAssessment(objective.id);
+            }}
+            disabled={isStarting === true}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
               isStarting
                 ? 'bg-indigo-400 text-white cursor-not-allowed'
@@ -234,16 +260,20 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
         )}
 
         {/* If learning paths exist, show jump-to-objective and continue learning */}
-        {hasPaths && (
+        {hasPaths === true && (
           <>
             <button
-              onClick={() => onViewDetails(objective.id)}
+              onClick={(): void => {
+                onViewDetails(objective.id);
+              }}
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
             >
               <span>Go to Objective</span>
             </button>
             <button
-              onClick={() => onStartLearning(objective.id)}
+              onClick={(): void => {
+                onStartLearning(objective.id);
+              }}
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
             >
               Continue Learning
@@ -251,17 +281,21 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
           </>
         )}
 
-        {objective.status === 'in_progress' && !hasPaths && (
+        {objective.status === 'in_progress' && hasPaths === false && (
           <>
             <button
-              onClick={() => onStartLearning(objective.id)}
+              onClick={(): void => {
+                onStartLearning(objective.id);
+              }}
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
             >
               <PlayIcon className="w-4 h-4" />
               <span>Continue Learning</span>
             </button>
             <button
-              onClick={() => onViewDetails(objective.id)}
+              onClick={(): void => {
+                onViewDetails(objective.id);
+              }}
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
             >
               Details
@@ -271,7 +305,9 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
         {objective.status === 'completed' && (
           <button
-            onClick={() => onViewDetails(objective.id)}
+            onClick={(): void => {
+              onViewDetails(objective.id);
+            }}
             className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors"
           >
             <CheckCircleIcon className="w-4 h-4" />
@@ -281,7 +317,9 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
         {objective.status === 'paused' && (
           <button
-            onClick={() => onStartLearning(objective.id)}
+            onClick={(): void => {
+              onStartLearning(objective.id);
+            }}
             className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-semibold hover:bg-yellow-700 transition-colors"
           >
             <PlayIcon className="w-4 h-4" />
@@ -293,9 +331,10 @@ const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
   );
 };
 
+// eslint-disable-next-line complexity, max-lines-per-function
 const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = ({
   className = '',
-}) => {
+}): JSX.Element => {
   const [objectives, setObjectives] = useState<LearningObjective[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -309,11 +348,12 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   const [confirmDeleteTitle, setConfirmDeleteTitle] = useState<string>('');
   const [setupLoading, setSetupLoading] = useState(false);
 
-  const fetchObjectives = async () => {
+  const fetchObjectives = async (): Promise<void> => {
     try {
       const res = await apiService.getObjectives();
-      setObjectives(res.data as any[] as LearningObjective[]);
-    } catch (e) {
+      const objectivesData = res.data as unknown as LearningObjective[];
+      setObjectives(Array.isArray(objectivesData) ? objectivesData : []);
+    } catch (e: unknown) {
       console.error('Failed to load objectives', e);
     } finally {
       setLoading(false);
@@ -321,26 +361,31 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   };
 
   // Load objectives from backend
-  useEffect(() => {
-    fetchObjectives();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect((): void => {
+    fetchObjectives().catch((error: unknown): void => {
+      console.error('Error fetching objectives:', error);
+    });
   }, []);
 
-  const handleStartAssessment = async (objectiveId: string) => {
+  const handleStartAssessment = async (objectiveId: string): Promise<void> => {
     try {
       setStartingObjectiveId(objectiveId);
       const res = await apiService.startAssessment({ objectiveId });
-      if (res.success && res.data) {
-        setActiveAssessment(res.data as Assessment);
+      if (res.success === true && res.data != null) {
+        setActiveAssessment(res.data as unknown as Assessment);
         setShowAssessment(true);
         toast.success('Assessment started');
       } else {
-        toast.error(res?.error?.message || 'Failed to start assessment');
+        const errorMessage: string =
+          res.error?.message != null && res.error.message !== ''
+            ? res.error.message
+            : 'Failed to start assessment';
+        toast.error(errorMessage);
       }
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || 'Failed to start assessment';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const msg: string = error.response?.data?.message ?? 'Failed to start assessment';
       toast.error(msg);
-      console.error('Start assessment failed', e);
     } finally {
       setStartingObjectiveId(null);
     }
@@ -350,114 +395,120 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
     assessmentId: string,
     answers: { questionId: string; selectedAnswer: number }[],
     timeSpent: number
-  ) => {
+  ): Promise<void> => {
     try {
       const res = await apiService.submitAssessment(assessmentId, answers, timeSpent);
-      if (res.success && res.data) {
+      if (res.success === true && res.data != null) {
         toast.success('Assessment completed!');
-        console.log('Assessment result:', res.data);
         // TODO: Update objective progress based on result
       } else {
-        toast.error(res?.error?.message || 'Failed to submit assessment');
+        const errorMessage: string =
+          res.error?.message != null && res.error.message !== ''
+            ? res.error.message
+            : 'Failed to submit assessment';
+        toast.error(errorMessage);
       }
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || 'Failed to submit assessment';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const msg: string = error.response?.data?.message ?? 'Failed to submit assessment';
       toast.error(msg);
-      console.error('Submit assessment failed', e);
     }
   };
 
-  const handleBackFromAssessment = () => {
+  const handleBackFromAssessment = (): void => {
     setShowAssessment(false);
     setActiveAssessment(null);
     // Refresh objectives to reflect newly generated learning paths
     setLoading(true);
-    fetchObjectives();
+    fetchObjectives().catch((error: unknown): void => {
+      console.error('Error fetching objectives:', error);
+    });
   };
 
   // Setup learning path (generate paths + modules) with loading modal
-  const setupLearningPath = async (objectiveId: string) => {
-    console.log('setupLearningPath called with objectiveId:', objectiveId);
+  const setupLearningPath = async (objectiveId: string): Promise<void> => {
     try {
       setShowAssessment(false);
       setSetupLoading(true);
-      console.log('Calling generateLearningPaths API...');
       const pathsRes = await apiService.generateLearningPaths(objectiveId);
-      console.log('generateLearningPaths response:', pathsRes);
 
-      if (!pathsRes.success) {
-        const errorMsg = pathsRes?.error?.message || pathsRes?.message || 'Paths generation failed';
-        console.error('Paths generation failed:', errorMsg);
+      if (pathsRes.success !== true) {
+        const errorMsg: string =
+          pathsRes.error?.message ?? pathsRes.message ?? 'Paths generation failed';
         throw new Error(errorMsg);
       }
 
-      const paths = (pathsRes.data as any[]) || [];
-      console.log('Generated paths:', paths);
-      const first = paths[0];
+      const paths = Array.isArray(pathsRes.data) ? (pathsRes.data as Array<{ id: string }>) : [];
+      const first = paths.length > 0 ? paths[0] : undefined;
 
-      if (first) {
-        console.log('Generating modules for first path:', first.id);
+      if (first != null) {
         try {
           await apiService.generatePathModules(objectiveId, first.id);
-        } catch (moduleError) {
-          console.warn('Module generation failed (non-critical):', moduleError);
+        } catch (_moduleError: unknown) {
+          // Module generation is non-critical, continue
         }
-        console.log('Navigating to path:', `/objectives/${objectiveId}/paths/${first.id}`);
         navigate(`/objectives/${objectiveId}/paths/${first.id}`);
       } else {
-        console.error('No paths in response');
         toast.error('No path generated');
       }
-    } catch (e: any) {
-      console.error('setupLearningPath error:', e);
-      console.error('Error stack:', e?.stack);
-      const msg =
-        e?.response?.data?.error?.message ||
-        e?.response?.data?.message ||
-        e?.message ||
-        'Failed to set up learning path';
+    } catch (err: unknown) {
+      const error = err as Error & {
+        response?: { data?: { error?: { message?: string }; message?: string } };
+      };
+      const msg: string =
+        error.response?.data?.error?.message ??
+        error.response?.data?.message ??
+        (error.message !== '' ? error.message : 'Failed to set up learning path');
       toast.error(msg);
     } finally {
       setSetupLoading(false);
     }
   };
 
-  const handleViewDetails = (objectiveId: string) => {
-    const obj = objectives.find(o => o.id === objectiveId) || null;
+  const handleViewDetails = (objectiveId: string): void => {
+    const obj = objectives.find((o): boolean => o.id === objectiveId) ?? null;
     setSelectedObjective(obj);
   };
 
-  const handleStartLearning = (objectiveId: string) => {
-    const obj = objectives.find(o => o.id === objectiveId) || null;
+  const handleStartLearning = (objectiveId: string): void => {
+    const obj = objectives.find((o): boolean => o.id === objectiveId) ?? null;
     setSelectedObjective(obj);
   };
 
-  const handleCreateObjective = () => {
+  const handleCreateObjective = (): void => {
     setShowCreateModal(true);
   };
 
-  const openDeleteConfirm = (objectiveId: string) => {
-    const obj = objectives.find(o => o.id === objectiveId);
+  const openDeleteConfirm = (objectiveId: string): void => {
+    const obj = objectives.find((o): boolean => o.id === objectiveId);
     setConfirmDeleteId(objectiveId);
-    setConfirmDeleteTitle(obj?.title || 'this objective');
+    setConfirmDeleteTitle(obj?.title ?? 'this objective');
   };
 
-  const closeDeleteConfirm = () => {
+  const closeDeleteConfirm = (): void => {
     setConfirmDeleteId(null);
     setConfirmDeleteTitle('');
   };
 
-  const confirmDeleteObjective = async () => {
-    if (!confirmDeleteId) return;
+  const confirmDeleteObjective = async (): Promise<void> => {
+    if (confirmDeleteId == null || confirmDeleteId === '') {
+      return;
+    }
     try {
       const res = await apiService.deleteObjective(confirmDeleteId);
-      if (res.success) {
-        setObjectives(prev => prev.filter(o => o.id !== confirmDeleteId));
+      if (res.success === true) {
+        setObjectives((prev: LearningObjective[]): LearningObjective[] =>
+          prev.filter((o): boolean => o.id !== confirmDeleteId)
+        );
         toast.success('Objective deleted');
       } else {
-        toast.error(res?.error?.message || 'Failed to delete objective');
+        const errorMessage: string =
+          res.error?.message != null && res.error.message !== ''
+            ? res.error.message
+            : 'Failed to delete objective';
+        toast.error(errorMessage);
       }
-    } catch (e) {
+    } catch (err: unknown) {
       toast.error('Failed to delete objective');
     } finally {
       closeDeleteConfirm();
@@ -475,31 +526,40 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   }): Promise<boolean> => {
     try {
       const res = await apiService.createObjective(objectiveData);
-      if (res.success && res.data) {
-        setObjectives(prev => [res.data as any, ...prev]);
+      if (res.success === true && res.data != null) {
+        const newObjective = res.data as unknown as LearningObjective;
+        setObjectives((prev: LearningObjective[]): LearningObjective[] => [newObjective, ...prev]);
         toast.success('Objective created');
         return true;
       } else {
-        toast.error(res?.error?.message || 'Failed to create objective');
+        const errorMessage: string =
+          res.error?.message != null && res.error.message !== ''
+            ? res.error.message
+            : 'Failed to create objective';
+        toast.error(errorMessage);
         return false;
       }
-    } catch (e: any) {
-      console.error('Create objective failed', e);
-      const msg = e?.response?.data?.message || 'Failed to create objective';
+    } catch (err: unknown) {
+      console.error('Create objective failed', err);
+      const error = err as { response?: { data?: { message?: string } } };
+      const msg: string = error.response?.data?.message ?? 'Failed to create objective';
       toast.error(msg);
       return false;
     }
   };
 
-  if (loading) {
+  if (loading === true) {
     return (
       <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
         <div className="animate-pulse">
-          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
+          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4" />
           <div className="space-y-4">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded-lg"></div>
-            ))}
+            {Array.from(
+              { length: 2 },
+              (_unused: unknown, i: number): JSX.Element => (
+                <div key={i} className="h-32 bg-slate-200 rounded-lg" />
+              )
+            )}
           </div>
         </div>
       </div>
@@ -507,18 +567,19 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   }
 
   // Show assessment if active
-  if (showAssessment && activeAssessment) {
+  if (showAssessment === true && activeAssessment != null) {
     return (
       <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
         <SkillAssessment
           assessment={activeAssessment}
-          onComplete={result => {
-            console.log('Assessment completed:', result);
+          onComplete={(): void => {
             // The SkillAssessment component will handle the backend submission internally
           }}
           onSubmitResult={handleSubmitAssessmentResult}
           onBack={handleBackFromAssessment}
-          onSetupLearningPath={(objectiveId: string) => setupLearningPath(objectiveId)}
+          onSetupLearningPath={async (objectiveId: string): Promise<void> => {
+            await setupLearningPath(objectiveId);
+          }}
         />
       </div>
     );
@@ -527,7 +588,7 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 ${className}`}>
       {/* Objective Details Modal */}
-      {selectedObjective && (
+      {selectedObjective != null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-2xl">
             <div className="flex items-start justify-between mb-4">
@@ -536,7 +597,9 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
                 <p className="text-slate-600 text-sm">{selectedObjective.description}</p>
               </div>
               <button
-                onClick={() => setSelectedObjective(null)}
+                onClick={(): void => {
+                  setSelectedObjective(null);
+                }}
                 className="px-3 py-1 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
               >
                 Close
@@ -552,7 +615,10 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
                 <div className="text-lg font-bold text-green-600">
-                  {selectedObjective.learningPaths.filter(p => p.isCompleted).length}
+                  {
+                    selectedObjective.learningPaths.filter((p): boolean => p.isCompleted === true)
+                      .length
+                  }
                 </div>
                 <div className="text-xs text-slate-600">Completed</div>
               </div>
@@ -560,8 +626,11 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
                 <div className="text-lg font-bold text-purple-600">
                   {selectedObjective.learningPaths.length > 0
                     ? Math.round(
-                        selectedObjective.learningPaths.reduce((s, p) => s + (p.progress || 0), 0) /
-                          selectedObjective.learningPaths.length
+                        selectedObjective.learningPaths.reduce((s: number, p): number => {
+                          const progressValue: number =
+                            typeof p.progress === 'number' ? p.progress : 0;
+                          return s + progressValue;
+                        }, 0) / selectedObjective.learningPaths.length
                       )
                     : 0}
                   %
@@ -573,34 +642,36 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-2">Learning Paths</h4>
               <div className="space-y-2 max-h-80 overflow-auto pr-1">
-                {selectedObjective.learningPaths.map(path => (
-                  <div
-                    key={path.id}
-                    className="flex items-center justify-between border border-slate-200 rounded-lg p-3"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800">{path.title}</div>
-                      <div className="text-xs text-slate-500">{path.description}</div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-20 bg-slate-200 rounded-full h-1">
-                        <div
-                          className="bg-indigo-500 h-1 rounded-full"
-                          style={{ width: `${path.progress}%` }}
-                        />
+                {selectedObjective.learningPaths.map(
+                  (path): JSX.Element => (
+                    <div
+                      key={path.id}
+                      className="flex items-center justify-between border border-slate-200 rounded-lg p-3"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-slate-800">{path.title}</div>
+                        <div className="text-xs text-slate-500">{path.description}</div>
                       </div>
-                      <span className="text-xs text-slate-500">{path.progress}%</span>
-                      <button
-                        onClick={() =>
-                          navigate(`/objectives/${selectedObjective.id}/paths/${path.id}`)
-                        }
-                        className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700"
-                      >
-                        Open
-                      </button>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-20 bg-slate-200 rounded-full h-1">
+                          <div
+                            className="bg-indigo-500 h-1 rounded-full"
+                            style={{ width: `${path.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-500">{path.progress}%</span>
+                        <button
+                          onClick={(): void => {
+                            navigate(`/objectives/${selectedObjective.id}/paths/${path.id}`);
+                          }}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700"
+                        >
+                          Open
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
                 {selectedObjective.learningPaths.length === 0 && (
                   <div className="text-sm text-slate-500">No learning paths yet.</div>
                 )}
@@ -610,7 +681,7 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
         </div>
       )}
       {/* Starting Assessment Modal */}
-      {startingObjectiveId && !showAssessment && (
+      {startingObjectiveId != null && startingObjectiveId !== '' && showAssessment === false && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
             <div className="flex items-center space-x-3 mb-3">
@@ -652,17 +723,19 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
         </div>
       ) : (
         <div className="space-y-6">
-          {objectives.map(objective => (
-            <ObjectiveCard
-              key={objective.id}
-              objective={objective}
-              onStartAssessment={handleStartAssessment}
-              onViewDetails={handleViewDetails}
-              onStartLearning={handleStartLearning}
-              onDelete={openDeleteConfirm}
-              isStarting={startingObjectiveId === objective.id}
-            />
-          ))}
+          {objectives.map(
+            (objective): JSX.Element => (
+              <ObjectiveCard
+                key={objective.id}
+                objective={objective}
+                onStartAssessment={handleStartAssessment}
+                onViewDetails={handleViewDetails}
+                onStartLearning={handleStartLearning}
+                onDelete={openDeleteConfirm}
+                isStarting={startingObjectiveId === objective.id}
+              />
+            )
+          )}
         </div>
       )}
 
@@ -676,19 +749,24 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {objectives.filter(o => o.status === 'in_progress').length}
+                {objectives.filter((o): boolean => o.status === 'in_progress').length}
               </div>
               <div className="text-sm text-slate-600">In Progress</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {objectives.filter(o => o.status === 'completed').length}
+                {objectives.filter((o): boolean => o.status === 'completed').length}
               </div>
               <div className="text-sm text-slate-600">Completed</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">
-                {Math.round(objectives.reduce((sum, o) => sum + o.progress, 0) / objectives.length)}
+                {objectives.length > 0
+                  ? Math.round(
+                      objectives.reduce((sum: number, o): number => sum + o.progress, 0) /
+                        objectives.length
+                    )
+                  : 0}
                 %
               </div>
               <div className="text-sm text-slate-600">Avg Progress</div>
@@ -698,7 +776,7 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
       )}
 
       {/* Delete Confirmation Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId != null && confirmDeleteId !== '' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Delete objective</h3>
@@ -726,7 +804,7 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
       )}
 
       {/* Setup Loading Modal */}
-      {setupLoading && (
+      {setupLoading === true && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6 w-full max-w-md">
             <div className="flex items-center space-x-3 mb-2">
@@ -743,8 +821,10 @@ const LearningObjectivesDashboard: React.FC<LearningObjectivesDashboardProps> = 
 
       {/* Create Objective Modal */}
       <CreateObjectiveModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        isOpen={showCreateModal === true}
+        onClose={(): void => {
+          setShowCreateModal(false);
+        }}
         onCreate={handleCreateObjectiveSubmit}
       />
     </div>

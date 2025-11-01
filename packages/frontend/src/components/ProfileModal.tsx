@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { User } from '@/types';
-import { AuthService } from '@/services/firebase';
+import type React from 'react';
+import { useState } from 'react';
+import type { User } from '@/types';
 import { toast } from 'react-hot-toast';
 
 interface ProfileModalProps {
@@ -10,7 +10,13 @@ interface ProfileModalProps {
   onUpdate: (updatedUser: User) => void;
 }
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUpdate }) => {
+// eslint-disable-next-line max-lines-per-function
+const ProfileModal: React.FC<ProfileModalProps> = ({
+  user,
+  isOpen,
+  onClose,
+  onUpdate,
+}): JSX.Element | null => {
   const [formData, setFormData] = useState({
     name: user.name,
     language: user.preferences.language,
@@ -20,7 +26,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     setLoading(true);
 
@@ -43,37 +49,39 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
       // await apiService.updateUserProfile(user.id, updatedUser);
 
       onUpdate(updatedUser);
-      toast.success('Profil mis à jour avec succès !');
+      toast.success('Profile updated successfully!');
       onClose();
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour du profil');
+    } catch (error: unknown) {
+      toast.error('Error updating profile');
       console.error('Profile update error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev): typeof formData => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
-  if (!isOpen) return null;
+  if (isOpen !== true) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="px-6 py-4 border-b border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900">Modifier le profil</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Edit Profile</h3>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           <div>
             <label htmlFor="name" className="label">
-              Nom complet
+              Full Name
             </label>
             <input
               id="name"
@@ -88,7 +96,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
 
           <div>
             <label htmlFor="language" className="label">
-              Langue
+              Language
             </label>
             <select
               id="language"
@@ -105,7 +113,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
 
           <div>
             <label htmlFor="studyMode" className="label">
-              Mode d'étude
+              Study Mode
             </label>
             <select
               id="studyMode"
@@ -114,15 +122,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
               onChange={handleInputChange}
               className="input"
             >
-              <option value="flashcards">Flashcards uniquement</option>
-              <option value="quiz">Quiz uniquement</option>
-              <option value="mixed">Mixte</option>
+              <option value="flashcards">Flashcards only</option>
+              <option value="quiz">Quiz only</option>
+              <option value="mixed">Mixed</option>
             </select>
           </div>
 
           <div>
             <label htmlFor="sessionLength" className="label">
-              Durée de session (minutes)
+              Session Duration (minutes)
             </label>
             <input
               id="sessionLength"
@@ -146,16 +154,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded"
             />
             <label htmlFor="notifications" className="ml-2 text-sm text-slate-700">
-              Recevoir les notifications
+              Receive notifications
             </label>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              Annuler
+              Cancel
             </button>
             <button type="submit" disabled={loading} className="btn btn-primary">
-              {loading ? 'Mise à jour...' : 'Sauvegarder'}
+              {loading ? 'Updating...' : 'Save'}
             </button>
           </div>
         </form>

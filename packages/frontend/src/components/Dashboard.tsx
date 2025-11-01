@@ -1,16 +1,16 @@
-import React from 'react';
+import type React from 'react';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import LearningObjectivesDashboard from './LearningObjectivesDashboard';
 
 interface DashboardProps {
-  plans?: any[];
-  onStartStudy?: any;
-  onCreatePlan?: any;
-  onUpdatePlan?: any;
-  onDeletePlan?: any;
+  plans?: unknown[];
+  onStartStudy?: () => void;
+  onCreatePlan?: () => void;
+  onUpdatePlan?: () => void;
+  onDeletePlan?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = () => {
+const Dashboard: React.FC<DashboardProps> = (): JSX.Element => {
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-8">

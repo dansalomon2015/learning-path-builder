@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Flashcard } from '../types';
+import type React from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import type { Flashcard } from '../types';
 import { CheckCircle2 } from 'lucide-react';
 
 interface ModuleFlashcardStudyProps {
@@ -9,17 +10,12 @@ interface ModuleFlashcardStudyProps {
   objectiveId?: string;
   pathId?: string;
   moduleId?: string;
-  initialMasteredCardIds?: string[]; // IDs des cartes maîtrisées sauvegardées
+  initialMasteredCardIds?: string[]; // IDs of mastered cards saved from previous sessions
   onProgressUpdate?: (masteryPercentage: number, masteredCardIds: string[]) => Promise<void>;
 }
 
-// Helper function to shuffle an array
-const shuffleArray = <T,>(array: T[]): T[] => {
-  return [...array].sort(() => Math.random() - 0.5);
-};
-
 // Helper function to format time
-const formatTime = (totalSeconds: number) => {
+const formatTime = (totalSeconds: number): string => {
   const minutes = Math.floor(totalSeconds / 60)
     .toString()
     .padStart(2, '0');
@@ -27,74 +23,82 @@ const formatTime = (totalSeconds: number) => {
   return `${minutes}:${seconds}`;
 };
 
+// eslint-disable-next-line max-lines-per-function
 const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
   flashcards,
   onComplete,
-  onBack,
-  objectiveId,
-  pathId,
-  moduleId,
+  onBack: _onBack,
+  objectiveId: _objectiveId,
+  pathId: _pathId,
+  moduleId: _moduleId,
   initialMasteredCardIds = [],
   onProgressUpdate,
-}) => {
+}): JSX.Element => {
   const [startTime] = useState<number>(Date.now());
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [key, setKey] = useState(0); // Used to reset animation state
-  // Initialiser avec les cartes maîtrisées sauvegardées
-  const [masteredCards, setMasteredCards] = useState<Set<string>>(
-    new Set(initialMasteredCardIds || [])
-  );
+  // Initialize with saved mastered cards
+  const [masteredCards, setMasteredCards] = useState<Set<string>>(new Set(initialMasteredCardIds));
   const [sessionFinished, setSessionFinished] = useState(false);
   const savingProgressRef = useRef(false);
 
-  // Réinitialiser les cartes maîtrisées si initialMasteredCardIds change (quand le module est rechargé)
+  // Reset mastered cards if initialMasteredCardIds changes (when module is reloaded)
   const initialMasteredCardIdsString = useMemo(
-    () => (initialMasteredCardIds || []).sort().join(','),
+    (): string => initialMasteredCardIds.sort().join(','),
     [initialMasteredCardIds]
   );
 
-  useEffect(() => {
-    // Initialiser ou réinitialiser avec les cartes maîtrisées sauvegardées
-    if (initialMasteredCardIds && initialMasteredCardIds.length >= 0) {
-      setMasteredCards(new Set(initialMasteredCardIds));
+  useEffect((): void => {
+    // Initialize or reset with saved mastered cards
+    setMasteredCards(new Set(initialMasteredCardIds));
+  }, [initialMasteredCardIdsString, initialMasteredCardIds]); // Triggers only if the IDs list changes
+
+  useEffect((): (() => void) | undefined => {
+    if (sessionFinished === true) {
+      return undefined;
     }
-  }, [initialMasteredCardIdsString]); // Se déclenche uniquement si la liste des IDs change
 
-  useEffect(() => {
-    if (sessionFinished) return;
-
-    const timer = setInterval(() => {
+    const timer = setInterval((): void => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
 
-    return () => clearInterval(timer);
+    return (): void => {
+      clearInterval(timer);
+    };
   }, [startTime, sessionFinished]);
 
-  const card = useMemo(() => flashcards[currentIndex], [flashcards, currentIndex]);
+  const card = useMemo(
+    (): Flashcard | undefined => flashcards[currentIndex],
+    [flashcards, currentIndex]
+  );
   const progressPercentage = useMemo(
-    () => ((currentIndex + 1) / flashcards.length) * 100,
+    (): number => ((currentIndex + 1) / flashcards.length) * 100,
     [currentIndex, flashcards.length]
   );
 
-  // Calculate module mastery percentage: (cartes maîtrisées / total) × 100
-  const calculateModuleMastery = useCallback(() => {
-    if (flashcards.length === 0) return 0;
+  // Calculate module mastery percentage: (mastered cards / total) × 100
+  const calculateModuleMastery = useCallback((): number => {
+    if (flashcards.length === 0) {
+      return 0;
+    }
     const percentage = (masteredCards.size / flashcards.length) * 100;
     return Math.round(percentage);
-  }, [masteredCards.size, flashcards.length]);
+  }, [masteredCards, flashcards.length]);
 
   // Save progress to backend
   const saveProgress = useCallback(
-    async (masteryPercentage: number, masteredCardIdsArray: string[]) => {
-      if (savingProgressRef.current) return; // Prevent multiple simultaneous saves
+    async (masteryPercentage: number, masteredCardIdsArray: string[]): Promise<void> => {
+      if (savingProgressRef.current === true) {
+        return; // Prevent multiple simultaneous saves
+      }
 
-      if (onProgressUpdate) {
+      if (onProgressUpdate != null) {
         savingProgressRef.current = true;
         try {
           await onProgressUpdate(masteryPercentage, masteredCardIdsArray);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Failed to save progress:', error);
         } finally {
           savingProgressRef.current = false;
@@ -105,46 +109,47 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
   );
 
   const handleNext = useCallback(
-    async (knewIt: boolean) => {
-      if (card) {
-        // Marquer la carte comme maîtrisée ou non
-        setMasteredCards(prev => {
+    (knewIt: boolean): void => {
+      if (card != null) {
+        // Mark card as mastered or not
+        setMasteredCards((prev: Set<string>): Set<string> => {
           const updated = new Set(prev);
-          if (knewIt) {
-            // Good → marquer comme maîtrisée
+          if (knewIt === true) {
+            // Good → mark as mastered
             updated.add(card.id);
           } else {
-            // Again → retirer de la liste des maîtrisées
+            // Again → remove from mastered list
             updated.delete(card.id);
           }
 
-          // Calculer le nouveau pourcentage de maîtrise
+          // Calculate new mastery percentage and save
           const newMastery =
             flashcards.length > 0 ? Math.round((updated.size / flashcards.length) * 100) : 0;
-
-          // Convertir le Set en Array pour la sauvegarde
           const masteredCardIdsArray = Array.from(updated);
 
-          // Sauvegarder immédiatement
-          setTimeout(() => {
-            saveProgress(newMastery, masteredCardIdsArray);
+          // Save immediately
+          setTimeout((): void => {
+            saveProgress(newMastery, masteredCardIdsArray).catch((err: unknown): undefined => {
+              console.error('Error saving progress:', err);
+              return undefined;
+            });
           }, 100);
 
           return updated;
         });
       }
 
-      // Navigation vers la carte suivante
+      // Navigate to next card
       if (currentIndex < flashcards.length - 1) {
         setIsFlipped(false);
-        setTimeout(() => {
-          setCurrentIndex(prev => prev + 1);
-          setKey(prev => prev + 1);
+        setTimeout((): void => {
+          setCurrentIndex((prev: number): number => prev + 1);
+          setKey((prev: number): number => prev + 1);
         }, 150);
       } else {
-        // Toutes les flashcards ont été vues
-        // Sauvegarder le progrès final et terminer la session
-        setTimeout(async () => {
+        // All flashcards have been viewed
+        // Save final progress and complete the session
+        setTimeout(async (): Promise<void> => {
           const finalMastery = calculateModuleMastery();
           const masteredCardIdsArray = Array.from(masteredCards);
           await saveProgress(finalMastery, masteredCardIdsArray);
@@ -153,15 +158,23 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
         }, 300);
       }
     },
-    [currentIndex, flashcards.length, card, onComplete, calculateModuleMastery, saveProgress]
+    [
+      currentIndex,
+      flashcards.length,
+      card,
+      onComplete,
+      calculateModuleMastery,
+      saveProgress,
+      masteredCards,
+    ]
   );
 
-  // Calculer le pourcentage de maîtrise du module
-  const masteryPercentage = useMemo(() => {
+  // Calculate module mastery percentage
+  const masteryPercentage = useMemo((): number => {
     return calculateModuleMastery();
   }, [calculateModuleMastery]);
 
-  if (sessionFinished) {
+  if (sessionFinished === true) {
     return (
       <div className="text-center bg-white p-8 rounded-xl shadow-lg animate-fade-in">
         <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -180,7 +193,7 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
     );
   }
 
-  if (!card) {
+  if (card == null) {
     return <div>Loading...</div>;
   }
 
@@ -209,9 +222,11 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
       <div className="w-full h-80 [perspective:1000px]" key={key}>
         <div
           className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${
-            isFlipped ? '[transform:rotateY(180deg)]' : ''
+            isFlipped === true ? '[transform:rotateY(180deg)]' : ''
           }`}
-          onClick={() => setIsFlipped(!isFlipped)}
+          onClick={(): void => {
+            setIsFlipped(!isFlipped);
+          }}
         >
           <div className="absolute w-full h-full bg-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [backface-visibility:hidden] cursor-pointer border-2 border-slate-200">
             <p className="text-2xl md:text-3xl font-semibold text-slate-800">{card.question}</p>
@@ -219,7 +234,7 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
           <div className="absolute w-full h-full bg-indigo-500 text-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [transform:rotateY(180deg)] [backface-visibility:hidden] cursor-pointer">
             <div className="text-center">
               <p className="text-xl md:text-2xl font-medium mb-4">{card.answer}</p>
-              {card.explanation && (
+              {card.explanation != null && card.explanation !== '' && (
                 <p className="text-sm text-indigo-100 mt-4 italic">{card.explanation}</p>
               )}
             </div>
@@ -232,13 +247,17 @@ const ModuleFlashcardStudy: React.FC<ModuleFlashcardStudyProps> = ({
       {/* Action Buttons */}
       <div className="mt-8 flex justify-center gap-4">
         <button
-          onClick={() => handleNext(false)}
+          onClick={(): void => {
+            handleNext(false);
+          }}
           className="px-10 py-4 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-colors transform hover:scale-105"
         >
           Again
         </button>
         <button
-          onClick={() => handleNext(true)}
+          onClick={(): void => {
+            handleNext(true);
+          }}
           className="px-10 py-4 bg-green-100 text-green-700 rounded-xl font-bold text-lg hover:bg-green-200 transition-colors transform hover:scale-105"
         >
           Good

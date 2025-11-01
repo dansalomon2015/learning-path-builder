@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { XIcon, AlertTriangleIcon } from './icons';
 
 interface ConfirmationModalProps {
@@ -21,8 +21,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   isDestructive = false,
-}) => {
-  if (!isOpen) return null;
+}): JSX.Element | null => {
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -53,7 +55,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {cancelText}
             </button>
             <button
-              onClick={() => {
+              onClick={(): void => {
                 onConfirm();
                 onClose();
               }}

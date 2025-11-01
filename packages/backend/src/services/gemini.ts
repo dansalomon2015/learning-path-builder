@@ -1,9 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 import { logger } from '@/utils/logger';
-import { Flashcard, QuizQuestion } from '@/types';
+import { type Flashcard, type QuizQuestion } from '@/types';
 
 class GeminiService {
-  private genAI: GoogleGenAI;
+  private readonly genAI: GoogleGenAI;
 
   constructor() {
     try {
@@ -11,7 +11,7 @@ class GeminiService {
         apiKey: 'AIzaSyAX8NG76dIXq44CS6PH_n7TtqWcrxFYbts', // TEMPORARY: Hardcoded for development
       });
       logger.info('Gemini AI service initialized successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize Gemini AI service:', error);
       throw error;
     }
@@ -27,7 +27,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseFlashcardsFromResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating flashcards:', error);
       throw error;
     }
@@ -43,7 +43,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseQuizQuestionsFromResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating quiz questions:', error);
       throw error;
     }
@@ -58,7 +58,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseDocumentProcessingResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error processing document:', error);
       throw error;
     }
@@ -66,7 +66,7 @@ class GeminiService {
 
   async generateAdaptiveQuestions(
     topic: string,
-    userPerformance: any[],
+    userPerformance: Array<Record<string, unknown>>,
     currentDifficulty: string
   ): Promise<QuizQuestion[]> {
     try {
@@ -74,7 +74,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseQuizQuestionsFromResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating adaptive questions:', error);
       throw error;
     }
@@ -90,7 +90,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return response.trim();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating explanation:', error);
       throw error;
     }
@@ -112,7 +112,7 @@ class GeminiService {
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseQuizQuestionsFromResponse(response);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating assessment:', error);
       throw error;
     }
@@ -153,7 +153,7 @@ class GeminiService {
       const parsed = this.parseLearningPathsFromResponse(response);
       logger.info(`Successfully parsed ${parsed.length} learning paths`);
       return parsed;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error in generateLearningPaths:', error);
       logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw error;
@@ -181,6 +181,10 @@ class GeminiService {
     return this.parseModulesFromResponse(response);
   }
 
+  async generateText(prompt: string): Promise<string> {
+    return await this.callGeminiAPI(prompt);
+  }
+
   private async callGeminiAPI(prompt: string): Promise<string> {
     try {
       logger.debug('Calling Gemini API with prompt length:', prompt.length);
@@ -188,13 +192,13 @@ class GeminiService {
         model: 'gemini-2.5-flash',
         contents: prompt,
       });
-      const text = response.text || '';
+      const text: string = response.text ?? '';
       logger.debug('Gemini API response length:', text.length);
-      if (!text) {
+      if (text === '') {
         logger.warn('Gemini API returned empty response');
       }
       return text;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error calling Gemini API:', error);
       if (error instanceof Error) {
         logger.error('Error message:', error.message);
@@ -271,7 +275,11 @@ Analyze the following document content and extract key educational concepts to c
 Document content:
 ${content.substring(0, 4000)} // Limit content to avoid token limits
 
-${topic ? `Focus on the topic: ${topic}` : 'Extract the main topics covered.'}
+${
+  topic != null && topic !== ''
+    ? `Focus on the topic: ${topic}`
+    : 'Extract the main topics covered.'
+}
 
 Generate flashcards that cover the most important concepts from this document.
 
@@ -296,12 +304,24 @@ Focus on the most important and educational concepts from the document.
 
   private buildAdaptivePrompt(
     topic: string,
-    userPerformance: any[],
+    userPerformance: Array<Record<string, unknown>>,
     currentDifficulty: string
   ): string {
     const performanceSummary = userPerformance
       .slice(-10) // Last 10 attempts
-      .map(p => `Score: ${p.score}, Difficulty: ${p.difficulty}, Time: ${p.responseTime}s`)
+      .map((p: Record<string, unknown>): string => {
+        const score: unknown = p['score'];
+        const difficulty: unknown = p['difficulty'];
+        const responseTime: unknown = p['responseTime'];
+        const scoreStr: string =
+          typeof score === 'number' || typeof score === 'string' ? String(score) : 'N/A';
+        const difficultyStr: string = typeof difficulty === 'string' ? difficulty : 'N/A';
+        const responseTimeStr: string =
+          typeof responseTime === 'number' || typeof responseTime === 'string'
+            ? String(responseTime)
+            : 'N/A';
+        return `Score: ${scoreStr}, Difficulty: ${difficultyStr}, Time: ${responseTimeStr}s`;
+      })
       .join('\n');
 
     return `
@@ -470,9 +490,9 @@ Respond ONLY with JSON in this format:
       const cleaned = this.normalizeJson(response);
       logger.debug('Cleaned JSON (first 500 chars):', cleaned.substring(0, 500));
 
-      const parsed = this.safeParse<any>(cleaned);
+      const parsed = this.safeParse<Record<string, unknown>>(cleaned);
 
-      if (!parsed) {
+      if (parsed == null || !(parsed instanceof Object)) {
         logger.error(
           'Failed to parse JSON. Cleaned response (first 1000 chars):',
           cleaned.substring(0, 1000)
@@ -480,7 +500,7 @@ Respond ONLY with JSON in this format:
         throw new Error('Failed to parse JSON from AI response');
       }
 
-      if (!Array.isArray(parsed.flashcards)) {
+      if (!Array.isArray(parsed['flashcards'])) {
         logger.error('parsed.flashcards is not an array. Parsed object keys:', Object.keys(parsed));
         logger.error(
           'Parsed object (first 1000 chars):',
@@ -488,15 +508,21 @@ Respond ONLY with JSON in this format:
         );
 
         // Essayer de trouver flashcards dans d'autres clés possibles
-        const flashcardsKey = Object.keys(parsed).find(
-          key =>
+        const flashcardsKey = Object.keys(parsed).find((key: string): boolean => {
+          const keyValue: unknown = parsed[key];
+          if (!Array.isArray(keyValue) || keyValue.length === 0) {
+            return false;
+          }
+          const firstElement: unknown = keyValue[0];
+          return (
             key.toLowerCase().includes('flashcard') ||
-            (Array.isArray(parsed[key]) && parsed[key].length > 0 && parsed[key][0]?.question)
-        );
+            (typeof firstElement === 'object' && firstElement != null && 'question' in firstElement)
+          );
+        });
 
-        if (flashcardsKey && Array.isArray(parsed[flashcardsKey])) {
+        if (flashcardsKey != null && Array.isArray(parsed[flashcardsKey])) {
           logger.info(`Found flashcards under key: ${flashcardsKey}`);
-          parsed.flashcards = parsed[flashcardsKey];
+          parsed['flashcards'] = parsed[flashcardsKey];
         } else {
           throw new Error(
             `Flashcards array not found in response. Found keys: ${Object.keys(parsed).join(', ')}`
@@ -504,31 +530,44 @@ Respond ONLY with JSON in this format:
         }
       }
 
-      if (parsed.flashcards.length === 0) {
+      const flashcardsArray: unknown = parsed['flashcards'];
+      if (!Array.isArray(flashcardsArray) || flashcardsArray.length === 0) {
         logger.warn('Flashcards array is empty');
         throw new Error('No flashcards found in AI response');
       }
 
-      logger.info(`Successfully parsed ${parsed.flashcards.length} flashcards`);
+      logger.info(`Successfully parsed ${flashcardsArray.length} flashcards`);
 
-      return parsed.flashcards.map((card: any, index: number) => {
-        if (!card.question || !card.answer) {
+      return flashcardsArray.map((card: Record<string, unknown>, index: number): Flashcard => {
+        const question: unknown = card['question'];
+        const answer: unknown = card['answer'];
+        if (
+          question == null ||
+          answer == null ||
+          typeof question !== 'string' ||
+          typeof answer !== 'string'
+        ) {
           logger.warn(`Flashcard at index ${index} missing question or answer:`, card);
         }
+        const explanation: string | undefined = card['explanation'] as string | undefined;
+        const difficultyValue: string = (card['difficulty'] as string | undefined) ?? 'medium';
         return {
           id: `generated_${Date.now()}_${index}`,
-          question: card.question || 'Question missing',
-          answer: card.answer || 'Answer missing',
-          explanation: card.explanation || undefined,
-          difficulty: card.difficulty || 'medium',
-          category: card.category || 'general',
-          tags: card.tags || [],
-          createdAt: new Date().toISOString(),
+          question: (card['question'] as string | undefined) ?? 'Question missing',
+          answer: (card['answer'] as string | undefined) ?? 'Answer missing',
+          ...(explanation !== undefined && { explanation }),
+          difficulty:
+            difficultyValue === 'easy' || difficultyValue === 'medium' || difficultyValue === 'hard'
+              ? difficultyValue
+              : 'medium',
+          category: (card['category'] as string | undefined) ?? 'general',
+          tags: Array.isArray(card['tags']) ? (card['tags'] as string[]) : [],
+          createdAt: new Date(),
           reviewCount: 0,
           masteryLevel: 0,
         };
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error parsing flashcards:', error);
       if (error instanceof Error) {
         logger.error('Error message:', error.message);
@@ -541,7 +580,10 @@ Respond ONLY with JSON in this format:
     const normalize = (raw: string): string => {
       // Extract JSON inside code fences if present
       const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
-      if (codeFenceMatch && codeFenceMatch[1]) return codeFenceMatch[1].trim();
+      const matchValue: string | undefined = codeFenceMatch?.[1];
+      if (matchValue != null && matchValue !== '') {
+        return matchValue.trim();
+      }
 
       // If extra prose exists, try to find the first '{' and last '}'
       const firstBrace = raw.indexOf('{');
@@ -552,24 +594,29 @@ Respond ONLY with JSON in this format:
       return raw.trim();
     };
 
-    const tryParse = (raw: string): any | null => {
+    const tryParse = (raw: string): Record<string, unknown> | null => {
       try {
-        return JSON.parse(raw);
+        return JSON.parse(raw) as Record<string, unknown>;
       } catch {
         return null;
       }
     };
 
     const cleaned = normalize(response);
-    let parsed = tryParse(cleaned);
+    let parsed: Record<string, unknown> | null = tryParse(cleaned);
 
-    if (!parsed) {
+    if (parsed == null) {
       // Try to coerce common issues: single quotes → double quotes
       const coerced = cleaned.replace(/'([^']*)'/g, '"$1"');
       parsed = tryParse(coerced);
     }
 
-    if (!parsed || !Array.isArray(parsed.questions)) {
+    if (
+      parsed == null ||
+      !(parsed instanceof Object) ||
+      !('questions' in parsed) ||
+      !Array.isArray((parsed as { questions: unknown }).questions)
+    ) {
       logger.error(
         'Gemini response JSON parse failed. Raw response sample:',
         cleaned.slice(0, 400)
@@ -577,22 +624,35 @@ Respond ONLY with JSON in this format:
       throw new Error('Failed to parse quiz questions from AI response');
     }
 
-    return parsed.questions.map((q: any, index: number) => ({
-      id: `quiz_${Date.now()}_${index}`,
-      question: q.question,
-      options: q.options,
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation,
-      difficulty: q.difficulty || 'medium',
-      category: q.category || 'general',
-      usageExample: q.usageExample,
-      skills: q.skills || [],
-    }));
+    const parsedWithQuestions = parsed as { questions: Record<string, unknown>[] };
+    return parsedWithQuestions.questions.map(
+      (q: Record<string, unknown>, index: number): QuizQuestion => {
+        const usageExample: string | undefined = q['usageExample'] as string | undefined;
+        const skills: string[] = Array.isArray(q['skills']) ? (q['skills'] as string[]) : [];
+        return {
+          id: `quiz_${Date.now()}_${index}`,
+          question: q['question'] as string,
+          options: q['options'] as string[],
+          correctAnswer: q['correctAnswer'] as number,
+          explanation: q['explanation'] as string,
+          difficulty: ((q['difficulty'] as string | undefined) ?? 'medium') as
+            | 'easy'
+            | 'medium'
+            | 'hard',
+          category: (q['category'] as string | undefined) ?? 'general',
+          ...(usageExample !== undefined && { usageExample }),
+          ...(skills.length > 0 && { skills }),
+        };
+      }
+    );
   }
 
   private normalizeJson(raw: string): string {
     const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
-    if (codeFenceMatch && codeFenceMatch[1]) return codeFenceMatch[1].trim();
+    const matchValue: string | undefined = codeFenceMatch?.[1];
+    if (matchValue != null && matchValue !== '') {
+      return matchValue.trim();
+    }
     const firstBrace = raw.indexOf('{');
     const lastBrace = raw.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -601,7 +661,7 @@ Respond ONLY with JSON in this format:
     return raw.trim();
   }
 
-  private safeParse<T = any>(raw: string): T | null {
+  private safeParse<T = unknown>(raw: string): T | null {
     try {
       return JSON.parse(raw) as T;
     } catch {
@@ -626,9 +686,9 @@ Respond ONLY with JSON in this format:
     logger.info('Parsing learning paths response...');
     const cleaned = this.normalizeJson(response);
     logger.debug('Cleaned JSON (first 500 chars):', cleaned.substring(0, 500));
-    const parsed = this.safeParse<any>(cleaned);
+    const parsed = this.safeParse<Record<string, unknown>>(cleaned);
 
-    if (!parsed) {
+    if (parsed == null || !(parsed instanceof Object)) {
       logger.error(
         'Failed to parse JSON. Cleaned response (first 1000 chars):',
         cleaned.substring(0, 1000)
@@ -636,7 +696,8 @@ Respond ONLY with JSON in this format:
       throw new Error('Failed to parse learning paths JSON - invalid JSON format');
     }
 
-    if (!Array.isArray(parsed.paths)) {
+    const pathsArray: unknown = parsed['paths'];
+    if (!Array.isArray(pathsArray)) {
       logger.error(
         'Parsed JSON does not contain paths array. Parsed object keys:',
         Object.keys(parsed)
@@ -652,16 +713,36 @@ Respond ONLY with JSON in this format:
       );
     }
 
-    logger.info(`Found ${parsed.paths.length} paths in response`);
-    return parsed.paths.map((p: any) => ({
-      title: p.title || 'Untitled Path',
-      description: p.description || '',
-      category: p.category || 'general',
-      difficulty: (p.difficulty || 'intermediate') as 'beginner' | 'intermediate' | 'advanced',
-      estimatedDuration: Number(p.estimatedDuration) || 6,
-      prerequisites: Array.isArray(p.prerequisites) ? p.prerequisites : [],
-      skills: Array.isArray(p.skills) ? p.skills : [],
-    }));
+    logger.info(`Found ${pathsArray.length} paths in response`);
+    return pathsArray.map(
+      (
+        p: Record<string, unknown>
+      ): {
+        title: string;
+        description: string;
+        category: string;
+        difficulty: 'beginner' | 'intermediate' | 'advanced';
+        estimatedDuration: number;
+        prerequisites: string[];
+        skills: string[];
+      } => ({
+        title: (p['title'] as string | undefined) ?? 'Untitled Path',
+        description: (p['description'] as string | undefined) ?? '',
+        category: (p['category'] as string | undefined) ?? 'general',
+        difficulty: ((p['difficulty'] as string | undefined) ?? 'intermediate') as
+          | 'beginner'
+          | 'intermediate'
+          | 'advanced',
+        estimatedDuration:
+          typeof p['estimatedDuration'] === 'number' &&
+          !isNaN(p['estimatedDuration']) &&
+          p['estimatedDuration'] > 0
+            ? p['estimatedDuration']
+            : 6,
+        prerequisites: Array.isArray(p['prerequisites']) ? (p['prerequisites'] as string[]) : [],
+        skills: Array.isArray(p['skills']) ? (p['skills'] as string[]) : [],
+      })
+    );
   }
 
   private parseModulesFromResponse(response: string): Array<{
@@ -671,17 +752,34 @@ Respond ONLY with JSON in this format:
     duration: number;
   }> {
     const cleaned = this.normalizeJson(response);
-    const parsed = this.safeParse<any>(cleaned);
-    if (!parsed || !Array.isArray(parsed.modules)) {
+    const parsed = this.safeParse<Record<string, unknown>>(cleaned);
+    const modulesArray: unknown = parsed != null ? parsed['modules'] : undefined;
+    if (parsed == null || !(parsed instanceof Object) || !Array.isArray(modulesArray)) {
       logger.error('Failed to parse modules JSON:', cleaned.slice(0, 400));
       throw new Error('Failed to parse modules from AI response');
     }
-    return parsed.modules.map((m: any) => ({
-      title: m.title,
-      description: m.description,
-      type: m.type || 'theory',
-      duration: Number(m.duration) || 4,
-    }));
+    return modulesArray.map(
+      (
+        m: Record<string, unknown>
+      ): {
+        title: string;
+        description: string;
+        type: 'theory' | 'practice' | 'project' | 'assessment';
+        duration: number;
+      } => ({
+        title: m['title'] as string,
+        description: m['description'] as string,
+        type: ((m['type'] as string | undefined) ?? 'theory') as
+          | 'theory'
+          | 'practice'
+          | 'project'
+          | 'assessment',
+        duration:
+          typeof m['duration'] === 'number' && !isNaN(m['duration']) && m['duration'] > 0
+            ? m['duration']
+            : 4,
+      })
+    );
   }
 
   private parseDocumentProcessingResponse(response: string): {
@@ -689,23 +787,37 @@ Respond ONLY with JSON in this format:
     topics: string[];
   } {
     try {
-      const parsed = JSON.parse(response);
+      const parsed = JSON.parse(response) as Record<string, unknown>;
       return {
-        topics: parsed.topics || [],
-        flashcards: parsed.flashcards.map((card: any, index: number) => ({
-          id: `doc_${Date.now()}_${index}`,
-          question: card.question,
-          answer: card.answer,
-          explanation: card.explanation,
-          difficulty: card.difficulty || 'medium',
-          category: card.category || 'general',
-          tags: card.tags || [],
-          createdAt: new Date(),
-          reviewCount: 0,
-          masteryLevel: 0,
-        })),
+        topics: Array.isArray(parsed['topics']) ? (parsed['topics'] as string[]) : [],
+        flashcards: Array.isArray(parsed['flashcards'])
+          ? (parsed['flashcards'] as Array<Record<string, unknown>>).map(
+              (card: Record<string, unknown>, index: number): Flashcard => {
+                const explanation: string | undefined = card['explanation'] as string | undefined;
+                const difficultyValue: string =
+                  (card['difficulty'] as string | undefined) ?? 'medium';
+                return {
+                  id: `doc_${Date.now()}_${index}`,
+                  question: card['question'] as string,
+                  answer: card['answer'] as string,
+                  ...(explanation !== undefined && { explanation }),
+                  difficulty:
+                    difficultyValue === 'easy' ||
+                    difficultyValue === 'medium' ||
+                    difficultyValue === 'hard'
+                      ? difficultyValue
+                      : 'medium',
+                  category: (card['category'] as string | undefined) ?? 'general',
+                  tags: Array.isArray(card['tags']) ? (card['tags'] as string[]) : [],
+                  createdAt: new Date(),
+                  reviewCount: 0,
+                  masteryLevel: 0,
+                };
+              }
+            )
+          : [],
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error parsing document processing response:', error);
       throw new Error('Failed to parse document processing response');
     }
@@ -742,7 +854,7 @@ Respond ONLY with JSON in this format:
       const parsed = this.parseFlashcardsFromResponse(response);
       logger.info(`Successfully generated ${parsed.length} flashcards for module ${module.title}`);
       return parsed;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating module flashcards:', error);
       if (error instanceof Error) {
         logger.error('Error message:', error.message);
@@ -844,7 +956,7 @@ Make sure the content is accurate, educational, and appropriate for ${context.di
         `Successfully generated ${parsed.length} validation quiz questions for module ${module.title}`
       );
       return parsed;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating module validation quiz:', error);
       throw error;
     }
@@ -868,7 +980,7 @@ Make sure the content is accurate, educational, and appropriate for ${context.di
   ): string {
     const flashcardTopics = flashcards
       .slice(0, 10)
-      .map((fc, i) => `${i + 1}. ${fc.question}`)
+      .map((fc: Flashcard, i: number): string => `${i + 1}. ${fc.question}`)
       .join('\n');
 
     return `
@@ -958,7 +1070,7 @@ Ensure questions are challenging but fair for ${context.difficulty} level and va
         `Successfully generated ${parsed.length} suggested resources for module ${module.title}`
       );
       return parsed;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating suggested resources:', error);
       throw error;
     }
@@ -1051,31 +1163,63 @@ Ensure resources are:
     isOptional: boolean;
   }> {
     const cleaned = this.normalizeJson(response);
-    const parsed = this.safeParse<any>(cleaned);
+    const parsed = this.safeParse<Record<string, unknown>>(cleaned);
 
-    if (!parsed || !Array.isArray(parsed.resources)) {
+    const resourcesArray: unknown = parsed != null ? parsed['resources'] : undefined;
+    if (parsed == null || !(parsed instanceof Object) || !Array.isArray(resourcesArray)) {
       logger.error('Failed to parse suggested resources JSON:', cleaned.slice(0, 400));
       throw new Error('Failed to parse suggested resources from AI response');
     }
 
-    return parsed.resources.map((item: any, index: number) => ({
-      id: `resource_${Date.now()}_${index}`,
-      type: (item.type || 'documentation') as
-        | 'documentation'
-        | 'book'
-        | 'article'
-        | 'video'
-        | 'tutorial'
-        | 'official_guide',
-      title: item.title || 'Untitled Resource',
-      description: item.description || '',
-      url: item.url,
-      author: item.author,
-      difficulty: (item.difficulty || 'intermediate') as 'beginner' | 'intermediate' | 'advanced',
-      estimatedTime: Number(item.estimatedTime) || 30,
-      priority: Number(item.priority) || 3,
-      isOptional: Boolean(item.isOptional),
-    }));
+    return resourcesArray.map(
+      (
+        item: Record<string, unknown>,
+        index: number
+      ): {
+        id: string;
+        type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+        title: string;
+        description: string;
+        url?: string;
+        author?: string;
+        difficulty: 'beginner' | 'intermediate' | 'advanced';
+        estimatedTime: number;
+        priority: number;
+        isOptional: boolean;
+      } => {
+        const url: string | undefined = item['url'] as string | undefined;
+        const author: string | undefined = item['author'] as string | undefined;
+        return {
+          id: `resource_${Date.now()}_${index}`,
+          type: ((item['type'] as string | undefined) ?? 'documentation') as
+            | 'documentation'
+            | 'book'
+            | 'article'
+            | 'video'
+            | 'tutorial'
+            | 'official_guide',
+          title: (item['title'] as string | undefined) ?? 'Untitled Resource',
+          description: (item['description'] as string | undefined) ?? '',
+          ...(url !== undefined && { url }),
+          ...(author !== undefined && { author }),
+          difficulty: ((item['difficulty'] as string | undefined) ?? 'intermediate') as
+            | 'beginner'
+            | 'intermediate'
+            | 'advanced',
+          estimatedTime:
+            typeof item['estimatedTime'] === 'number' &&
+            !isNaN(item['estimatedTime']) &&
+            item['estimatedTime'] > 0
+              ? item['estimatedTime']
+              : 30,
+          priority:
+            typeof item['priority'] === 'number' && !isNaN(item['priority']) && item['priority'] > 0
+              ? item['priority']
+              : 3,
+          isOptional: Boolean(item['isOptional']),
+        };
+      }
+    );
   }
 
   // Health check
@@ -1083,7 +1227,7 @@ Ensure resources are:
     try {
       await this.callGeminiAPI('Hello, are you working?');
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Gemini health check failed:', error);
       return false;
     }

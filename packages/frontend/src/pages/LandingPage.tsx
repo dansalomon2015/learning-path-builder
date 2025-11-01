@@ -1,21 +1,22 @@
-import React from 'react';
+import type React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpenIcon, SparklesIcon, TrophyIcon } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
 
-const LandingPage: React.FC = () => {
+// eslint-disable-next-line max-lines-per-function
+const LandingPage: React.FC = (): JSX.Element => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  const handleLogin = () => {
-    if (isAuthenticated) {
+  const handleLogin = (): void => {
+    if (isAuthenticated === true) {
       navigate('/dashboard');
     } else {
       navigate('/auth');
     }
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = (): void => {
     navigate('/auth');
   };
 
@@ -54,12 +55,12 @@ const LandingPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center">
           <h1 className="text-5xl font-bold text-slate-900 mb-6">
-            Apprenez avec l'IA
+            Apprenez avec l&apos;IA
             <span className="text-indigo-600"> FlashLearn</span>
           </h1>
           <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
             Transformez vos documents en flashcards intelligentes et progressez avec un système
-            d'apprentissage adaptatif.
+            d&apos;apprentissage adaptatif.
           </p>
           <div className="flex justify-center space-x-4">
             <button
@@ -82,7 +83,7 @@ const LandingPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">Génération IA</h3>
             <p className="text-slate-600">
-              Créez automatiquement des flashcards à partir de vos documents avec l'IA Gemini.
+              Créez automatiquement des flashcards à partir de vos documents avec l&apos;IA Gemini.
             </p>
           </div>
 
@@ -92,7 +93,7 @@ const LandingPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">Apprentissage Adaptatif</h3>
             <p className="text-slate-600">
-              Le système s'adapte à votre niveau et ajuste la difficulté automatiquement.
+              Le système s&apos;adapte à votre niveau et ajuste la difficulté automatiquement.
             </p>
           </div>
 

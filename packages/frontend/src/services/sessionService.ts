@@ -1,4 +1,4 @@
-import { StudySession, SessionPerformance, Flashcard, LearningPlan } from '../types';
+import type { StudySession, LearningPlan } from '../types';
 
 export interface SessionStats {
   totalSessions: number;
@@ -41,9 +41,9 @@ export interface AdaptiveSettings {
 }
 
 class SessionService {
-  private static instance: SessionService;
+  private static instance: SessionService | undefined;
   private currentSession: SessionProgress | null = null;
-  private adaptiveSettings: AdaptiveSettings = {
+  private readonly adaptiveSettings: AdaptiveSettings = {
     difficultyAdjustment: 'automatic',
     responseTimeThreshold: 5,
     accuracyThreshold: 80,
@@ -52,7 +52,7 @@ class SessionService {
   };
 
   static getInstance(): SessionService {
-    if (!SessionService.instance) {
+    if (SessionService.instance === undefined) {
       SessionService.instance = new SessionService();
     }
     return SessionService.instance;
@@ -90,7 +90,7 @@ class SessionService {
   // Resume an existing session
   resumeSession(sessionId: string): SessionProgress | null {
     const savedSession = this.loadSessionFromStorage(sessionId);
-    if (savedSession) {
+    if (savedSession != null) {
       this.currentSession = savedSession;
       this.currentSession.isPaused = false;
       this.currentSession.lastActivityTime = Date.now();
@@ -102,7 +102,7 @@ class SessionService {
 
   // Pause current session
   pauseSession(): void {
-    if (this.currentSession) {
+    if (this.currentSession != null) {
       this.currentSession.isPaused = true;
       this.currentSession.lastActivityTime = Date.now();
       this.saveSessionToStorage();
@@ -116,7 +116,9 @@ class SessionService {
     responseTime: number,
     difficulty: 'easy' | 'medium' | 'hard'
   ): void {
-    if (!this.currentSession) return;
+    if (this.currentSession == null) {
+      return;
+    }
 
     // Update counters
     if (isCorrect) {
@@ -143,7 +145,9 @@ class SessionService {
 
   // Move to next card
   nextCard(): void {
-    if (!this.currentSession) return;
+    if (this.currentSession == null) {
+      return;
+    }
 
     this.currentSession.currentCardIndex++;
     this.currentSession.lastActivityTime = Date.now();
@@ -152,7 +156,9 @@ class SessionService {
 
   // Complete session
   completeSession(): StudySession | null {
-    if (!this.currentSession) return null;
+    if (this.currentSession == null) {
+      return null;
+    }
 
     const session: StudySession = {
       id: this.currentSession.sessionId,
@@ -197,11 +203,11 @@ class SessionService {
   // Get session statistics
   getSessionStats(): SessionStats {
     const sessions = this.getCompletedSessions();
-    const now = new Date();
 
     // Calculate streaks
     const sortedSessions = sessions.sort(
-      (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+      (a: StudySession, b: StudySession): number =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
 
     let currentStreak = 0;
@@ -217,7 +223,7 @@ class SessionService {
         sessionDate.getDate()
       );
 
-      if (!lastDate) {
+      if (lastDate == null) {
         lastDate = sessionDay;
         tempStreak = 1;
         currentStreak = 1;
@@ -244,23 +250,33 @@ class SessionService {
     longestStreak = Math.max(longestStreak, tempStreak);
 
     // Calculate other stats
-    const totalStudyTime = sessions.reduce((sum, session) => sum + (session.duration || 0), 0) / 60;
+    const totalStudyTime =
+      sessions.reduce(
+        (sum: number, session: StudySession): number => sum + (session.duration ?? 0),
+        0
+      ) / 60;
     const averageSessionLength = sessions.length > 0 ? totalStudyTime / sessions.length : 0;
-    const totalCorrect = sessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+    const totalCorrect = sessions.reduce(
+      (sum: number, session: StudySession): number => sum + (session.correctAnswers ?? 0),
+      0
+    );
     const totalQuestions = sessions.reduce(
-      (sum, session) => sum + (session.totalQuestions || 0),
+      (sum: number, session: StudySession): number => sum + (session.totalQuestions ?? 0),
       0
     );
     const accuracyRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
 
     // Find favorite mode and topic
-    const modeCounts = sessions.reduce((counts, session) => {
-      counts[session.mode] = (counts[session.mode] || 0) + 1;
-      return counts;
-    }, {} as Record<string, number>);
+    const modeCounts = sessions.reduce<Record<string, number>>(
+      (counts: Record<string, number>, session: StudySession): Record<string, number> => {
+        counts[session.mode] = (counts[session.mode] ?? 0) + 1;
+        return counts;
+      },
+      {}
+    );
 
     const favoriteMode = Object.keys(modeCounts).reduce(
-      (a, b) => (modeCounts[a] > modeCounts[b] ? a : b),
+      (a: string, b: string): string => (modeCounts[a] > modeCounts[b] ? a : b),
       'mixed'
     ) as 'flashcards' | 'quiz' | 'mixed';
 
@@ -270,7 +286,10 @@ class SessionService {
       averageSessionLength: Math.round(averageSessionLength),
       currentStreak,
       longestStreak,
-      cardsMastered: sessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0),
+      cardsMastered: sessions.reduce(
+        (sum: number, session: StudySession): number => sum + (session.correctAnswers ?? 0),
+        0
+      ),
       accuracyRate: Math.round(accuracyRate),
       favoriteMode,
       mostStudiedTopic: 'General', // This would need to be calculated from plan data
@@ -290,16 +309,17 @@ class SessionService {
 
     let difficultyAdjustment: 'increase' | 'decrease' | 'maintain' = 'maintain';
     let suggestedMode: 'flashcards' | 'quiz' | 'mixed' = 'mixed';
-    let focusAreas: string[] = [];
+    const focusAreas: string[] = [];
     let estimatedTimeToMastery = 30; // default
 
     // Analyze recent performance
     if (recentSessions.length > 0) {
       const recentAccuracy =
-        recentSessions.reduce((sum, session) => {
-          const sessionAccuracy = session.totalQuestions
-            ? (session.correctAnswers || 0) / session.totalQuestions
-            : 0;
+        recentSessions.reduce((sum: number, session: StudySession): number => {
+          const sessionAccuracy =
+            session.totalQuestions != null && session.totalQuestions > 0
+              ? (session.correctAnswers ?? 0) / session.totalQuestions
+              : 0;
           return sum + sessionAccuracy;
         }, 0) / recentSessions.length;
 
@@ -310,8 +330,10 @@ class SessionService {
       }
 
       // Suggest mode based on performance
-      const flashcardSessions = recentSessions.filter(s => s.mode === 'flashcards');
-      const quizSessions = recentSessions.filter(s => s.mode === 'quiz');
+      const flashcardSessions = recentSessions.filter(
+        (s: StudySession): boolean => s.mode === 'flashcards'
+      );
+      const quizSessions = recentSessions.filter((s: StudySession): boolean => s.mode === 'quiz');
 
       if (flashcardSessions.length > quizSessions.length) {
         suggestedMode = 'quiz';
@@ -335,7 +357,9 @@ class SessionService {
 
   // Private helper methods
   private updatePerformanceAreas(cardId: string, isCorrect: boolean, responseTime: number): void {
-    if (!this.currentSession) return;
+    if (this.currentSession == null) {
+      return;
+    }
 
     // This is a simplified version - in a real app, you'd analyze card categories, topics, etc.
     if (isCorrect && responseTime < this.adaptiveSettings.responseTimeThreshold) {
@@ -369,7 +393,7 @@ class SessionService {
   }
 
   private saveSessionToStorage(): void {
-    if (this.currentSession) {
+    if (this.currentSession != null) {
       localStorage.setItem('currentSession', JSON.stringify(this.currentSession));
     }
   }
@@ -377,11 +401,11 @@ class SessionService {
   private loadSessionFromStorage(sessionId: string): SessionProgress | null {
     try {
       const saved = localStorage.getItem('currentSession');
-      if (saved) {
+      if (saved != null && saved !== '') {
         const session = JSON.parse(saved) as SessionProgress;
         return session.sessionId === sessionId ? session : null;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading session from storage:', error);
     }
     return null;
@@ -399,7 +423,7 @@ class SessionService {
       // Keep only last 100 sessions
       const limitedSessions = sessions.slice(0, 100);
       localStorage.setItem('completedSessions', JSON.stringify(limitedSessions));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving completed session:', error);
     }
   }
@@ -407,8 +431,11 @@ class SessionService {
   private getCompletedSessions(): StudySession[] {
     try {
       const saved = localStorage.getItem('completedSessions');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
+      if (saved != null && saved !== '') {
+        return JSON.parse(saved) as StudySession[];
+      }
+      return [];
+    } catch (error: unknown) {
       console.error('Error loading completed sessions:', error);
       return [];
     }

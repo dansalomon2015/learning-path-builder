@@ -1,28 +1,55 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import {
+import axios from 'axios';
+import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig, AxiosError } from 'axios';
+import type {
   LearningPlan,
   Flashcard,
   QuizQuestion,
   StudySession,
   DocumentUpload,
-  ExportData,
   ApiResponse,
-  PaginatedResponse,
   QuizResult,
-  LearningProgress,
 } from '@/types';
-import { AuthService } from './firebase';
 import { toast } from 'react-hot-toast';
-import Cookies from 'universal-cookie';
 
-const cookies = new Cookies();
+// Helper functions for cookie management
+const getCookie = (name: string): string | undefined => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const cookieValue = parts.pop()?.split(';').shift();
+    return cookieValue;
+  }
+  return undefined;
+};
+
+const setCookie = (
+  name: string,
+  value: string,
+  options?: { path?: string; sameSite?: string; maxAge?: number }
+): void => {
+  let cookieString = `${name}=${value}`;
+  if (options?.path != null) {
+    cookieString += `; path=${options.path}`;
+  }
+  if (options?.sameSite != null) {
+    cookieString += `; SameSite=${options.sameSite}`;
+  }
+  if (options?.maxAge != null) {
+    cookieString += `; max-age=${options.maxAge}`;
+  }
+  document.cookie = cookieString;
+};
 
 class ApiService {
-  private api: AxiosInstance;
+  private readonly api: AxiosInstance;
 
   constructor() {
+    const baseURL: string =
+      typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL !== ''
+        ? import.meta.env.VITE_API_URL
+        : '/api';
     this.api = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || '/api',
+      baseURL,
       timeout: 300000, // allow up to 5 minutes for long-running AI generations
       headers: {
         'Content-Type': 'application/json',
@@ -31,12 +58,14 @@ class ApiService {
 
     // Request interceptor
     this.api.interceptors.request.use(
-      async config => {
+      (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
         // Only use backend JWT for protected routes
-        const backendJwt = cookies.get('jwtToken') || localStorage.getItem('jwtToken');
-        if (backendJwt) {
+        const cookieJwt: string | undefined = getCookie('jwtToken');
+        const storageJwt: string | null = localStorage.getItem('jwtToken');
+        const backendJwt: string | undefined = cookieJwt ?? storageJwt ?? undefined;
+        if (backendJwt != null && backendJwt !== '') {
           config.headers.Authorization = `Bearer ${backendJwt}`;
-        } else if (config.url && !config.url.includes('/auth/')) {
+        } else if (config.url != null && !config.url.includes('/auth/')) {
           // No token for a protected route → warn for easier debugging
           // (Creation endpoints like /objectives are protected)
           // Don't block the request; backend will 401 and the response interceptor will handle UX.
@@ -44,22 +73,24 @@ class ApiService {
         }
         return config;
       },
-      error => {
+      (error: AxiosError): Promise<AxiosError> => {
         return Promise.reject(error);
       }
     );
 
     // Response interceptor
     this.api.interceptors.response.use(
-      (response: AxiosResponse) => {
+      (response: AxiosResponse): AxiosResponse => {
         return response;
       },
-      error => {
+      (error: AxiosError): Promise<AxiosError> => {
         if (error.response?.status === 401) {
           try {
             // localStorage.removeItem('jwtToken');
             // cookies.remove('jwtToken', { path: '/' });
-          } catch {}
+          } catch {
+            // Ignore errors
+          }
           toast.error('Session expirée. Veuillez vous reconnecter.');
         }
         return Promise.reject(error);
@@ -68,60 +99,85 @@ class ApiService {
   }
 
   // Auth
-  async backendLogin(email: string, password: string): Promise<{ jwtToken: string; user?: any }> {
-    const response = await this.api.post('/auth/login', { email, password });
-    const jwt = response.data?.jwtToken;
-    if (jwt) {
-      cookies.set('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
+  async backendLogin(
+    email: string,
+    password: string
+  ): Promise<{ jwtToken: string; user?: Record<string, unknown> }> {
+    const response = await this.api.post<{ jwtToken?: string; user?: Record<string, unknown> }>(
+      '/auth/login',
+      { email, password }
+    );
+    const jwt: string | undefined = response.data.jwtToken;
+    if (jwt != null && jwt !== '') {
+      setCookie('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
       try {
         localStorage.setItem('jwtToken', jwt);
-      } catch {}
+      } catch {
+        // Ignore errors
+      }
     }
-    return { jwtToken: jwt, user: response.data?.user };
+    return { jwtToken: jwt ?? '', user: response.data.user };
   }
 
   async backendRegister(
     name: string,
     email: string,
     password: string
-  ): Promise<{ jwtToken: string; user?: any }> {
-    const response = await this.api.post('/auth/register', { name, email, password });
-    const jwt = response.data?.jwtToken || response.data?.token;
-    if (jwt) {
-      cookies.set('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
+  ): Promise<{ jwtToken: string; user?: Record<string, unknown> }> {
+    const response = await this.api.post<{
+      jwtToken?: string;
+      token?: string;
+      user?: Record<string, unknown>;
+    }>('/auth/register', { name, email, password });
+    const jwt: string | undefined = response.data.jwtToken ?? response.data.token;
+    if (jwt != null && jwt !== '') {
+      setCookie('jwtToken', jwt, { path: '/', sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 });
       try {
         localStorage.setItem('jwtToken', jwt);
-      } catch {}
+      } catch {
+        // Ignore errors
+      }
     }
-    return { jwtToken: jwt, user: response.data?.user };
+    return { jwtToken: jwt ?? '', user: response.data.user };
   }
 
   // Objectives
-  async createObjective(data: any): Promise<ApiResponse<any>> {
-    const response = await this.api.post('/objectives', data);
+  async createObjective(
+    data: Record<string, unknown>
+  ): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>('/objectives', data);
     return response.data;
   }
 
-  async getObjectives(): Promise<ApiResponse<any[]>> {
-    const response = await this.api.get('/objectives');
+  async getObjectives(): Promise<ApiResponse<Array<Record<string, unknown>>>> {
+    const response = await this.api.get<ApiResponse<Array<Record<string, unknown>>>>('/objectives');
     return response.data;
   }
 
-  async getObjective(id: string): Promise<ApiResponse<any>> {
-    const response = await this.api.get(`/objectives/${id}`);
+  async getObjective(id: string): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.get<ApiResponse<Record<string, unknown>>>(`/objectives/${id}`);
     return response.data;
   }
 
-  async deleteObjective(id: string): Promise<ApiResponse<any>> {
-    const response = await this.api.delete(`/objectives/${id}`);
+  async deleteObjective(id: string): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.delete<ApiResponse<Record<string, unknown>>>(
+      `/objectives/${id}`
+    );
     return response.data;
   }
 
   async completeLearningPath(
     objectiveId: string,
     pathId: string
-  ): Promise<ApiResponse<{ learningPaths: any[]; objectiveProgress: number }>> {
-    const response = await this.api.patch(`/objectives/${objectiveId}/paths/${pathId}/complete`);
+  ): Promise<
+    ApiResponse<{ learningPaths: Array<Record<string, unknown>>; objectiveProgress: number }>
+  > {
+    const response = await this.api.patch<
+      ApiResponse<{
+        learningPaths: Array<Record<string, unknown>>;
+        objectiveProgress: number;
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/complete`);
     return response.data;
   }
 
@@ -129,10 +185,13 @@ class ApiService {
     objectiveId: string,
     pathId: string,
     moduleId: string
-  ): Promise<ApiResponse<{ path: any; objectiveProgress: number }>> {
-    const response = await this.api.patch(
-      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/complete`
-    );
+  ): Promise<ApiResponse<{ path: Record<string, unknown>; objectiveProgress: number }>> {
+    const response = await this.api.patch<
+      ApiResponse<{
+        path: Record<string, unknown>;
+        objectiveProgress: number;
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/complete`);
     return response.data;
   }
 
@@ -140,10 +199,20 @@ class ApiService {
     objectiveId: string,
     pathId: string,
     moduleId: string
-  ): Promise<ApiResponse<{ module: any; flashcards?: any[]; suggestedResources?: any[] }>> {
-    const response = await this.api.post(
-      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-content`
-    );
+  ): Promise<
+    ApiResponse<{
+      module: Record<string, unknown>;
+      flashcards?: Flashcard[];
+      suggestedResources?: Array<Record<string, unknown>>;
+    }>
+  > {
+    const response = await this.api.post<
+      ApiResponse<{
+        module: Record<string, unknown>;
+        flashcards?: Flashcard[];
+        suggestedResources?: Array<Record<string, unknown>>;
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-content`);
     return response.data;
   }
 
@@ -151,10 +220,13 @@ class ApiService {
     objectiveId: string,
     pathId: string,
     moduleId: string
-  ): Promise<ApiResponse<{ module: any; validationQuiz?: any[] }>> {
-    const response = await this.api.post(
-      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-validation-quiz`
-    );
+  ): Promise<ApiResponse<{ module: Record<string, unknown>; validationQuiz?: QuizQuestion[] }>> {
+    const response = await this.api.post<
+      ApiResponse<{
+        module: Record<string, unknown>;
+        validationQuiz?: QuizQuestion[];
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-validation-quiz`);
     return response.data;
   }
 
@@ -171,35 +243,63 @@ class ApiService {
       correctAnswers: number;
       totalQuestions: number;
       feedback: Array<{ questionId: string; correct: boolean; explanation?: string }>;
-      module: any;
+      module: Record<string, unknown>;
     }>
   > {
-    const response = await this.api.post(
-      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/validate`,
-      {
-        answers,
-        timeSpent,
-      }
-    );
+    const response = await this.api.post<
+      ApiResponse<{
+        score: number;
+        passed: boolean;
+        correctAnswers: number;
+        totalQuestions: number;
+        feedback: Array<{ questionId: string; correct: boolean; explanation?: string }>;
+        module: Record<string, unknown>;
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/validate`, {
+      answers,
+      timeSpent,
+    });
     return response.data;
   }
 
-  async trackFlashcardSession(
-    objectiveId: string,
-    pathId: string,
-    moduleId: string,
-    flashcardMastery: number,
-    timeSpent?: number,
-    masteredCardIds?: string[]
-  ): Promise<ApiResponse<{ module: any; trend?: 'progression' | 'regression' | 'stable' }>> {
-    const response = await this.api.post(
-      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/flashcard-session`,
-      {
-        flashcardMastery,
-        timeSpent,
-        masteredCardIds,
-      }
-    );
+  async trackFlashcardSession(params: {
+    objectiveId: string;
+    pathId: string;
+    moduleId: string;
+    flashcardMastery: number;
+    timeSpent?: number;
+    masteredCardIds?: string[];
+  }): Promise<
+    ApiResponse<{
+      module: Record<string, unknown>;
+      trend?: 'progression' | 'regression' | 'stable';
+    }>
+  > {
+    const {
+      objectiveId,
+      pathId,
+      moduleId,
+      flashcardMastery,
+      timeSpent,
+      masteredCardIds,
+    }: {
+      objectiveId: string;
+      pathId: string;
+      moduleId: string;
+      flashcardMastery: number;
+      timeSpent?: number;
+      masteredCardIds?: string[];
+    } = params;
+    const response = await this.api.post<
+      ApiResponse<{
+        module: Record<string, unknown>;
+        trend?: 'progression' | 'regression' | 'stable';
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/flashcard-session`, {
+      flashcardMastery,
+      timeSpent,
+      masteredCardIds,
+    });
     return response.data;
   }
 
@@ -209,8 +309,11 @@ class ApiService {
     topic?: string;
     level?: 'beginner' | 'intermediate' | 'advanced';
     count?: number;
-  }): Promise<ApiResponse<any>> {
-    const response = await this.api.post('/assessments/start', payload);
+  }): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
+      '/assessments/start',
+      payload
+    );
     return response.data;
   }
 
@@ -218,27 +321,37 @@ class ApiService {
     assessmentId: string,
     answers: { questionId: string; selectedAnswer: number }[],
     timeSpent: number
-  ): Promise<ApiResponse<any>> {
-    const response = await this.api.post(`/assessments/${assessmentId}/submit`, {
-      answers,
-      timeSpent,
-    });
+  ): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
+      `/assessments/${assessmentId}/submit`,
+      {
+        answers,
+        timeSpent,
+      }
+    );
     return response.data;
   }
 
-  async getAssessmentResult(resultId: string): Promise<ApiResponse<any>> {
-    const response = await this.api.get(`/assessments/results/${resultId}`);
+  async getAssessmentResult(resultId: string): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.get<ApiResponse<Record<string, unknown>>>(
+      `/assessments/results/${resultId}`
+    );
     return response.data;
   }
 
   // Objectives → Generate learning paths
-  async generateLearningPaths(objectiveId: string): Promise<ApiResponse<any>> {
-    const response = await this.api.post(`/objectives/${objectiveId}/generate-paths`);
+  async generateLearningPaths(objectiveId: string): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
+      `/objectives/${objectiveId}/generate-paths`
+    );
     return response.data;
   }
 
-  async generatePathModules(objectiveId: string, pathId: string): Promise<ApiResponse<any>> {
-    const response = await this.api.post(
+  async generatePathModules(
+    objectiveId: string,
+    pathId: string
+  ): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
       `/objectives/${objectiveId}/paths/${pathId}/generate-modules`
     );
     return response.data;
@@ -246,12 +359,12 @@ class ApiService {
 
   // Learning Plans
   async getLearningPlans(): Promise<ApiResponse<LearningPlan[]>> {
-    const response = await this.api.get('/learning-plans');
+    const response = await this.api.get<ApiResponse<LearningPlan[]>>('/learning-plans');
     return response.data;
   }
 
   async getLearningPlan(id: string): Promise<ApiResponse<LearningPlan>> {
-    const response = await this.api.get(`/learning-plans/${id}`);
+    const response = await this.api.get<ApiResponse<LearningPlan>>(`/learning-plans/${id}`);
     return response.data;
   }
 
@@ -262,7 +375,7 @@ class ApiService {
     skillLevel: string;
     mode: string;
   }): Promise<ApiResponse<LearningPlan>> {
-    const response = await this.api.post('/learning-plans', data);
+    const response = await this.api.post<ApiResponse<LearningPlan>>('/learning-plans', data);
     return response.data;
   }
 
@@ -270,12 +383,12 @@ class ApiService {
     id: string,
     data: Partial<LearningPlan>
   ): Promise<ApiResponse<LearningPlan>> {
-    const response = await this.api.put(`/learning-plans/${id}`, data);
+    const response = await this.api.put<ApiResponse<LearningPlan>>(`/learning-plans/${id}`, data);
     return response.data;
   }
 
   async deleteLearningPlan(id: string): Promise<ApiResponse<void>> {
-    const response = await this.api.delete(`/learning-plans/${id}`);
+    const response = await this.api.delete<ApiResponse<void>>(`/learning-plans/${id}`);
     return response.data;
   }
 
@@ -284,7 +397,10 @@ class ApiService {
     planId: string,
     mode: 'flashcards' | 'quiz'
   ): Promise<ApiResponse<StudySession>> {
-    const response = await this.api.post(`/learning-plans/${planId}/study-session`, { mode });
+    const response = await this.api.post<ApiResponse<StudySession>>(
+      `/learning-plans/${planId}/study-session`,
+      { mode }
+    );
     return response.data;
   }
 
@@ -295,11 +411,14 @@ class ApiService {
     responseTime: number,
     sessionId: string
   ): Promise<ApiResponse<Flashcard>> {
-    const response = await this.api.post(`/learning-plans/${planId}/flashcards/${cardId}/review`, {
-      userResponse,
-      responseTime,
-      sessionId,
-    });
+    const response = await this.api.post<ApiResponse<Flashcard>>(
+      `/learning-plans/${planId}/flashcards/${cardId}/review`,
+      {
+        userResponse,
+        responseTime,
+        sessionId,
+      }
+    );
     return response.data;
   }
 
@@ -314,19 +433,28 @@ class ApiService {
       adaptiveRecommendations: string[];
     }>
   > {
-    const response = await this.api.get(`/learning-plans/${planId}/quiz-questions?count=${count}`);
+    const response = await this.api.get<
+      ApiResponse<{
+        questions: QuizQuestion[];
+        difficulty: string;
+        adaptiveRecommendations: string[];
+      }>
+    >(`/learning-plans/${planId}/quiz-questions?count=${count}`);
     return response.data;
   }
 
   async submitQuiz(
     planId: string,
-    answers: any[],
+    answers: Array<{ questionId: string; selectedAnswer: number }>,
     sessionId: string
   ): Promise<ApiResponse<QuizResult>> {
-    const response = await this.api.post(`/learning-plans/${planId}/quiz-submit`, {
-      answers,
-      sessionId,
-    });
+    const response = await this.api.post<ApiResponse<QuizResult>>(
+      `/learning-plans/${planId}/quiz-submit`,
+      {
+        answers,
+        sessionId,
+      }
+    );
     return response.data;
   }
 
@@ -344,11 +472,18 @@ class ApiService {
   > {
     const formData = new FormData();
     formData.append('document', file);
-    if (topic) {
+    if (topic != null && topic !== '') {
       formData.append('topic', topic);
     }
 
-    const response = await this.api.post('/documents/upload', formData, {
+    const response = await this.api.post<
+      ApiResponse<{
+        uploadId: string;
+        learningPlanId: string;
+        extractedTopics: string[];
+        generatedFlashcards: number;
+      }>
+    >('/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -357,7 +492,7 @@ class ApiService {
   }
 
   async getDocumentUploads(): Promise<ApiResponse<DocumentUpload[]>> {
-    const response = await this.api.get('/documents/uploads');
+    const response = await this.api.get<ApiResponse<DocumentUpload[]>>('/documents/uploads');
     return response.data;
   }
 
@@ -371,7 +506,7 @@ class ApiService {
       includeFlashcards?: boolean;
     }
   ): Promise<Blob> {
-    const response = await this.api.post(`/export/${format}`, options, {
+    const response = await this.api.post<Blob>(`/export/${format}`, options, {
       responseType: 'blob',
     });
     return response.data;
@@ -391,7 +526,19 @@ class ApiService {
       version: string;
     }>
   > {
-    const response = await this.api.get('/health');
+    const response = await this.api.get<
+      ApiResponse<{
+        status: string;
+        timestamp: string;
+        services: {
+          firebase: boolean;
+          gemini: boolean;
+          firestore: boolean;
+        };
+        uptime: number;
+        version: string;
+      }>
+    >('/health');
     return response.data;
   }
 }

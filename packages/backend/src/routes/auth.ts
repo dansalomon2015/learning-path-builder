@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { firebaseService } from '@/services/firebase';
 import { logger } from '@/utils/logger';
 import jwt from 'jsonwebtoken';
@@ -6,9 +6,16 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 
 // Register new user
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    const { email, password, name } = req.body;
+    const body = req.body as {
+      email: string;
+      password: string;
+      name: string;
+    };
+    const email: string = body.email;
+    const password: string = body.password;
+    const name: string = body.name;
 
     // Create user in Firebase Auth
     const userRecord = await firebaseService.auth.createUser({
@@ -39,37 +46,36 @@ router.post('/register', async (req, res) => {
     );
 
     // Generate JWT token
-    const token = jwt.sign(
-      { uid: userRecord.uid, email },
-      process.env['JWT_SECRET'] || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    const secret: string = process.env['JWT_SECRET'] ?? 'your-secret-key';
+    const token: string = jwt.sign({ uid: userRecord.uid, email }, secret, { expiresIn: '7d' });
 
     res.status(201).json({
       success: true,
       token,
       user: {
         uid: userRecord.uid,
-        email: userRecord.email,
-        name: userRecord.displayName,
+        email: userRecord.email ?? undefined,
+        name: userRecord.displayName ?? undefined,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Registration error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Registration failed';
     res.status(400).json({
       success: false,
-      message: error.message || 'Registration failed',
+      message: errorMessage,
     });
   }
 });
 
 // Login user with password verification via Firebase Identity Toolkit REST API
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, password } = req.body as { email: string; password: string };
+    const email: string = (req.body as { email: string; password: string }).email;
+    const password: string = (req.body as { email: string; password: string }).password;
 
-    const apiKey = process.env['FIREBASE_API_KEY'];
-    if (!apiKey) {
+    const apiKey: string | undefined = process.env['FIREBASE_API_KEY'];
+    if (apiKey == null || apiKey === '') {
       return res.status(500).json({ success: false, message: 'FIREBASE_API_KEY not configured' });
     }
 
@@ -96,40 +102,45 @@ router.post('/login', async (req, res) => {
     const userRecord = await firebaseService.auth.getUser(uid);
 
     // Issue backend JWT used for protected API access
-    const jwtToken = jwt.sign(
-      { uid, email: userRecord.email },
-      process.env['JWT_SECRET'] || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    const secret: string = process.env['JWT_SECRET'] ?? 'your-secret-key';
+    const jwtToken: string = jwt.sign({ uid, email: userRecord.email ?? undefined }, secret, {
+      expiresIn: '7d',
+    });
 
     return res.json({
       success: true,
       jwtToken,
       user: {
         id: uid,
-        email: userRecord.email,
-        name: userRecord.displayName,
+        email: userRecord.email ?? undefined,
+        name: userRecord.displayName ?? undefined,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Login error:', error);
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 
 // Verify token middleware
-export const verifyToken = async (req: any, res: any, next: any) => {
+export const verifyToken = (req: Request, res: Response, next: NextFunction): Response | void => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const authHeader: string | undefined = req.headers.authorization;
+    const token: string | undefined = authHeader?.replace('Bearer ', '');
 
-    if (!token) {
+    if (token == null || token === '') {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env['JWT_SECRET'] || 'your-secret-key') as any;
-    req.user = decoded;
+    const secret: string = process.env['JWT_SECRET'] ?? 'your-secret-key';
+    const decoded = jwt.verify(token, secret) as { uid: string; email?: string; name?: string };
+    req.user = {
+      uid: decoded.uid,
+      ...(decoded.email !== undefined && { email: decoded.email }),
+      ...(decoded.name !== undefined && { name: decoded.name }),
+    };
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     res.status(401).json({ message: 'Invalid token' });
   }
 };
