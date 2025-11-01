@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePageRoute from './pages/ProfilePageRoute';
 import StudyPage from './pages/StudyPage';
 import ObjectivePathPage from './pages/ObjectivePathPage';
+import ModuleLearnPage from './pages/ModuleLearnPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const App: React.FC = () => {
@@ -54,6 +55,14 @@ const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <ObjectivePathPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/objectives/:objectiveId/paths/:pathId/modules/:moduleId/learn"
+                element={
+                  <ProtectedRoute>
+                    <ModuleLearnPage />
                   </ProtectedRoute>
                 }
               />

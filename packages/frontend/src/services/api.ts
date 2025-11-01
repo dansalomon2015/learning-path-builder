@@ -117,6 +117,92 @@ class ApiService {
     return response.data;
   }
 
+  async completeLearningPath(
+    objectiveId: string,
+    pathId: string
+  ): Promise<ApiResponse<{ learningPaths: any[]; objectiveProgress: number }>> {
+    const response = await this.api.patch(`/objectives/${objectiveId}/paths/${pathId}/complete`);
+    return response.data;
+  }
+
+  async completeModule(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string
+  ): Promise<ApiResponse<{ path: any; objectiveProgress: number }>> {
+    const response = await this.api.patch(
+      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/complete`
+    );
+    return response.data;
+  }
+
+  async generateModuleContent(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string
+  ): Promise<ApiResponse<{ module: any; flashcards?: any[]; suggestedResources?: any[] }>> {
+    const response = await this.api.post(
+      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-content`
+    );
+    return response.data;
+  }
+
+  async generateModuleValidationQuiz(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string
+  ): Promise<ApiResponse<{ module: any; validationQuiz?: any[] }>> {
+    const response = await this.api.post(
+      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/generate-validation-quiz`
+    );
+    return response.data;
+  }
+
+  async validateModule(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string,
+    answers: Array<{ questionId: string; selectedAnswer: string | number }>,
+    timeSpent: number
+  ): Promise<
+    ApiResponse<{
+      score: number;
+      passed: boolean;
+      correctAnswers: number;
+      totalQuestions: number;
+      feedback: Array<{ questionId: string; correct: boolean; explanation?: string }>;
+      module: any;
+    }>
+  > {
+    const response = await this.api.post(
+      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/validate`,
+      {
+        answers,
+        timeSpent,
+      }
+    );
+    return response.data;
+  }
+
+  async trackFlashcardSession(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string,
+    flashcardMastery: number,
+    timeSpent?: number,
+    masteredCardIds?: string[]
+  ): Promise<ApiResponse<{ module: any; trend?: 'progression' | 'regression' | 'stable' }>> {
+    const response = await this.api.post(
+      `/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/flashcard-session`,
+      {
+        flashcardMastery,
+        timeSpent,
+        masteredCardIds,
+      }
+    );
+    return response.data;
+  }
+
   // Assessments
   async startAssessment(payload: {
     objectiveId: string;

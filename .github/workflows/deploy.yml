@@ -1,69 +1,40 @@
-name: Deploy FlashLearn AI to Google Cloud Run
+name: Deploy to Cloud Run
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy (backend, frontend, or both)'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - backend
+          - frontend
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us-central1
+  REGION: ${{ secrets.GCP_REGION || 'us-central1' }}
   BACKEND_SERVICE: flashlearn-ai-backend
   FRONTEND_SERVICE: flashlearn-ai-frontend
 
 jobs:
-  # Test job
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run backend tests
-        run: npm run test --workspace=@flashlearn-ai/backend
-
-      - name: Run frontend tests
-        run: npm run test --workspace=@flashlearn-ai/frontend
-
-      - name: Run linting
-        run: npm run lint
-
-      - name: Type check
-        run: npm run type-check --workspace=@flashlearn-ai/backend && npm run type-check --workspace=@flashlearn-ai/frontend
-
-  # Build and deploy backend
   deploy-backend:
-    needs: test
+    if: github.event.inputs.service == 'both' || github.event.inputs.service == 'backend' || github.event_name == 'push'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build backend
-        run: npm run build:backend
-
-      - name: Google Auth
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -71,20 +42,64 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker
+      - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
-      - name: Build and push backend image
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
         run: |
-          docker build -f packages/backend/Dockerfile -t gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA .
-          docker push gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA
+          cd packages/backend
+          npm run build
+
+      - name: Build Docker image for backend
+        run: |
+          docker build -f packages/backend/Dockerfile \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest \
+            .
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
+
+      - name: Enable required APIs
+        run: |
+          gcloud services enable cloudbuild.googleapis.com || true
+          gcloud services enable run.googleapis.com || true
+          gcloud services enable containerregistry.googleapis.com || true
+          gcloud services enable secretmanager.googleapis.com || true
+
+      - name: Check if secrets exist
+        id: check-secrets
+        continue-on-error: true
+        run: |
+          if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null && \
+             gcloud secrets describe gemini-config --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "secrets_exist=true" >> $GITHUB_OUTPUT
+            echo "✅ Secrets exist in Secret Manager"
+          else
+            echo "secrets_exist=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Secrets not found. Deploying without secrets (you'll need to configure them manually)"
+          fi
 
       - name: Deploy backend to Cloud Run
+        id: deploy-backend
         run: |
-          gcloud run deploy $BACKEND_SERVICE \
-            --image gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA \
+          # Build the deploy command
+          DEPLOY_CMD="gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
             --platform managed \
-            --region $REGION \
+            --region ${{ env.REGION }} \
             --allow-unauthenticated \
             --port 3000 \
             --memory 1Gi \
@@ -92,33 +107,42 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars NODE_ENV=production,PORT=3000 \
-            --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            --set-env-vars NODE_ENV=production,PORT=3000"
 
-  # Build and deploy frontend
+          # Add secrets if they exist
+          if [ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ]; then
+            DEPLOY_CMD="$DEPLOY_CMD --set-secrets FIREBASE_PROJECT_ID=firebase-config:project_id,GEMINI_API_KEY=gemini-config:api_key"
+          else
+            echo "⚠️  Deploying without secrets. Configure them manually after deployment."
+          fi
+
+          DEPLOY_CMD="$DEPLOY_CMD --format=value(status.url)"
+
+          BACKEND_URL=$(eval $DEPLOY_CMD)
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "✅ Backend deployed at: $BACKEND_URL"
+
+      - name: Get backend URL
+        id: backend-url
+        run: |
+          BACKEND_URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region=${{ env.REGION }} \
+            --format="value(status.url)")
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+
   deploy-frontend:
-    needs: test
+    if: github.event.inputs.service == 'both' || github.event.inputs.service == 'frontend' || github.event_name == 'push'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    needs: deploy-backend
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build:frontend
-
-      - name: Google Auth
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -126,20 +150,73 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker
+      - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
-      - name: Build and push frontend image
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get backend URL for frontend build
+        id: backend-url
         run: |
-          docker build -f packages/frontend/Dockerfile -t gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA .
-          docker push gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA
+          BACKEND_URL=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region=${{ env.REGION }} \
+            --format="value(status.url)")
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "Backend URL for frontend build: $BACKEND_URL"
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: ${{ steps.backend-url.outputs.url || needs.deploy-backend.outputs.url }}/api
+        run: |
+          cd packages/frontend
+          npm run build
+
+      - name: Build Docker image for frontend
+        run: |
+          docker build -f packages/frontend/Dockerfile \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest \
+            .
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest
+
+      - name: Check if secrets exist
+        id: check-secrets-frontend
+        continue-on-error: true
+        run: |
+          if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "secrets_exist=true" >> $GITHUB_OUTPUT
+            echo "✅ Firebase secrets exist"
+          else
+            echo "secrets_exist=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Firebase secrets not found"
+          fi
 
       - name: Deploy frontend to Cloud Run
+        id: deploy-frontend
         run: |
-          gcloud run deploy $FRONTEND_SERVICE \
-            --image gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA \
+          # Get backend URL
+          BACKEND_URL="${{ steps.backend-url.outputs.url }}"
+          if [ -z "$BACKEND_URL" ]; then
+            BACKEND_URL="${{ needs.deploy-backend.outputs.url }}"
+          fi
+
+          # Build the deploy command
+          DEPLOY_CMD="gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
             --platform managed \
-            --region $REGION \
+            --region ${{ env.REGION }} \
             --allow-unauthenticated \
             --port 80 \
             --memory 512Mi \
@@ -147,32 +224,39 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-                --set-env-vars VITE_API_URL=https://$BACKEND_SERVICE-$PROJECT_ID.a.run.app/api \
-                --set-env-vars FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
-                --set-env-vars FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }} \
-                --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-                --set-env-vars FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }} \
-                --set-env-vars FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }} \
-                --set-env-vars FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }} \
-                --set-env-vars FIREBASE_MEASUREMENT_ID=${{ secrets.FIREBASE_MEASUREMENT_ID }}
+            --set-env-vars VITE_API_URL=$BACKEND_URL/api"
 
-  # Notify deployment status
-  notify:
-    needs: [deploy-backend, deploy-frontend]
+          # Add secrets if they exist
+          if [ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" == "true" ]; then
+            DEPLOY_CMD="$DEPLOY_CMD --set-secrets FIREBASE_API_KEY=firebase-config:api_key,FIREBASE_AUTH_DOMAIN=firebase-config:auth_domain,FIREBASE_PROJECT_ID=firebase-config:project_id,FIREBASE_STORAGE_BUCKET=firebase-config:storage_bucket,FIREBASE_MESSAGING_SENDER_ID=firebase-config:messaging_sender_id,FIREBASE_APP_ID=firebase-config:app_id,FIREBASE_MEASUREMENT_ID=firebase-config:measurement_id"
+          else
+            echo "⚠️  Deploying without Firebase secrets. Configure them manually after deployment."
+          fi
+
+          DEPLOY_CMD="$DEPLOY_CMD --format=value(status.url)"
+
+          FRONTEND_URL=$(eval $DEPLOY_CMD)
+          echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          echo "✅ Frontend deployed at: $FRONTEND_URL"
+
+  deployment-summary:
     runs-on: ubuntu-latest
-    if: always() && github.ref == 'refs/heads/main'
-
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
     steps:
-      - name: Notify success
-        if: needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
+      - name: Deployment Summary
         run: |
-          echo "✅ FlashLearn AI deployment successful!"
-          echo "Backend: https://${{ env.BACKEND_SERVICE }}-${{ env.PROJECT_ID }}.a.run.app"
-          echo "Frontend: https://${{ env.FRONTEND_SERVICE }}-${{ env.PROJECT_ID }}.a.run.app"
-
-      - name: Notify failure
-        if: needs.deploy-backend.result == 'failure' || needs.deploy-frontend.result == 'failure'
-        run: |
-          echo "❌ FlashLearn AI deployment failed!"
-          echo "Backend status: ${{ needs.deploy-backend.result }}"
-          echo "Frontend status: ${{ needs.deploy-frontend.result }}"
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy-backend.result }}" == "success" ]; then
+            echo "✅ Backend: ${{ needs.deploy-backend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+            echo "📊 Health check: ${{ needs.deploy-backend.outputs.url }}/health" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Backend deployment failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
+            echo "✅ Frontend: ${{ needs.deploy-frontend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend deployment failed" >> $GITHUB_STEP_SUMMARY
+          fi

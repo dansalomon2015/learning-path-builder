@@ -55,17 +55,6 @@ router.put('/profile', async (req: Request, res: Response) => {
 
     const updateData = req.body;
 
-    // Validate required fields
-    if (
-      updateData.skillLevel &&
-      !['beginner', 'intermediate', 'advanced'].includes(updateData.skillLevel)
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'Invalid skill level' },
-      });
-    }
-
     // Update user profile
     await firebaseService.updateDocument('users', userId, {
       ...updateData,

@@ -67,7 +67,6 @@ export class AuthService {
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
-        skillLevel: 'beginner',
         learningObjectives: [],
         preferences: {
           studyMode: 'mixed',

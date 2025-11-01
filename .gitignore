@@ -97,5 +97,13 @@ temp/
 # Cloud Run
 cloud-run/
 
+# Firebase service account keys
+**/firebase-service-account.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!tsconfig.json
+
 # TypeScript
 *.tsbuildinfo

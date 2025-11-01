@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  // badges?: Badge[]; // Future: badges system to track achievements
   learningObjectives: string[];
   preferences: UserPreferences;
   createdAt: Date;

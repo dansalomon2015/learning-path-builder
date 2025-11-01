@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { User, LearningPlan } from '@/types';
+import React, { useState, useEffect } from 'react';
+import { User, LearningObjective } from '../types';
 import { ArrowLeftIcon, BarChartIcon, UserIcon, AlertTriangleIcon } from './icons';
+import { apiService } from '../services/api';
 
 interface ProfilePageProps {
   user: User;
-  plans: LearningPlan[];
   onUpdateUser: (updatedUser: User) => void;
   onDeleteAccount: () => void;
   onBackToDashboard: () => void;
@@ -12,7 +12,6 @@ interface ProfilePageProps {
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
   user,
-  plans,
   onUpdateUser,
   onDeleteAccount,
   onBackToDashboard,
@@ -20,6 +19,26 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
+  const [objectives, setObjectives] = useState<LearningObjective[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadObjectives = async () => {
+      try {
+        const res = await apiService.getObjectives();
+        setObjectives((res.data as any[]) || []);
+      } catch (error) {
+        console.error('Error loading objectives:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadObjectives();
+  }, []);
+
+  useEffect(() => {
+    setEditedUser(user);
+  }, [user]);
 
   const handleSave = () => {
     onUpdateUser(editedUser);
@@ -36,10 +55,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     setShowDeleteConfirm(false);
   };
 
-  // Calculate statistics
-  const totalCards = plans.reduce((sum, plan) => sum + plan.totalCards, 0);
-  const masteredCards = plans.reduce((sum, plan) => sum + plan.masteredCards, 0);
-  const masteryPercentage = totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
+  // Calculate statistics from objectives
+  const totalObjectives = objectives.length;
+  const completedObjectives = objectives.filter(obj => obj.status === 'completed').length;
+  const inProgressObjectives = objectives.filter(obj => obj.status === 'in_progress').length;
+  const averageProgress =
+    objectives.length > 0
+      ? Math.round(
+          objectives.reduce((sum, obj) => sum + (obj.progress || 0), 0) / objectives.length
+        )
+      : 0;
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
@@ -85,25 +110,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Skill Level
-                  </label>
-                  <select
-                    value={editedUser.skillLevel}
-                    onChange={e =>
-                      setEditedUser({
-                        ...editedUser,
-                        skillLevel: e.target.value as 'beginner' | 'intermediate' | 'advanced',
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleSave}
@@ -121,24 +127,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
               </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Skill Level
-                  </label>
-                  <span className="inline-block bg-indigo-100 text-indigo-800 text-sm font-semibold px-3 py-1 rounded-full">
-                    {user.skillLevel}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Learning Objectives
-                  </label>
-                  <p className="text-slate-600 text-sm">
-                    {user.learningObjectives.length > 0
-                      ? user.learningObjectives.join(', ')
-                      : 'No objectives set yet'}
-                  </p>
-                </div>
+                {/* Future: Badges system could be displayed here */}
                 <button
                   onClick={() => setIsEditing(true)}
                   className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
@@ -150,7 +139,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
 
-        {/* Statistics and Learning Plans */}
+        {/* Statistics and Learning Objectives */}
         <div className="lg:col-span-2 space-y-6">
           {/* Statistics */}
           <div className="bg-white rounded-xl shadow-md p-6">
@@ -158,65 +147,72 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
               <BarChartIcon className="w-6 h-6 text-indigo-600" />
               <h3 className="text-xl font-bold text-slate-800">Learning Statistics</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-indigo-600">{plans.length}</p>
-                <p className="text-sm text-slate-600">Learning Plans</p>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-indigo-600">{totalCards}</p>
-                <p className="text-sm text-slate-600">Total Cards</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-indigo-600">{totalObjectives}</p>
+                  <p className="text-sm text-slate-600">Objectives</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-indigo-600">{completedObjectives}</p>
+                  <p className="text-sm text-slate-600">Completed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-indigo-600">{inProgressObjectives}</p>
+                  <p className="text-sm text-slate-600">In Progress</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-indigo-600">{averageProgress}%</p>
+                  <p className="text-sm text-slate-600">Avg Progress</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-indigo-600">{masteredCards}</p>
-                <p className="text-sm text-slate-600">Mastered Cards</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-indigo-600">{masteryPercentage}%</p>
-                <p className="text-sm text-slate-600">Mastery Rate</p>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Learning Plans */}
+          {/* Learning Objectives */}
           <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Your Learning Plans</h3>
-            {plans.length > 0 ? (
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Your Learning Objectives</h3>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : objectives.length > 0 ? (
               <div className="space-y-3">
-                {plans.map(plan => {
-                  const planMasteryPercentage =
-                    plan.totalCards > 0
-                      ? Math.round((plan.masteredCards / plan.totalCards) * 100)
-                      : 0;
-
-                  return (
-                    <div key={plan.id} className="border border-slate-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-slate-800">{plan.title}</h4>
-                        <span className="text-sm text-slate-500">{planMasteryPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-slate-600">{plan.topic}</span>
-                        <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded-full">
-                          {plan.skillLevel}
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${planMasteryPercentage}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {plan.masteredCards} / {plan.totalCards} cards mastered
-                      </p>
+                {objectives.map(objective => (
+                  <div key={objective.id} className="border border-slate-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-semibold text-slate-800">{objective.title}</h4>
+                      <span className="text-sm text-slate-500">{objective.progress || 0}%</span>
                     </div>
-                  );
-                })}
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-slate-600">{objective.category}</span>
+                      <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded-full">
+                        {objective.status}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${objective.progress || 0}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {objective.learningPaths?.length || 0} learning paths
+                      {objective.learningPaths?.filter((p: any) => p.isCompleted).length > 0 &&
+                        ` • ${
+                          objective.learningPaths?.filter((p: any) => p.isCompleted).length
+                        } completed`}
+                    </p>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-slate-500 text-center py-8">
-                No learning plans yet. Create your first plan to start learning!
+                No learning objectives yet. Create your first objective to start learning!
               </p>
             )}
           </div>

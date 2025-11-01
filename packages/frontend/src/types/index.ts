@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  // badges?: Badge[]; // Future: badges system to track achievements
   learningObjectives: string[];
   preferences: UserPreferences;
   createdAt: string;
@@ -196,9 +196,19 @@ export interface LearningPath {
   skills: string[];
   modules: LearningModule[];
   isCompleted: boolean;
+  isEnabled: boolean; // Active par défaut seulement pour le premier path
   progress: number; // 0-100
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ModulePerformanceHistory {
+  attemptNumber: number;
+  timestamp: string;
+  quizScore?: number; // 0-100, only if validation quiz was taken
+  flashcardMastery?: number; // 0-100, average mastery of flashcards studied
+  timeSpent?: number; // minutes
+  passed?: boolean; // whether validation quiz was passed
 }
 
 export interface LearningModule {
@@ -207,11 +217,39 @@ export interface LearningModule {
   description: string;
   type: 'theory' | 'practice' | 'project' | 'assessment';
   duration: number; // hours
-  content: ModuleContent[];
+  flashcards: Flashcard[]; // Remplace content[] - Flashcards générées par IA
+  validationQuiz?: QuizQuestion[]; // Quiz généré après maîtrise flashcards
+  suggestedResources?: SuggestedResource[]; // Ressources officielles suggérées
   isCompleted: boolean;
+  isEnabled: boolean; // Active par défaut seulement pour le premier module
+  hasFlashcards: boolean; // Remplace hasContent - Indique si flashcards ont été générées
+  hasValidationQuiz: boolean; // Indique si le quiz de validation a été généré
+  hasSuggestedResources: boolean; // Indique si les ressources suggérées ont été générées
+  progress: number; // 0-100 pour afficher le pourcentage d'avancement
   order: number;
+  dueDate?: string;
+  masteredCardIds?: string[]; // IDs des cartes maîtrisées
+  performanceHistory?: ModulePerformanceHistory[]; // Historique des tentatives
+  trend?: 'progression' | 'regression' | 'stable'; // Tendance basée sur les performances
+  lastAttemptScore?: number; // Dernier score obtenu
+  previousAttemptScore?: number; // Score de la tentative précédente
+  // Deprecated: content: ModuleContent[] - Utiliser flashcards à la place
 }
 
+export interface SuggestedResource {
+  id: string;
+  type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+  title: string;
+  description: string;
+  url?: string;
+  author?: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedTime: number; // minutes
+  priority: number; // 1-5 (1 = haute priorité)
+  isOptional: boolean;
+}
+
+// Deprecated: ModuleContent - Utiliser flashcards et suggestedResources à la place
 export interface ModuleContent {
   id: string;
   type: 'video' | 'article' | 'exercise' | 'quiz' | 'project';

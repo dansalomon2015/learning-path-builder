@@ -13,7 +13,6 @@ interface ProfileModalProps {
 const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     name: user.name,
-    skillLevel: user.skillLevel,
     language: user.preferences.language,
     studyMode: user.preferences.studyMode,
     sessionLength: user.preferences.sessionLength,
@@ -30,7 +29,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
       const updatedUser: User = {
         ...user,
         name: formData.name,
-        skillLevel: formData.skillLevel as 'beginner' | 'intermediate' | 'advanced',
         preferences: {
           ...user.preferences,
           language: formData.language,
@@ -86,23 +84,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose, onUp
               className="input"
               required
             />
-          </div>
-
-          <div>
-            <label htmlFor="skillLevel" className="label">
-              Niveau de compétence
-            </label>
-            <select
-              id="skillLevel"
-              name="skillLevel"
-              value={formData.skillLevel}
-              onChange={handleInputChange}
-              className="input"
-            >
-              <option value="beginner">Débutant</option>
-              <option value="intermediate">Intermédiaire</option>
-              <option value="advanced">Avancé</option>
-            </select>
           </div>
 
           <div>

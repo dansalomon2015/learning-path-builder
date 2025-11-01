@@ -24,7 +24,6 @@ router.post('/register', async (req, res) => {
         uid: userRecord.uid,
         name,
         email,
-        skillLevel: 'beginner',
         learningObjectives: [],
         preferences: {
           studyMode: 'mixed',

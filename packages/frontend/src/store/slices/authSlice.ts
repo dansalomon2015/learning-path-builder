@@ -53,7 +53,6 @@ export const signUp = createAsyncThunk(
         email: user.email,
         name: user.name || user.displayName || '',
         avatar: user.avatar,
-        skillLevel: user.skillLevel || 'beginner',
         learningObjectives: user.learningObjectives || [],
         preferences: user.preferences || {
           studyMode: 'mixed',
@@ -88,8 +87,9 @@ export const loadUserProfile = createAsyncThunk(
   'auth/loadUserProfile',
   async (userId: string, { rejectWithValue }) => {
     try {
-      const userProfile = await AuthService.getUserProfile(userId);
-      return userProfile as User;
+      // TODO: Implement API call to load user profile
+      // For now, return null as this is not currently used
+      return null as User | null;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load user profile');
     }

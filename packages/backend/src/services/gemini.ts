@@ -8,7 +8,7 @@ class GeminiService {
   constructor() {
     try {
       this.genAI = new GoogleGenAI({
-        apiKey: 'AIzaSyAX8NG76dIXq44CS6PH_n7TtqWcrxFYbts',
+        apiKey: 'AIzaSyAX8NG76dIXq44CS6PH_n7TtqWcrxFYbts', // TEMPORARY: Hardcoded for development
       });
       logger.info('Gemini AI service initialized successfully');
     } catch (error) {
@@ -464,22 +464,76 @@ Respond ONLY with JSON in this format:
 
   private parseFlashcardsFromResponse(response: string): Flashcard[] {
     try {
-      const parsed = JSON.parse(response);
-      return parsed.flashcards.map((card: any, index: number) => ({
-        id: `generated_${Date.now()}_${index}`,
-        question: card.question,
-        answer: card.answer,
-        explanation: card.explanation,
-        difficulty: card.difficulty || 'medium',
-        category: card.category || 'general',
-        tags: card.tags || [],
-        createdAt: new Date(),
-        reviewCount: 0,
-        masteryLevel: 0,
-      }));
+      logger.debug('Parsing flashcards from response, length:', response.length);
+      logger.debug('Raw response (first 500 chars):', response.substring(0, 500));
+
+      const cleaned = this.normalizeJson(response);
+      logger.debug('Cleaned JSON (first 500 chars):', cleaned.substring(0, 500));
+
+      const parsed = this.safeParse<any>(cleaned);
+
+      if (!parsed) {
+        logger.error(
+          'Failed to parse JSON. Cleaned response (first 1000 chars):',
+          cleaned.substring(0, 1000)
+        );
+        throw new Error('Failed to parse JSON from AI response');
+      }
+
+      if (!Array.isArray(parsed.flashcards)) {
+        logger.error('parsed.flashcards is not an array. Parsed object keys:', Object.keys(parsed));
+        logger.error(
+          'Parsed object (first 1000 chars):',
+          JSON.stringify(parsed).substring(0, 1000)
+        );
+
+        // Essayer de trouver flashcards dans d'autres clés possibles
+        const flashcardsKey = Object.keys(parsed).find(
+          key =>
+            key.toLowerCase().includes('flashcard') ||
+            (Array.isArray(parsed[key]) && parsed[key].length > 0 && parsed[key][0]?.question)
+        );
+
+        if (flashcardsKey && Array.isArray(parsed[flashcardsKey])) {
+          logger.info(`Found flashcards under key: ${flashcardsKey}`);
+          parsed.flashcards = parsed[flashcardsKey];
+        } else {
+          throw new Error(
+            `Flashcards array not found in response. Found keys: ${Object.keys(parsed).join(', ')}`
+          );
+        }
+      }
+
+      if (parsed.flashcards.length === 0) {
+        logger.warn('Flashcards array is empty');
+        throw new Error('No flashcards found in AI response');
+      }
+
+      logger.info(`Successfully parsed ${parsed.flashcards.length} flashcards`);
+
+      return parsed.flashcards.map((card: any, index: number) => {
+        if (!card.question || !card.answer) {
+          logger.warn(`Flashcard at index ${index} missing question or answer:`, card);
+        }
+        return {
+          id: `generated_${Date.now()}_${index}`,
+          question: card.question || 'Question missing',
+          answer: card.answer || 'Answer missing',
+          explanation: card.explanation || undefined,
+          difficulty: card.difficulty || 'medium',
+          category: card.category || 'general',
+          tags: card.tags || [],
+          createdAt: new Date().toISOString(),
+          reviewCount: 0,
+          masteryLevel: 0,
+        };
+      });
     } catch (error) {
-      logger.error('Error parsing flashcards from Gemini response:', error);
-      throw new Error('Failed to parse flashcards from AI response');
+      logger.error('Error parsing flashcards:', error);
+      if (error instanceof Error) {
+        logger.error('Error message:', error.message);
+      }
+      throw error;
     }
   }
 
@@ -655,6 +709,373 @@ Respond ONLY with JSON in this format:
       logger.error('Error parsing document processing response:', error);
       throw new Error('Failed to parse document processing response');
     }
+  }
+
+  // Generate flashcards for a learning module
+  async generateModuleFlashcards(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+      duration: number;
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    }
+  ): Promise<Flashcard[]> {
+    try {
+      logger.info(`Generating flashcards for module: ${module.title} (type: ${module.type})`);
+      const count = Math.max(15, Math.min(20, Math.ceil(module.duration * 3))); // 15-20 flashcards based on duration
+      const prompt = this.buildModuleFlashcardPrompt(module, context, count);
+      logger.debug('Calling Gemini API for module flashcards...');
+      const response = await this.callGeminiAPI(prompt);
+      logger.info('Gemini API response received, length:', response.length);
+      if (response.length > 0) {
+        logger.debug('Raw Gemini response (first 1000 chars):', response.substring(0, 1000));
+      } else {
+        logger.warn('Gemini API returned empty response for flashcards');
+      }
+      const parsed = this.parseFlashcardsFromResponse(response);
+      logger.info(`Successfully generated ${parsed.length} flashcards for module ${module.title}`);
+      return parsed;
+    } catch (error) {
+      logger.error('Error generating module flashcards:', error);
+      if (error instanceof Error) {
+        logger.error('Error message:', error.message);
+        logger.error('Error stack:', error.stack);
+      }
+      throw error;
+    }
+  }
+
+  private buildModuleFlashcardPrompt(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+      duration: number;
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    },
+    count: number
+  ): string {
+    return `
+Generate ${count} educational flashcards for a learning module titled "${module.title}".
+
+Module Context:
+- Objective: ${context.objectiveTitle} (${context.objectiveCategory})
+- Target Role: ${context.targetRole}
+- Learning Path: ${context.pathTitle}
+- Difficulty Level: ${context.difficulty}
+- Module Type: ${module.type}
+- Module Duration: ${module.duration} hours
+- Module Description: ${module.description}
+
+For each flashcard, provide:
+1. A clear, concise question that tests understanding of key concepts from this module
+2. A detailed, accurate answer that explains the concept
+3. An optional explanation for better understanding
+4. A difficulty level (easy, medium, hard) appropriate for ${context.difficulty} level
+5. Relevant tags/categories related to the module topic
+
+Focus on:
+- Core concepts and principles covered in this module
+- Practical applications relevant to ${context.targetRole}
+- Real-world scenarios and examples
+- Best practices and common pitfalls
+
+STRICT INSTRUCTIONS:
+- Respond ONLY with valid JSON, no prose, no markdown, no code fences.
+- Ensure the top-level object has a "flashcards" array exactly as specified below.
+- Do not include trailing commas.
+- All string values must be properly escaped.
+
+Format the response as JSON:
+{
+  "flashcards": [
+    {
+      "question": "What is...?",
+      "answer": "The answer is...",
+      "explanation": "This means...",
+      "difficulty": "easy|medium|hard",
+      "category": "${context.objectiveCategory}",
+      "tags": ["tag1", "tag2", "${module.type}"]
+    }
+  ]
+}
+
+Return ONLY the JSON object above. Do not include any text before or after the JSON.
+Make sure the content is accurate, educational, and appropriate for ${context.difficulty} level learners working toward ${context.targetRole}.
+`.trim();
+  }
+
+  // Generate validation quiz for a module
+  async generateModuleValidationQuiz(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+    },
+    flashcards: Flashcard[],
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    }
+  ): Promise<QuizQuestion[]> {
+    try {
+      logger.info(`Generating validation quiz for module: ${module.title}`);
+      const count = Math.max(10, Math.min(15, flashcards.length / 2)); // 10-15 questions based on flashcards count
+      const prompt = this.buildModuleValidationQuizPrompt(module, flashcards, context, count);
+      const response = await this.callGeminiAPI(prompt);
+      const parsed = this.parseQuizQuestionsFromResponse(response);
+      logger.info(
+        `Successfully generated ${parsed.length} validation quiz questions for module ${module.title}`
+      );
+      return parsed;
+    } catch (error) {
+      logger.error('Error generating module validation quiz:', error);
+      throw error;
+    }
+  }
+
+  private buildModuleValidationQuizPrompt(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+    },
+    flashcards: Flashcard[],
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    },
+    count: number
+  ): string {
+    const flashcardTopics = flashcards
+      .slice(0, 10)
+      .map((fc, i) => `${i + 1}. ${fc.question}`)
+      .join('\n');
+
+    return `
+Generate ${count} interview-style validation quiz questions to test comprehensive understanding of the module "${module.title}".
+
+Module Context:
+- Objective: ${context.objectiveTitle} (${context.objectiveCategory})
+- Target Role: ${context.targetRole}
+- Learning Path: ${context.pathTitle}
+- Difficulty Level: ${context.difficulty}
+- Module Type: ${module.type}
+- Module Description: ${module.description}
+
+The learner has already studied these flashcards:
+${flashcardTopics}
+
+Create questions that:
+- Test deep understanding, not just memorization
+- Assess ability to apply concepts in ${context.targetRole} context
+- Include practical scenarios and problem-solving
+- Are interview-style questions appropriate for ${context.difficulty} level
+- Cover the key concepts from the flashcards above
+
+For each question, provide:
+1. A clear, comprehensive question
+2. Four answer options (A, B, C, D) with plausible distractors
+3. The correct answer (0-3 index)
+4. A detailed explanation
+5. A difficulty level appropriate for ${context.difficulty}
+6. Relevant skills/tags
+7. A practical usage example
+
+Format the response as JSON:
+{
+  "questions": [
+    {
+      "question": "What is...?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "The correct answer is... because...",
+      "difficulty": "easy|medium|hard",
+      "category": "${context.objectiveCategory}",
+      "skills": ["skill1", "skill2"],
+      "usageExample": "In practice, this means..."
+    }
+  ]
+}
+
+Ensure questions are challenging but fair for ${context.difficulty} level and validate comprehensive understanding.
+`.trim();
+  }
+
+  // Generate suggested official resources for a module
+  async generateSuggestedResources(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    }
+  ): Promise<
+    Array<{
+      id: string;
+      type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+      title: string;
+      description: string;
+      url?: string;
+      author?: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+      estimatedTime: number;
+      priority: number;
+      isOptional: boolean;
+    }>
+  > {
+    try {
+      logger.info(`Generating suggested resources for module: ${module.title}`);
+      const prompt = this.buildSuggestedResourcesPrompt(module, context);
+      const response = await this.callGeminiAPI(prompt);
+      const parsed = this.parseSuggestedResourcesFromResponse(response);
+      logger.info(
+        `Successfully generated ${parsed.length} suggested resources for module ${module.title}`
+      );
+      return parsed;
+    } catch (error) {
+      logger.error('Error generating suggested resources:', error);
+      throw error;
+    }
+  }
+
+  private buildSuggestedResourcesPrompt(
+    module: {
+      title: string;
+      description: string;
+      type: 'theory' | 'practice' | 'project' | 'assessment';
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      pathTitle: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    }
+  ): string {
+    return `
+Generate 3-5 official, authoritative learning resources for a module titled "${module.title}".
+
+Module Context:
+- Objective: ${context.objectiveTitle} (${context.objectiveCategory})
+- Target Role: ${context.targetRole}
+- Learning Path: ${context.pathTitle}
+- Difficulty Level: ${context.difficulty}
+- Module Type: ${module.type}
+- Module Description: ${module.description}
+
+Prioritize:
+1. Official documentation (e.g., Oracle docs, MDN, React docs, Java official docs)
+2. Well-known books by recognized authors in the field
+3. Official tutorials and guides from authoritative sources
+4. Respected articles from official sources or recognized publications
+5. Video courses from official channels or reputable educational platforms
+
+For each resource, include:
+- Type: documentation|book|article|video|tutorial|official_guide
+- Title
+- Description explaining why it's relevant to this module
+- URL (if available and official/free)
+- Author (for books/articles)
+- Difficulty level (beginner|intermediate|advanced)
+- Estimated reading/watching time in minutes
+- Priority (1-5, where 1 is highest priority)
+- isOptional (false for essential resources, true for supplementary)
+
+Avoid:
+- Random blog posts from unknown sources
+- Non-official tutorials
+- Outdated resources
+- Paid resources (unless free tier is available)
+
+Format the response as JSON:
+{
+  "resources": [
+    {
+      "type": "documentation",
+      "title": "Official Java Concurrency Guide",
+      "description": "Comprehensive official documentation covering...",
+      "url": "https://docs.oracle.com/javase/tutorial/essential/concurrency/",
+      "author": "Oracle",
+      "difficulty": "intermediate",
+      "estimatedTime": 45,
+      "priority": 1,
+      "isOptional": false
+    }
+  ]
+}
+
+Ensure resources are:
+- Relevant to ${context.targetRole} role
+- Appropriate for ${context.difficulty} level
+- Official, authoritative, and up-to-date
+- Aligned with module objectives
+`.trim();
+  }
+
+  private parseSuggestedResourcesFromResponse(response: string): Array<{
+    id: string;
+    type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+    title: string;
+    description: string;
+    url?: string;
+    author?: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    estimatedTime: number;
+    priority: number;
+    isOptional: boolean;
+  }> {
+    const cleaned = this.normalizeJson(response);
+    const parsed = this.safeParse<any>(cleaned);
+
+    if (!parsed || !Array.isArray(parsed.resources)) {
+      logger.error('Failed to parse suggested resources JSON:', cleaned.slice(0, 400));
+      throw new Error('Failed to parse suggested resources from AI response');
+    }
+
+    return parsed.resources.map((item: any, index: number) => ({
+      id: `resource_${Date.now()}_${index}`,
+      type: (item.type || 'documentation') as
+        | 'documentation'
+        | 'book'
+        | 'article'
+        | 'video'
+        | 'tutorial'
+        | 'official_guide',
+      title: item.title || 'Untitled Resource',
+      description: item.description || '',
+      url: item.url,
+      author: item.author,
+      difficulty: (item.difficulty || 'intermediate') as 'beginner' | 'intermediate' | 'advanced',
+      estimatedTime: Number(item.estimatedTime) || 30,
+      priority: Number(item.priority) || 3,
+      isOptional: Boolean(item.isOptional),
+    }));
   }
 
   // Health check
