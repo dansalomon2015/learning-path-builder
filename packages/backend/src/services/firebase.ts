@@ -87,8 +87,10 @@ class FirebaseService {
   constructor() {
     try {
       // Try to load from FIREBASE_CONFIG first (from Secret Manager)
-      let { serviceAccount: serviceAccountData, projectId } =
-        this.loadServiceAccountFromFirebaseConfig();
+      let { serviceAccount: serviceAccountData, projectId }: {
+        serviceAccount: Record<string, unknown>;
+        projectId: string | undefined;
+      } = this.loadServiceAccountFromFirebaseConfig();
 
       // Fallback to FIREBASE_SERVICE_ACCOUNT if available
       if (Object.keys(serviceAccountData).length === 0) {
