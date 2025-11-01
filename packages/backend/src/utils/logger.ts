@@ -24,8 +24,10 @@ const logger = winston.createLogger({
   ],
 });
 
-// Add file transport in production
-if (process.env['NODE_ENV'] === 'production') {
+// Only add file transport in production if not running on Cloud Run
+// Cloud Run captures console logs automatically and filesystem is read-only
+const isCloudRun = process.env['K_SERVICE'] != null || process.env['PORT'] != null;
+if (process.env['NODE_ENV'] === 'production' && !isCloudRun) {
   logger.add(
     new winston.transports.File({
       filename: 'logs/error.log',
