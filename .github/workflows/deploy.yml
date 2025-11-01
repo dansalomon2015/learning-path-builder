@@ -98,8 +98,10 @@ jobs:
       - name: Deploy backend to Cloud Run
         id: deploy-backend
         run: |
-          # Build the deploy command
-          DEPLOY_CMD="gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+          # Build base deploy command arguments
+          set -e
+          
+          BACKEND_URL=$(gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --image gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
             --platform managed \
             --region ${{ env.REGION }} \
@@ -110,20 +112,16 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars NODE_ENV=production"
-
-          # Add secrets if they exist
-          if [ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ]; then
-            DEPLOY_CMD="$DEPLOY_CMD --set-secrets FIREBASE_PROJECT_ID=firebase-config:project_id,GEMINI_API_KEY=gemini-config:api_key"
-          else
-            echo "⚠️  Deploying without secrets. Configure them manually after deployment."
-          fi
-
-          DEPLOY_CMD="$DEPLOY_CMD --format=value(status.url)"
-
-          BACKEND_URL=$(eval $DEPLOY_CMD)
+            --set-env-vars NODE_ENV=production \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_PROJECT_ID=firebase-config:project_id,GEMINI_API_KEY=gemini-config:api_key" || echo "") \
+            --format="value(status.url)")
+          
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
           echo "✅ Backend deployed at: $BACKEND_URL"
+          
+          if [ "${{ steps.check-secrets.outputs.secrets_exist }}" != "true" ]; then
+            echo "⚠️  Deployed without secrets. Configure them manually after deployment."
+          fi
 
       - name: Get backend URL
         id: backend-url
@@ -213,13 +211,14 @@ jobs:
         id: deploy-frontend
         run: |
           # Get backend URL
+          set -e
+          
           BACKEND_URL="${{ steps.backend-url.outputs.url }}"
           if [ -z "$BACKEND_URL" ]; then
             BACKEND_URL="${{ needs.deploy-backend.outputs.url }}"
           fi
 
-          # Build the deploy command
-          DEPLOY_CMD="gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
+          FRONTEND_URL=$(gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --image gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
             --platform managed \
             --region ${{ env.REGION }} \
@@ -230,20 +229,16 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-            --set-env-vars VITE_API_URL=$BACKEND_URL/api"
-
-          # Add secrets if they exist
-          if [ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" == "true" ]; then
-            DEPLOY_CMD="$DEPLOY_CMD --set-secrets FIREBASE_API_KEY=firebase-config:api_key,FIREBASE_AUTH_DOMAIN=firebase-config:auth_domain,FIREBASE_PROJECT_ID=firebase-config:project_id,FIREBASE_STORAGE_BUCKET=firebase-config:storage_bucket,FIREBASE_MESSAGING_SENDER_ID=firebase-config:messaging_sender_id,FIREBASE_APP_ID=firebase-config:app_id,FIREBASE_MEASUREMENT_ID=firebase-config:measurement_id"
-          else
-            echo "⚠️  Deploying without Firebase secrets. Configure them manually after deployment."
-          fi
-
-          DEPLOY_CMD="$DEPLOY_CMD --format=value(status.url)"
-
-          FRONTEND_URL=$(eval $DEPLOY_CMD)
+            --set-env-vars VITE_API_URL=$BACKEND_URL/api \
+            $([ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_API_KEY=firebase-config:api_key,FIREBASE_AUTH_DOMAIN=firebase-config:auth_domain,FIREBASE_PROJECT_ID=firebase-config:project_id,FIREBASE_STORAGE_BUCKET=firebase-config:storage_bucket,FIREBASE_MESSAGING_SENDER_ID=firebase-config:messaging_sender_id,FIREBASE_APP_ID=firebase-config:app_id,FIREBASE_MEASUREMENT_ID=firebase-config:measurement_id" || echo "") \
+            --format="value(status.url)")
+          
           echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
           echo "✅ Frontend deployed at: $FRONTEND_URL"
+          
+          if [ "${{ steps.check-secrets-frontend.outputs.secrets_exist }}" != "true" ]; then
+            echo "⚠️  Deployed without Firebase secrets. Configure them manually after deployment."
+          fi
 
   deployment-summary:
     runs-on: ubuntu-latest
