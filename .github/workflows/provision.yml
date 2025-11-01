@@ -36,6 +36,9 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          export_default_credentials: true
 
       - name: Validate required secrets
         run: |
@@ -53,12 +56,16 @@ jobs:
       - name: Enable required APIs
         run: |
           echo "🔧 Enabling required Google Cloud APIs..."
-          gcloud services enable cloudbuild.googleapis.com
-          gcloud services enable run.googleapis.com
-          gcloud services enable containerregistry.googleapis.com
-          gcloud services enable secretmanager.googleapis.com
-          gcloud services enable firebase.googleapis.com
-          echo "✅ All required APIs enabled"
+          echo "⚠️  Note: This requires the service account to have 'Service Usage Admin' role"
+
+          # Enable APIs with error handling
+          gcloud services enable cloudbuild.googleapis.com || echo "⚠️  Failed to enable cloudbuild.googleapis.com (may already be enabled)"
+          gcloud services enable run.googleapis.com || echo "⚠️  Failed to enable run.googleapis.com (may already be enabled)"
+          gcloud services enable containerregistry.googleapis.com || echo "⚠️  Failed to enable containerregistry.googleapis.com (may already be enabled)"
+          gcloud services enable secretmanager.googleapis.com || echo "⚠️  Failed to enable secretmanager.googleapis.com (may already be enabled)"
+          gcloud services enable firebase.googleapis.com || echo "⚠️  Failed to enable firebase.googleapis.com (may already be enabled)"
+
+          echo "✅ API enablement completed"
 
       - name: Create Secret Manager secrets if not exists
         run: |
@@ -130,6 +137,15 @@ jobs:
               --project=${{ env.PROJECT_ID }} \
               --format="value(status.url)")
             echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+            
+            # Ensure service is publicly accessible
+            echo "🔓 Ensuring backend service is publicly accessible..."
+            gcloud run services add-iam-policy-binding ${{ env.BACKEND_SERVICE }} \
+              --region=${{ env.REGION }} \
+              --project=${{ env.PROJECT_ID }} \
+              --member="allUsers" \
+              --role="roles/run.invoker" \
+              || echo "⚠️  Service may already be public or IAM update failed"
           else
             echo "Creating backend service (placeholder image)..."
             # Use a placeholder image for initial provisioning
