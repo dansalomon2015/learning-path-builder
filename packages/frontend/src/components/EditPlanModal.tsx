@@ -1,7 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import type { LearningPlan } from '@/types';
-import { SkillLevel } from '@/types';
+import type { LearningPlan, SkillLevel } from '@/types';
 import { XIcon } from './icons';
 
 interface EditPlanModalProps {

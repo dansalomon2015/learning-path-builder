@@ -35,6 +35,7 @@ const persistedReducer = persistReducer(persistConfig, rootReducer);
 // Configure store
 export const store = configureStore({
   reducer: persistedReducer,
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {

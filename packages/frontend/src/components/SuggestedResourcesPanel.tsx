@@ -66,7 +66,6 @@ const SuggestedResourcesPanel: React.FC<SuggestedResourcesPanelProps> = ({
     return 'text-slate-600 bg-slate-50 border-slate-200';
   };
 
-
   const renderResourceGroup = (
     group: SuggestedResource[],
     label: string,
