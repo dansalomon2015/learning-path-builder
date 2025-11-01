@@ -7,73 +7,84 @@ class FirebaseService {
 
   private readonly serviceAccount: Record<string, unknown>;
 
-  constructor() {
+  private loadServiceAccountFromFirebaseConfig(): {
+    serviceAccount: Record<string, unknown>;
+    projectId: string;
+  } {
+    const firebaseConfigEnv = process.env['FIREBASE_CONFIG'];
+    if (firebaseConfigEnv == null || firebaseConfigEnv === '') {
+      return { serviceAccount: {}, projectId: 'gen-lang-client-0438922965' };
+    }
+
     try {
-      // Load service account from environment variable (JSON string) or file
+      const firebaseConfig = JSON.parse(firebaseConfigEnv) as Record<string, unknown>;
       let serviceAccountData: Record<string, unknown> = {};
       let projectId: string = 'gen-lang-client-0438922965';
 
-      // Try to load from FIREBASE_CONFIG environment variable first (from Secret Manager)
-      const firebaseConfigEnv = process.env['FIREBASE_CONFIG'];
-      if (firebaseConfigEnv != null && firebaseConfigEnv !== '') {
-        try {
-          const firebaseConfig = JSON.parse(firebaseConfigEnv) as Record<string, unknown>;
-
-          // Extract service account from firebase-config
-          if (
-            firebaseConfig['serviceAccount'] != null &&
-            typeof firebaseConfig['serviceAccount'] === 'object'
-          ) {
-            serviceAccountData = firebaseConfig['serviceAccount'] as Record<string, unknown>;
-          } else if (firebaseConfig['project_id'] != null) {
-            // If firebase-config contains service account fields directly
-            serviceAccountData = firebaseConfig;
-          }
-
-          // Extract project_id from firebase-config
-          if (
-            firebaseConfig['project_id'] != null &&
-            typeof firebaseConfig['project_id'] === 'string'
-          ) {
-            projectId = firebaseConfig['project_id'];
-          } else if (
-            serviceAccountData['project_id'] != null &&
-            typeof serviceAccountData['project_id'] === 'string'
-          ) {
-            projectId = serviceAccountData['project_id'];
-          }
-
-          logger.info('Loaded Firebase config from FIREBASE_CONFIG environment variable');
-        } catch (parseError) {
-          logger.warn('Failed to parse FIREBASE_CONFIG from environment:', parseError);
-        }
+      // Extract service account from firebase-config
+      if (firebaseConfig['serviceAccount'] != null && typeof firebaseConfig['serviceAccount'] === 'object') {
+        serviceAccountData = firebaseConfig['serviceAccount'] as Record<string, unknown>;
+      } else if (firebaseConfig['project_id'] != null) {
+        // If firebase-config contains service account fields directly
+        serviceAccountData = firebaseConfig;
       }
+
+      // Extract project_id from firebase-config
+      if (firebaseConfig['project_id'] != null && typeof firebaseConfig['project_id'] === 'string') {
+        projectId = firebaseConfig['project_id'];
+      } else if (serviceAccountData['project_id'] != null && typeof serviceAccountData['project_id'] === 'string') {
+        projectId = serviceAccountData['project_id'];
+      }
+
+      logger.info('Loaded Firebase config from FIREBASE_CONFIG environment variable');
+      return { serviceAccount: serviceAccountData, projectId };
+    } catch (parseError) {
+      logger.warn('Failed to parse FIREBASE_CONFIG from environment:', parseError);
+      return { serviceAccount: {}, projectId: 'gen-lang-client-0438922965' };
+    }
+  }
+
+  private loadServiceAccountFromEnv(): Record<string, unknown> {
+    const serviceAccountEnv = process.env['FIREBASE_SERVICE_ACCOUNT'];
+    if (serviceAccountEnv == null || serviceAccountEnv === '') {
+      return {};
+    }
+
+    try {
+      const serviceAccountData = JSON.parse(serviceAccountEnv) as Record<string, unknown>;
+      logger.info('Loaded Firebase service account from FIREBASE_SERVICE_ACCOUNT');
+      return serviceAccountData;
+    } catch (parseError) {
+      logger.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT:', parseError);
+      return {};
+    }
+  }
+
+  private loadServiceAccountFromFile(): Record<string, unknown> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+      const serviceAccountData = require('./firebase-service-account.json') as Record<string, unknown>;
+      logger.info('Loaded Firebase service account from file');
+      return serviceAccountData;
+    } catch {
+      logger.warn('Firebase service account file not found, using environment variables only');
+      return {};
+    }
+  }
+
+  constructor() {
+    try {
+      // Try to load from FIREBASE_CONFIG first (from Secret Manager)
+      let { serviceAccount: serviceAccountData, projectId } = this.loadServiceAccountFromFirebaseConfig();
 
       // Fallback to FIREBASE_SERVICE_ACCOUNT if available
       if (Object.keys(serviceAccountData).length === 0) {
-        const serviceAccountEnv = process.env['FIREBASE_SERVICE_ACCOUNT'];
-        if (serviceAccountEnv != null && serviceAccountEnv !== '') {
-          try {
-            serviceAccountData = JSON.parse(serviceAccountEnv) as Record<string, unknown>;
-            logger.info('Loaded Firebase service account from FIREBASE_SERVICE_ACCOUNT');
-          } catch (parseError) {
-            logger.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT:', parseError);
-          }
-        }
+        serviceAccountData = this.loadServiceAccountFromEnv();
       }
 
       // Fallback to file if environment variables not set (local development)
       if (Object.keys(serviceAccountData).length === 0) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-          serviceAccountData = require('./firebase-service-account.json') as Record<
-            string,
-            unknown
-          >;
-          logger.info('Loaded Firebase service account from file');
-        } catch {
-          logger.warn('Firebase service account file not found, using environment variables only');
-        }
+        serviceAccountData = this.loadServiceAccountFromFile();
       }
 
       // Use FIREBASE_PROJECT_ID if projectId not set from firebase-config
