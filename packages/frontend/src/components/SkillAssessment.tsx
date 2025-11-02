@@ -52,29 +52,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   selectedAnswer,
   timeRemaining,
 }): JSX.Element => {
-  // Guard against undefined question
-  if (question == null) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 text-center">
-        <p className="text-slate-600">Question data is not available.</p>
-      </div>
-    );
-  }
-
-  const getDifficultyColor = (difficulty: Difficulty | string | undefined): string => {
-    if (difficulty == null || difficulty === '') {
-      return 'bg-gray-100 text-gray-700';
-    }
-    // Handle both enum and string values
+  const getDifficultyColor = (difficulty: Difficulty): string => {
     switch (difficulty) {
       case Difficulty.EASY:
-      case 'easy':
         return 'bg-green-100 text-green-700';
       case Difficulty.MEDIUM:
-      case 'medium':
         return 'bg-yellow-100 text-yellow-700';
       case Difficulty.HARD:
-      case 'hard':
         return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
@@ -101,15 +85,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               {questionNumber} of {totalQuestions}
             </span>
           </div>
-          {question.difficulty != null && (
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(
-                question.difficulty
-              )}`}
-            >
-              {question.difficulty}
-            </div>
-          )}
+          <div
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(
+              question.difficulty
+            )}`}
+          >
+            {question.difficulty}
+          </div>
         </div>
         {timeRemaining !== undefined && (
           <div className="flex items-center space-x-2 text-slate-600">
@@ -122,11 +104,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question */}
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-slate-800 leading-relaxed mb-4">
-          {question.question ?? 'No question text available'}
+          {question.question}
         </h3>
 
         {/* Skills */}
-        {question.skills != null && question.skills.length > 0 && (
+        {question.skills.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {question.skills.map(
               (skill: string): JSX.Element => (
@@ -146,8 +128,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       <div className="space-y-3">
         {(question.options != null && question.options.length > 0 ? question.options : []).map(
           (option: string, index: number): JSX.Element => {
-            // Default to MULTIPLE_CHOICE if type is undefined
-            const questionType = question.type ?? AssessmentQuestionType.MULTIPLE_CHOICE;
+            // Use question type (should always be defined)
+            const questionType = question.type;
 
             // Determine what value to compare based on question type
             const expectedValue =
@@ -167,17 +149,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 onClick={(): void => {
                   const answerValue =
                     questionType === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index;
-                  // eslint-disable-next-line no-console
-                  console.log('[QuestionCard] Click on option:', {
-                    index,
-                    option,
-                    answerValue,
-                    questionType,
-                    questionId: question.id,
-                  });
                   onAnswer(answerValue);
                 }}
-                disabled={questionType == null}
+                disabled={false}
                 className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ${
                   isSelected
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-800'
@@ -203,15 +177,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question Type Indicator */}
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex items-center space-x-2 text-sm text-slate-500">
-          <span className="capitalize">
-            {question.type != null
-              ? question.type.replace('_', ' ')
-              : AssessmentQuestionType.MULTIPLE_CHOICE.replace('_', ' ')}
-          </span>
+          <span className="capitalize">{question.type.replace('_', ' ')}</span>
           <span>•</span>
-          <span>
-            {question.category != null && question.category !== '' ? question.category : 'general'}
-          </span>
+          <span>{question.category !== '' ? question.category : 'general'}</span>
         </div>
       </div>
     </div>
@@ -361,12 +329,15 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
   const [result, setResult] = useState<AssessmentResult | null>(null);
 
   // Guard against undefined questions array or out-of-bounds index
-  const questions = assessment.questions ?? [];
+  const questions = useMemo(
+    (): AssessmentQuestion[] => assessment.questions,
+    [assessment.questions]
+  );
   const currentQuestion = questions[currentQuestionIndex];
 
   // Memoize selectedAnswer to ensure it updates when answers or currentQuestion changes
   const selectedAnswer = useMemo((): string | number | undefined => {
-    if (currentQuestion == null) {
+    if (currentQuestionIndex < 0 || currentQuestionIndex >= questions.length) {
       return undefined;
     }
     const answer = answers.find(
@@ -374,29 +345,13 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
     );
     const result = answer?.selectedAnswer;
 
-    // Only log when answer changes, not on every render
-    if (result !== undefined) {
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] selectedAnswer memo updated:', {
-        questionId: currentQuestion.id,
-        selectedAnswer: result,
-        answersCount: answers.length,
-      });
-    }
-
     return result;
-  }, [answers, currentQuestion?.id]);
+  }, [answers, currentQuestion, currentQuestionIndex, questions.length]);
 
   // Timer effect
   const handleComplete = useCallback((): void => {
     const endTime = Date.now();
     const totalTimeSpent = Math.floor((endTime - startTime) / 1000 / 60); // Convert to minutes
-
-    // Debug: Log all answers before calculating score
-    // eslint-disable-next-line no-console
-    console.log('[SkillAssessment] handleComplete - All answers:', answers);
-    // eslint-disable-next-line no-console
-    console.log('[SkillAssessment] handleComplete - Questions count:', questions.length);
 
     // Recalculate isCorrect for each answer to ensure accuracy
     // Also check all questions to ensure we have answers for all
@@ -406,8 +361,6 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       );
 
       if (existingAnswer == null) {
-        // eslint-disable-next-line no-console
-        console.warn('[SkillAssessment] No answer found for question:', question.id);
         return {
           questionId: question.id,
           selectedAnswer: -1,
@@ -420,8 +373,8 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       let answerAsNumber: number;
       if (typeof existingAnswer.selectedAnswer === 'number') {
         answerAsNumber = existingAnswer.selectedAnswer;
-      } else if (question.options != null) {
-        answerAsNumber = question.options.indexOf(existingAnswer.selectedAnswer as string);
+      } else if (question.options != null && question.options.length > 0) {
+        answerAsNumber = question.options.indexOf(String(existingAnswer.selectedAnswer));
       } else {
         answerAsNumber = -1;
       }
@@ -430,22 +383,13 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       const correctAnswerAsNumber: number =
         typeof question.correctAnswer === 'number'
           ? question.correctAnswer
-          : question.options != null
-          ? question.options.indexOf(question.correctAnswer as string)
+          : question.options != null && question.options.length > 0
+          ? question.options.indexOf(String(question.correctAnswer))
           : -1;
 
       const isCorrect = answerAsNumber >= 0 && answerAsNumber === correctAnswerAsNumber;
 
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] Recalculating isCorrect for answer:', {
-        questionId: question.id,
-        selectedAnswer: existingAnswer.selectedAnswer,
-        answerAsNumber,
-        correctAnswer: question.correctAnswer,
-        correctAnswerAsNumber,
-        isCorrect,
-        questionOptions: question.options,
-      });
+      // Debug logging removed to prevent infinite loops
 
       return { ...existingAnswer, isCorrect };
     });
@@ -455,14 +399,6 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
     ).length;
     const totalQuestions = questions.length > 0 ? questions.length : 1; // Prevent division by zero
     const score = Math.round((correctAnswers / totalQuestions) * 100);
-
-    // eslint-disable-next-line no-console
-    console.log('[SkillAssessment] Score calculation:', {
-      correctAnswers,
-      totalQuestions,
-      score,
-      answersCount: answers.length,
-    });
 
     // Determine skill level based on score
     let skillLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
@@ -512,22 +448,14 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
             if (typeof a.selectedAnswer === 'number') {
               // Already a number, use it directly
               selectedAnswerAsNumber = a.selectedAnswer;
-            } else if (question != null && question.options != null) {
+            } else if (question?.options != null && question.options.length > 0) {
               // Find the index of the selected option string
-              const optionIndex = question.options.indexOf(a.selectedAnswer as string);
+              const optionIndex = question.options.indexOf(String(a.selectedAnswer));
               selectedAnswerAsNumber = optionIndex >= 0 ? optionIndex : 0;
             } else {
               // Fallback to 0 if we can't convert
               selectedAnswerAsNumber = 0;
             }
-
-            // eslint-disable-next-line no-console
-            console.log('[SkillAssessment] Converting answer for submission:', {
-              questionId: a.questionId,
-              originalAnswer: a.selectedAnswer,
-              convertedAnswer: selectedAnswerAsNumber,
-              questionType: question?.type,
-            });
 
             return {
               questionId: a.questionId,
@@ -535,9 +463,6 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
             };
           }
         );
-
-        // eslint-disable-next-line no-console
-        console.log('[SkillAssessment] Submitting answers to backend:', compact);
 
         Promise.resolve(onSubmitResult(assessment.id, compact, totalTimeSpent)).catch((): void => {
           // Ignore errors
@@ -574,16 +499,7 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
 
   const handleAnswer = useCallback(
     (answer: string | number): void => {
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] handleAnswer called:', {
-        answer,
-        currentQuestionId: currentQuestion?.id,
-        currentQuestion: currentQuestion != null,
-      });
-
-      if (currentQuestion == null) {
-        // eslint-disable-next-line no-console
-        console.warn('[SkillAssessment] handleAnswer: currentQuestion is null, returning');
+      if (currentQuestionIndex < 0 || currentQuestionIndex >= questions.length) {
         return;
       }
       const questionStartTime = Date.now();
@@ -594,9 +510,9 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       let answerAsNumber: number;
       if (typeof answer === 'number') {
         answerAsNumber = answer;
-      } else if (currentQuestion.options != null) {
+      } else if (currentQuestion.options != null && currentQuestion.options.length > 0) {
         // For MULTIPLE_CHOICE, find the index of the selected option
-        answerAsNumber = currentQuestion.options.indexOf(answer);
+        answerAsNumber = currentQuestion.options.indexOf(String(answer));
       } else {
         answerAsNumber = -1; // Invalid
       }
@@ -605,20 +521,11 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       const correctAnswerAsNumber: number =
         typeof currentQuestion.correctAnswer === 'number'
           ? currentQuestion.correctAnswer
-          : currentQuestion.options != null
-          ? currentQuestion.options.indexOf(currentQuestion.correctAnswer as string)
+          : currentQuestion.options != null && currentQuestion.options.length > 0
+          ? currentQuestion.options.indexOf(String(currentQuestion.correctAnswer))
           : -1;
 
       const isCorrect = answerAsNumber >= 0 && answerAsNumber === correctAnswerAsNumber;
-
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] Calculating isCorrect:', {
-        answer,
-        answerAsNumber,
-        correctAnswer: currentQuestion.correctAnswer,
-        correctAnswerAsNumber,
-        isCorrect,
-      });
 
       const newAnswer: AssessmentAnswer = {
         questionId: currentQuestion.id,
@@ -627,12 +534,7 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
         timeSpent,
       };
 
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] Creating new answer:', newAnswer);
-
       setAnswers((prev: AssessmentAnswer[]): AssessmentAnswer[] => {
-        // eslint-disable-next-line no-console
-        console.log('[SkillAssessment] setAnswers called with prev:', prev);
         const existingIndex = prev.findIndex(
           (a: AssessmentAnswer): boolean => a.questionId === currentQuestion.id
         );
@@ -640,26 +542,13 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
           // Update existing answer
           const updated = [...prev];
           updated[existingIndex] = newAnswer;
-          // eslint-disable-next-line no-console
-          console.log(
-            '[SkillAssessment] Updating existing answer at index:',
-            existingIndex,
-            'New array:',
-            updated
-          );
           return updated;
         }
         // Add new answer
-        const newArray = [...prev, newAnswer];
-        // eslint-disable-next-line no-console
-        console.log('[SkillAssessment] Adding new answer. New array:', newArray);
-        return newArray;
+        return [...prev, newAnswer];
       });
-
-      // eslint-disable-next-line no-console
-      console.log('[SkillAssessment] handleAnswer completed');
     },
-    [currentQuestion, startTime]
+    [currentQuestion, startTime, currentQuestionIndex, questions.length]
   );
 
   const handleNext = useCallback((): void => {
@@ -779,7 +668,7 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       </div>
 
       {/* Question */}
-      {currentQuestion != null ? (
+      {currentQuestionIndex >= 0 && currentQuestionIndex < questions.length ? (
         <QuestionCard
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}

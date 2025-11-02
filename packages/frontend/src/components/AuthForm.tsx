@@ -53,7 +53,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
           <p className="mt-2 text-center text-sm text-slate-600">
             {mode === 'login' ? (
               <>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   onClick={onSwitchMode}
                   className="font-medium text-indigo-600 hover:text-indigo-500"

@@ -8,7 +8,6 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function Layout({ children }: LayoutProps): JSX.Element {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
