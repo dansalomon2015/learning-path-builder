@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import StudySession from '../components/StudySession';
 import type { User, LearningPlan } from '../types';
+import { StudyMode } from '../types';
 
 const StudyPage: React.FC = (): JSX.Element => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const StudyPage: React.FC = (): JSX.Element => {
   const isAuthenticated: boolean = authContext.isAuthenticated;
   const logout: () => Promise<void> = authContext.logout;
   const [plan, setPlan] = useState<LearningPlan | null>(null);
-  const [studyMode, setStudyMode] = useState<'flashcards' | 'quiz'>('flashcards');
+  const [studyMode, setStudyMode] = useState<StudyMode>(StudyMode.FLASHCARDS);
   const [loading, setLoading] = useState(true);
 
   useEffect((): (() => void) | undefined => {
@@ -32,11 +33,11 @@ const StudyPage: React.FC = (): JSX.Element => {
         // Get plan data from location state or fetch by ID
         const locationState = location.state as {
           plan?: LearningPlan;
-          mode?: 'flashcards' | 'quiz';
+          mode?: StudyMode;
         } | null;
         if (locationState?.plan != null) {
           setPlan(locationState.plan);
-          setStudyMode(locationState.mode ?? 'flashcards');
+          setStudyMode(locationState.mode ?? StudyMode.FLASHCARDS);
         } else if (planId != null && planId !== '') {
           // TODO: Fetch plan by ID from API
           // eslint-disable-next-line no-console

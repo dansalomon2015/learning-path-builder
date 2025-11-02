@@ -1,7 +1,7 @@
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Assessment, AssessmentQuestion, AssessmentAnswer } from '../types';
-import { AssessmentQuestionType } from '../types';
+import { AssessmentQuestionType, Difficulty } from '../types';
 import { apiService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -52,12 +52,28 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   selectedAnswer,
   timeRemaining,
 }): JSX.Element => {
-  const getDifficultyColor = (difficulty: string): string => {
+  // Guard against undefined question
+  if (question == null) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 text-center">
+        <p className="text-slate-600">Question data is not available.</p>
+      </div>
+    );
+  }
+
+  const getDifficultyColor = (difficulty: Difficulty | string | undefined): string => {
+    if (difficulty == null || difficulty === '') {
+      return 'bg-gray-100 text-gray-700';
+    }
+    // Handle both enum and string values
     switch (difficulty) {
+      case Difficulty.EASY:
       case 'easy':
         return 'bg-green-100 text-green-700';
+      case Difficulty.MEDIUM:
       case 'medium':
         return 'bg-yellow-100 text-yellow-700';
+      case Difficulty.HARD:
       case 'hard':
         return 'bg-red-100 text-red-700';
       default:
@@ -65,7 +81,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     }
   };
 
-  const formatTime = (seconds: number): string => {
+  const formatTime = (seconds: number | undefined): string => {
+    if (seconds == null || seconds < 0) {
+      return '0:00';
+    }
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -82,13 +101,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               {questionNumber} of {totalQuestions}
             </span>
           </div>
-          <div
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(
-              question.difficulty
-            )}`}
-          >
-            {question.difficulty}
-          </div>
+          {question.difficulty != null && (
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(
+                question.difficulty
+              )}`}
+            >
+              {question.difficulty}
+            </div>
+          )}
         </div>
         {timeRemaining !== undefined && (
           <div className="flex items-center space-x-2 text-slate-600">
@@ -101,39 +122,46 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question */}
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-slate-800 leading-relaxed mb-4">
-          {question.question}
+          {question.question ?? 'No question text available'}
         </h3>
 
         {/* Skills */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {question.skills.length > 0
-            ? question.skills.map(
-                (skill: string): JSX.Element => (
-                  <span
-                    key={skill}
-                    className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full"
-                  >
-                    {skill}
-                  </span>
-                )
+        {question.skills != null && question.skills.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {question.skills.map(
+              (skill: string): JSX.Element => (
+                <span
+                  key={skill}
+                  className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full"
+                >
+                  {skill}
+                </span>
               )
-            : null}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Answer Options */}
       <div className="space-y-3">
         {(question.options != null && question.options.length > 0 ? question.options : []).map(
           (option: string, index: number): JSX.Element => {
-            const isSelected = selectedAnswer === option || selectedAnswer === index;
+            // Improved comparison: handle both string and number types
+            const isSelected =
+              selectedAnswer !== undefined &&
+              (selectedAnswer === option ||
+                selectedAnswer === index ||
+                String(selectedAnswer) === String(option) ||
+                Number(selectedAnswer) === index);
             return (
               <button
                 key={index}
                 onClick={(): void => {
-                  onAnswer(
-                    question.type === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index
-                  );
+                  const answerValue =
+                    question.type === AssessmentQuestionType.MULTIPLE_CHOICE ? option : index;
+                  onAnswer(answerValue);
                 }}
+                disabled={question.type == null}
                 className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ${
                   isSelected
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-800'
@@ -159,9 +187,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question Type Indicator */}
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex items-center space-x-2 text-sm text-slate-500">
-          <span className="capitalize">{question.type.replace('_', ' ')}</span>
+          <span className="capitalize">
+            {question.type != null ? question.type.replace('_', ' ') : 'question'}
+          </span>
           <span>•</span>
-          <span>{question.category !== '' ? question.category : 'general'}</span>
+          <span>
+            {question.category != null && question.category !== '' ? question.category : 'general'}
+          </span>
         </div>
       </div>
     </div>
@@ -310,10 +342,19 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
   const [isComplete, setIsComplete] = useState(false);
   const [result, setResult] = useState<AssessmentResult | null>(null);
 
-  const currentQuestion = assessment.questions[currentQuestionIndex];
-  const selectedAnswer = answers.find(
-    (a: AssessmentAnswer): boolean => a.questionId === currentQuestion.id
-  )?.selectedAnswer;
+  // Guard against undefined questions array or out-of-bounds index
+  const questions = assessment.questions ?? [];
+  const currentQuestion = questions[currentQuestionIndex];
+
+  // Memoize selectedAnswer to ensure it updates when answers or currentQuestion changes
+  const selectedAnswer = useMemo(
+    (): string | number | undefined =>
+      currentQuestion != null
+        ? answers.find((a: AssessmentAnswer): boolean => a.questionId === currentQuestion.id)
+            ?.selectedAnswer
+        : undefined,
+    [answers, currentQuestion]
+  );
 
   // Timer effect
   const handleComplete = useCallback((): void => {
@@ -323,7 +364,8 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
     const correctAnswers = answers.filter(
       (a: AssessmentAnswer): boolean => a.isCorrect === true
     ).length;
-    const score = Math.round((correctAnswers / assessment.questions.length) * 100);
+    const totalQuestions = questions.length > 0 ? questions.length : 1; // Prevent division by zero
+    const score = Math.round((correctAnswers / totalQuestions) * 100);
 
     // Determine skill level based on score
     let skillLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
@@ -351,7 +393,7 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
       userId: 'current-user', // This should come from auth context
       assessmentId: assessment.id,
       score,
-      totalQuestions: assessment.questions.length,
+      totalQuestions: questions.length,
       correctAnswers,
       timeSpent: totalTimeSpent,
       answers,
@@ -380,7 +422,7 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
     setResult(assessmentResult);
     setIsComplete(true);
     onComplete(assessmentResult);
-  }, [answers, assessment, startTime, onComplete, onSubmitResult]);
+  }, [answers, questions.length, assessment, startTime, onComplete, onSubmitResult]);
 
   useEffect((): (() => void) | undefined => {
     if (isComplete === true) {
@@ -404,13 +446,22 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
 
   const handleAnswer = useCallback(
     (answer: string | number): void => {
+      if (currentQuestion == null) {
+        return;
+      }
       const questionStartTime = Date.now();
       const timeSpent = Math.floor((questionStartTime - startTime) / 1000);
+
+      // Improved comparison for isCorrect: handle both string and number types
+      const isCorrect =
+        answer === currentQuestion.correctAnswer ||
+        String(answer) === String(currentQuestion.correctAnswer) ||
+        Number(answer) === Number(currentQuestion.correctAnswer);
 
       const newAnswer: AssessmentAnswer = {
         questionId: currentQuestion.id,
         selectedAnswer: answer,
-        isCorrect: answer === currentQuestion.correctAnswer,
+        isCorrect,
         timeSpent,
       };
 
@@ -430,12 +481,16 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
   );
 
   const handleNext = useCallback((): void => {
-    if (currentQuestionIndex < assessment.questions.length - 1) {
+    if (questions.length === 0) {
+      handleComplete();
+      return;
+    }
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev: number): number => prev + 1);
     } else {
       handleComplete();
     }
-  }, [currentQuestionIndex, assessment.questions.length, handleComplete]);
+  }, [currentQuestionIndex, questions.length, handleComplete]);
 
   const handleRetake = (): void => {
     setCurrentQuestionIndex(0);
@@ -535,21 +590,27 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
               </span>
             </div>
             <div className="text-sm text-slate-500">
-              {answers.length} of {assessment.questions.length} answered
+              {answers.length} of {questions.length} answered
             </div>
           </div>
         </div>
       </div>
 
       {/* Question */}
-      <QuestionCard
-        question={currentQuestion}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={assessment.questions.length}
-        onAnswer={handleAnswer}
-        selectedAnswer={selectedAnswer}
-        timeRemaining={timeRemaining}
-      />
+      {currentQuestion != null ? (
+        <QuestionCard
+          question={currentQuestion}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          onAnswer={handleAnswer}
+          selectedAnswer={selectedAnswer}
+          timeRemaining={timeRemaining}
+        />
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 text-center">
+          <p className="text-slate-600">No questions available in this assessment.</p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="mt-6 flex justify-between">
@@ -567,7 +628,9 @@ const SkillAssessment: React.FC<SkillAssessmentProps> = ({
           onClick={handleNext}
           className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
         >
-          {currentQuestionIndex === assessment.questions.length - 1 ? 'Complete' : 'Next'}
+          {questions.length === 0 || currentQuestionIndex === questions.length - 1
+            ? 'Complete'
+            : 'Next'}
         </button>
       </div>
     </div>

@@ -1,6 +1,38 @@
 // Load environment variables FIRST
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+import path from 'path';
+import { existsSync } from 'fs';
+
+// Load .env.local from project root (monorepo root)
+// Try multiple paths in order of preference to ensure it works in dev and production
+const rootPath = path.resolve(process.cwd(), '.env.local');
+const distPath = path.resolve(__dirname, '../../../.env.local');
+const srcPath = path.resolve(__dirname, '../../.env.local');
+
+// Try to load .env.local
+let envLoaded = false;
+if (existsSync(rootPath)) {
+  dotenv.config({ path: rootPath });
+  envLoaded = true;
+} else if (existsSync(distPath)) {
+  dotenv.config({ path: distPath });
+  envLoaded = true;
+} else if (existsSync(srcPath)) {
+  dotenv.config({ path: srcPath });
+  envLoaded = true;
+}
+
+// Also try .env as fallback
+const rootEnvPath = path.resolve(process.cwd(), '.env');
+if (!envLoaded && existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+}
+
+// Verify critical environment variables are loaded (will log warnings if not set)
+if (!process.env['GEMINI_API_KEY']) {
+  console.warn('⚠️  WARNING: GEMINI_API_KEY not found in environment variables');
+  console.warn('   Checked paths:', { rootPath, distPath, srcPath });
+}
 
 import express from 'express';
 import cors from 'cors';

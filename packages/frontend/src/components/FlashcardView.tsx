@@ -1,11 +1,12 @@
 import type React from 'react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { LearningPlan, Flashcard } from '@/types';
+import { StudyMode } from '@/types';
 import { ArrowLeftIcon, TrophyIcon, ClockIcon, CodeIcon } from './icons';
 
 interface FlashcardViewProps {
   plan: LearningPlan;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   onBack: () => void;
   onComplete?: () => void;
 }
@@ -103,7 +104,9 @@ const SpacedRepetitionMode: React.FC<{
           }}
         >
           <div className="absolute w-full h-full bg-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [backface-visibility:hidden] cursor-pointer">
-            <p className="text-2xl md:text-3xl font-semibold text-slate-800">{card?.question ?? ''}</p>
+            <p className="text-2xl md:text-3xl font-semibold text-slate-800">
+              {card?.question ?? ''}
+            </p>
           </div>
           <div className="absolute w-full h-full bg-indigo-500 text-white rounded-2xl shadow-xl flex items-center justify-center p-6 text-center [transform:rotateY(180deg)] [backface-visibility:hidden] cursor-pointer">
             <div>
@@ -389,7 +392,7 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ plan, mode, onBack }): JS
         <span className="font-mono font-semibold">{formatTime(elapsedTime)}</span>
       </div>
 
-      {mode === 'quiz' ? (
+      {mode === StudyMode.QUIZ ? (
         <QuizMode
           plan={plan}
           onBack={onBack}

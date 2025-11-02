@@ -170,7 +170,7 @@ class SessionService {
       endTime: new Date().toISOString(),
       duration: Math.floor((Date.now() - this.currentSession.startTime) / 1000),
       score:
-        this.currentSession.mode === 'quiz'
+        this.currentSession.mode === StudyMode.QUIZ
           ? Math.round((this.currentSession.correctAnswers / this.currentSession.totalCards) * 100)
           : undefined,
       totalQuestions: this.currentSession.totalCards,

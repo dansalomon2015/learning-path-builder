@@ -4,7 +4,8 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sessionService } from '../sessionService';
-import { type LearningPlan, SkillLevel, Difficulty, StudyMode } from '../../types';
+import { SkillLevel, Difficulty, StudyMode } from '../../types';
+import type { LearningPlan } from '../../types';
 
 // eslint-disable-next-line max-lines-per-function
 describe('SessionService - Critical Functions', (): void => {
