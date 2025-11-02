@@ -6,6 +6,9 @@ BACKEND_URL="${BACKEND_URL:-}"
 
 # If BACKEND_URL is set, create proxy configuration
 if [ -n "$BACKEND_URL" ]; then
+  # Extract backend hostname from URL (e.g., https://backend.run.app -> backend.run.app)
+  BACKEND_HOST=$(echo "$BACKEND_URL" | sed -e 's|^[^/]*//||' -e 's|:.*$||' -e 's|/.*$||')
+  
   cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
     listen 80;
@@ -40,7 +43,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
+        proxy_set_header Host ${BACKEND_HOST};
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
