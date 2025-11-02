@@ -218,39 +218,6 @@ jobs:
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:latest
 
-      - name: Get Firebase config from Secret Manager
-        id: firebase-config
-        continue-on-error: true
-        run: |
-          if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null; then
-            echo "Fetching Firebase config from Secret Manager..."
-            FIREBASE_JSON=$(gcloud secrets versions access latest --secret=firebase-config --project=${{ env.PROJECT_ID }})
-            echo "firebase_config_json<<EOF" >> $GITHUB_OUTPUT
-            echo "$FIREBASE_JSON" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            
-            # Extract individual values using jq or Python
-            FIREBASE_API_KEY=$(echo "$FIREBASE_JSON" | grep -o '"api_key"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_AUTH_DOMAIN=$(echo "$FIREBASE_JSON" | grep -o '"auth_domain"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_PROJECT_ID=$(echo "$FIREBASE_JSON" | grep -o '"project_id"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_STORAGE_BUCKET=$(echo "$FIREBASE_JSON" | grep -o '"storage_bucket"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_MESSAGING_SENDER_ID=$(echo "$FIREBASE_JSON" | grep -o '"messaging_sender_id"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_APP_ID=$(echo "$FIREBASE_JSON" | grep -o '"app_id"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            FIREBASE_MEASUREMENT_ID=$(echo "$FIREBASE_JSON" | grep -o '"measurement_id"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4 || echo "")
-            
-            echo "api_key=$FIREBASE_API_KEY" >> $GITHUB_OUTPUT
-            echo "auth_domain=$FIREBASE_AUTH_DOMAIN" >> $GITHUB_OUTPUT
-            echo "project_id=$FIREBASE_PROJECT_ID" >> $GITHUB_OUTPUT
-            echo "storage_bucket=$FIREBASE_STORAGE_BUCKET" >> $GITHUB_OUTPUT
-            echo "messaging_sender_id=$FIREBASE_MESSAGING_SENDER_ID" >> $GITHUB_OUTPUT
-            echo "app_id=$FIREBASE_APP_ID" >> $GITHUB_OUTPUT
-            echo "measurement_id=$FIREBASE_MEASUREMENT_ID" >> $GITHUB_OUTPUT
-            echo "config_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "config_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️  Firebase config secret not found"
-          fi
-
       - name: Deploy frontend to Cloud Run
         id: deploy-frontend
         run: |
@@ -260,35 +227,6 @@ jobs:
           BACKEND_URL="${{ steps.backend-url.outputs.url }}"
           if [ -z "$BACKEND_URL" ]; then
             BACKEND_URL="${{ needs.deploy-backend.outputs.url }}"
-          fi
-
-          # Build environment variables string
-          ENV_VARS="VITE_API_URL=$BACKEND_URL/api"
-
-          # Add Firebase config if available (as env vars, not secrets, since they're public in frontend)
-          if [ "${{ steps.firebase-config.outputs.config_exists }}" == "true" ]; then
-            ENV_VARS="$ENV_VARS"
-            if [ -n "${{ steps.firebase-config.outputs.api_key }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_API_KEY=${{ steps.firebase-config.outputs.api_key }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.auth_domain }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_AUTH_DOMAIN=${{ steps.firebase-config.outputs.auth_domain }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.project_id }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_PROJECT_ID=${{ steps.firebase-config.outputs.project_id }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.storage_bucket }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_STORAGE_BUCKET=${{ steps.firebase-config.outputs.storage_bucket }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.messaging_sender_id }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_MESSAGING_SENDER_ID=${{ steps.firebase-config.outputs.messaging_sender_id }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.app_id }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_APP_ID=${{ steps.firebase-config.outputs.app_id }}"
-            fi
-            if [ -n "${{ steps.firebase-config.outputs.measurement_id }}" ]; then
-              ENV_VARS="$ENV_VARS,VITE_FIREBASE_MEASUREMENT_ID=${{ steps.firebase-config.outputs.measurement_id }}"
-            fi
           fi
 
           FRONTEND_URL=$(gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
@@ -302,15 +240,11 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-            --set-env-vars "$ENV_VARS" \
+            --set-env-vars VITE_API_URL=$BACKEND_URL/api \
             --format="value(status.url)")
 
           echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
           echo "✅ Frontend deployed at: $FRONTEND_URL"
-
-          if [ "${{ steps.firebase-config.outputs.config_exists }}" != "true" ]; then
-            echo "⚠️  Deployed without Firebase config. Configure Firebase env vars manually after deployment."
-          fi
 
   deployment-summary:
     runs-on: ubuntu-latest
