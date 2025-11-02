@@ -90,6 +90,16 @@ jobs:
             echo "⚠️  Note: Update gemini-api-key secret with actual value"
           fi
 
+          # Check and create FIREBASE_API_KEY secret
+          if ! gcloud secrets describe FIREBASE_API_KEY --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "Creating FIREBASE_API_KEY secret (placeholder)..."
+            echo -n 'your-firebase-api-key' | gcloud secrets create FIREBASE_API_KEY \
+              --data-file=- \
+              --replication-policy="automatic" \
+              --project=${{ env.PROJECT_ID }}
+            echo "⚠️  Note: Update FIREBASE_API_KEY secret with actual value"
+          fi
+
           echo "✅ Secrets created/verified"
 
       - name: Update secret versions from GitHub secrets
@@ -99,6 +109,7 @@ jobs:
           echo "⚠️  Manual step required: Update secret values using:"
           echo "   cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-"
           echo "   echo -n 'your-actual-api-key' | gcloud secrets versions add gemini-api-key --data-file=-"
+          echo "   echo -n 'your-firebase-api-key' | gcloud secrets versions add FIREBASE_API_KEY --data-file=-"
 
       - name: Grant Cloud Run access to secrets
         run: |
@@ -115,6 +126,11 @@ jobs:
             --project=${{ env.PROJECT_ID }} || true
 
           gcloud secrets add-iam-policy-binding gemini-api-key \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          gcloud secrets add-iam-policy-binding FIREBASE_API_KEY \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
@@ -225,4 +241,5 @@ jobs:
           echo "1. Update secret values (if using placeholders):" >> $GITHUB_STEP_SUMMARY
           echo "   - firebase-config: \`cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "   - gemini-api-key: \`echo -n 'your-api-key' | gcloud secrets versions add gemini-api-key --data-file=-\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - FIREBASE_API_KEY: \`echo -n 'your-firebase-api-key' | gcloud secrets versions add FIREBASE_API_KEY --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "2. Run the deploy workflow to build and deploy your application" >> $GITHUB_STEP_SUMMARY

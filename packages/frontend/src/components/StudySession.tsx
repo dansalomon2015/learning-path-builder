@@ -17,14 +17,14 @@ import {
 
 interface StudySessionProps {
   plan: LearningPlan;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   onBack: () => void;
   onComplete?: () => void;
 }
 
 interface SessionHeaderProps {
   plan: LearningPlan;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   onBack: () => void;
   elapsedTime: number;
   isPaused: boolean;
@@ -479,7 +479,7 @@ const QuizMode: React.FC<QuizModeProps> = ({ plan, session, onComplete }): JSX.E
 
 interface SessionCompleteProps {
   plan: LearningPlan;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   sessionStats: SessionStats;
   onBack: () => void;
   onRestart: () => void;

@@ -1,4 +1,4 @@
-import type { StudySession, LearningPlan } from '../types';
+import type { LearningPlan, StudySession } from '../types';
 import { StudyMode } from '../types';
 
 export interface SessionStats {
@@ -17,7 +17,7 @@ export interface SessionStats {
 export interface SessionProgress {
   sessionId: string;
   planId: string;
-  mode: 'flashcards' | 'quiz';
+  mode: StudyMode;
   currentCardIndex: number;
   totalCards: number;
   correctAnswers: number;
@@ -60,7 +60,7 @@ class SessionService {
   }
 
   // Start a new study session
-  startSession(plan: LearningPlan, mode: 'flashcards' | 'quiz'): SessionProgress {
+  startSession(plan: LearningPlan, mode: StudyMode): SessionProgress {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     this.currentSession = {

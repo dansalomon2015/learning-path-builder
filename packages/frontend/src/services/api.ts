@@ -8,6 +8,8 @@ import type {
   DocumentUpload,
   ApiResponse,
   QuizResult,
+  ObjectiveAnalytics,
+  LearningAnalytics,
 } from '@/types';
 import { toast } from 'react-hot-toast';
 
@@ -539,6 +541,27 @@ class ApiService {
         version: string;
       }>
     >('/health');
+    return response.data;
+  }
+
+  // Analytics
+  async getUserAnalytics(
+    userId: string,
+    timeRange: 'week' | 'month' | 'all' = 'month'
+  ): Promise<ApiResponse<LearningAnalytics>> {
+    const response = await this.api.get<ApiResponse<LearningAnalytics>>(
+      `/analytics/user/${userId}?timeRange=${timeRange}`
+    );
+    return response.data;
+  }
+
+  async getObjectiveAnalytics(
+    objectiveId: string,
+    timeRange: 'week' | 'month' | 'all' = 'month'
+  ): Promise<ApiResponse<ObjectiveAnalytics>> {
+    const response = await this.api.get<ApiResponse<ObjectiveAnalytics>>(
+      `/analytics/objective/${objectiveId}?timeRange=${timeRange}`
+    );
     return response.data;
   }
 }

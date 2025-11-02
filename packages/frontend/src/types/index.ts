@@ -231,6 +231,32 @@ export interface AdaptiveRecommendations {
   difficultyAdjustment: DifficultyAdjustmentAction;
 }
 
+export interface LearningAnalytics {
+  totalStudyTime: number;
+  averageScore: number;
+  masteryLevel: number;
+  weakAreas: string[];
+  strongAreas: string[];
+  learningVelocity: number;
+  retentionRate: number;
+  recommendations: string[];
+}
+
+export interface ObjectiveAnalytics extends LearningAnalytics {
+  objectiveId: string;
+  objectiveTitle: string;
+  learningPathsCount: number;
+  modulesCount: number;
+  sessionsCount: number;
+  completionRate: number; // percentage of completed modules
+  progressTimeline: Array<{
+    date: string;
+    studyTime: number;
+    masteryLevel: number;
+    score: number;
+  }>;
+}
+
 // Learning Objectives System
 export interface LearningObjective {
   id: string;

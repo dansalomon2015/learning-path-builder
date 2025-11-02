@@ -167,4 +167,51 @@ router.get('/dashboard/:userId', async (req: Request, res: Response): Promise<Re
   }
 });
 
+// GET /api/analytics/objective/:objectiveId
+router.get('/objective/:objectiveId', async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const objectiveIdParam: string | undefined = req.params['objectiveId'];
+    if (objectiveIdParam == null || objectiveIdParam === '') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'objectiveId is required' },
+      });
+    }
+    const objectiveId: string = objectiveIdParam;
+    const userIdParam: string | undefined = req.user?.uid;
+    if (userIdParam == null || userIdParam === '') {
+      return res.status(401).json({
+        success: false,
+        error: { message: 'User not authenticated' },
+      });
+    }
+    const userId: string = userIdParam;
+    const timeRangeParam: unknown = req.query['timeRange'];
+    const timeRange: string =
+      (typeof timeRangeParam === 'string' ? timeRangeParam : undefined) ?? 'month';
+
+    const analytics = await analyticsService.getObjectiveAnalytics(
+      userId,
+      objectiveId,
+      timeRange as 'week' | 'month' | 'all'
+    );
+
+    return res.json({
+      success: true,
+      data: analytics,
+      message: 'Objective analytics retrieved successfully',
+    });
+  } catch (error: unknown) {
+    logger.error('Error getting objective analytics:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMessage.includes('not found') || errorMessage.includes('Access denied')) {
+      return res.status(404).json({
+        success: false,
+        error: { message: errorMessage },
+      });
+    }
+    throw error;
+  }
+});
+
 export const analyticsRoutes = router;

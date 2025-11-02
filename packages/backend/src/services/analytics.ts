@@ -13,6 +13,21 @@ export interface LearningAnalytics {
   recommendations: string[];
 }
 
+export interface ObjectiveAnalytics extends LearningAnalytics {
+  objectiveId: string;
+  objectiveTitle: string;
+  learningPathsCount: number;
+  modulesCount: number;
+  sessionsCount: number;
+  completionRate: number; // percentage of completed modules
+  progressTimeline: Array<{
+    date: string;
+    studyTime: number;
+    masteryLevel: number;
+    score: number;
+  }>;
+}
+
 export interface StudyPattern {
   preferredTimeOfDay: string;
   averageSessionLength: number;
@@ -406,6 +421,366 @@ export class AnalyticsService {
       }, 0) / olderSessions.length;
 
     return Promise.resolve(recentAvgScore - olderAvgScore); // Positive means improvement
+  }
+
+  // Get analytics for a specific objective
+  // eslint-disable-next-line max-lines-per-function
+  async getObjectiveAnalytics(
+    userId: string,
+    objectiveId: string,
+    timeRange: 'week' | 'month' | 'all' = 'month'
+  ): Promise<ObjectiveAnalytics> {
+    try {
+      // Get the objective
+      const objective = await firebaseService.getDocument('objectives', objectiveId);
+      if (objective == null) {
+        throw new Error('Objective not found');
+      }
+      const objectiveData = objective as {
+        userId: string;
+        title: string;
+        learningPaths?: Array<Record<string, unknown>>;
+      };
+      if (objectiveData.userId !== userId) {
+        throw new Error('Access denied');
+      }
+
+      // Get time range
+      const endDate = new Date();
+      const startDate = new Date();
+      switch (timeRange) {
+        case 'week':
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(endDate.getMonth() - 1);
+          break;
+        case 'all':
+          startDate.setFullYear(2020);
+          break;
+      }
+
+      // Get all learning paths for this objective
+      const learningPaths = (objectiveData.learningPaths ?? []) as Array<{
+        id: string;
+        modules?: Array<Record<string, unknown>>;
+        isCompleted?: boolean;
+      }>;
+
+      // Extract all module IDs from all learning paths
+      const moduleIds = new Set<string>();
+      learningPaths.forEach((path: { modules?: Array<Record<string, unknown>> }): void => {
+        if (Array.isArray(path.modules)) {
+          path.modules.forEach((module: Record<string, unknown>): void => {
+            const moduleId: unknown = module['id'];
+            if (typeof moduleId === 'string') {
+              moduleIds.add(moduleId);
+            }
+          });
+        }
+      });
+
+      // Get all learning plans that are linked to this objective's modules/paths
+      // We'll query by userId first, then filter by objectiveId, learningPathId, or moduleId
+      const allLearningPlans = await firebaseService.queryDocuments('learningPlans', [
+        { field: 'userId', operator: '==', value: userId },
+      ]);
+
+      // Filter learning plans that belong to this objective
+      // Check if plan has objectiveId, learningPathId in objective's paths, or moduleId in objective's modules
+      const relevantPlanIds = allLearningPlans
+        .filter((plan: Record<string, unknown>): boolean => {
+          const planObjectiveId: unknown = plan['objectiveId'];
+          const planPathId: unknown = plan['learningPathId'];
+          const planModuleId: unknown = plan['moduleId'];
+
+          if (typeof planObjectiveId === 'string' && planObjectiveId === objectiveId) {
+            return true;
+          }
+          if (typeof planPathId === 'string') {
+            const pathExists = learningPaths.some(
+              (path: { id: string }): boolean => path.id === planPathId
+            );
+            if (pathExists) {
+              return true;
+            }
+          }
+          if (typeof planModuleId === 'string' && moduleIds.has(planModuleId)) {
+            return true;
+          }
+          return false;
+        })
+        .map((plan: Record<string, unknown>): string => {
+          const id: unknown = plan['id'];
+          return typeof id === 'string' ? id : '';
+        })
+        .filter((id: string): boolean => id !== '');
+
+      // Get all study sessions for these learning plans
+      const allSessions = await firebaseService.queryDocuments('studySessions', [
+        { field: 'userId', operator: '==', value: userId },
+        { field: 'isCompleted', operator: '==', value: true },
+        { field: 'startTime', operator: '>=', value: startDate },
+        { field: 'startTime', operator: '<=', value: endDate },
+      ]);
+
+      const relevantSessions = allSessions.filter((session: Record<string, unknown>): boolean => {
+        const sessionPlanId: unknown = session['learningPlanId'];
+        return (
+          typeof sessionPlanId === 'string' &&
+          relevantPlanIds.includes(sessionPlanId) &&
+          relevantPlanIds.length > 0
+        );
+      });
+
+      // Calculate analytics for this objective
+      const totalStudyTime = relevantSessions.reduce(
+        (sum: number, session: Record<string, unknown>): number => {
+          const duration: unknown = session['duration'];
+          return sum + (typeof duration === 'number' ? duration : 0);
+        },
+        0
+      );
+
+      const averageScore =
+        relevantSessions.length > 0
+          ? relevantSessions.reduce((sum: number, session: Record<string, unknown>): number => {
+              const score: unknown = session['score'];
+              return sum + (typeof score === 'number' ? score : 0);
+            }, 0) / relevantSessions.length
+          : 0;
+
+      // Calculate mastery from relevant learning plans
+      const relevantPlans = allLearningPlans.filter((plan: Record<string, unknown>): boolean => {
+        const planId: unknown = plan['id'];
+        return typeof planId === 'string' && relevantPlanIds.includes(planId);
+      });
+
+      const totalCards = relevantPlans.reduce(
+        (sum: number, plan: Record<string, unknown>): number => {
+          const totalCardsValue: unknown = plan['totalCards'];
+          return sum + (typeof totalCardsValue === 'number' ? totalCardsValue : 0);
+        },
+        0
+      );
+      const masteredCards = relevantPlans.reduce(
+        (sum: number, plan: Record<string, unknown>): number => {
+          const masteredCardsValue: unknown = plan['masteredCards'];
+          return sum + (typeof masteredCardsValue === 'number' ? masteredCardsValue : 0);
+        },
+        0
+      );
+      const masteryLevel = totalCards > 0 ? (masteredCards / totalCards) * 100 : 0;
+
+      // Calculate completion rate (completed modules / total modules)
+      const totalModules = moduleIds.size;
+      const completedModules = learningPaths.reduce(
+        (count: number, path: { isCompleted?: boolean }): number => {
+          // Count completed paths (simplified - in real app might need to check module completion)
+          return path.isCompleted === true ? count + 1 : count;
+        },
+        0
+      );
+      const completionRate = totalModules > 0 ? (completedModules / totalModules) * 100 : 0;
+
+      // Analyze weak and strong areas
+      const weakAreas = await this.analyzeWeakAreasForPlans(relevantPlanIds);
+      const strongAreas = await this.analyzeStrongAreasForPlans(relevantPlanIds);
+
+      // Calculate learning velocity
+      const learningVelocity = totalStudyTime > 0 ? masteredCards / (totalStudyTime / 3600) : 0;
+
+      // Calculate retention rate
+      const retentionRate = await this.calculateRetentionRate(userId, relevantSessions);
+
+      // Generate recommendations
+      const recommendations = await this.generateRecommendations(userId, {
+        totalStudyTime,
+        averageScore,
+        masteryLevel,
+        weakAreas,
+        strongAreas,
+        learningVelocity,
+        retentionRate,
+      });
+
+      // Build progress timeline (last 30 days)
+      const progressTimeline = this.buildProgressTimeline(relevantSessions, 30);
+
+      // Count modules
+      const modulesCount = totalModules;
+
+      return {
+        objectiveId,
+        objectiveTitle: objectiveData.title,
+        totalStudyTime,
+        averageScore: Math.round(averageScore),
+        masteryLevel: Math.round(masteryLevel),
+        weakAreas,
+        strongAreas,
+        learningVelocity: Math.round(learningVelocity * 100) / 100,
+        retentionRate: Math.round(retentionRate),
+        recommendations,
+        learningPathsCount: learningPaths.length,
+        modulesCount,
+        sessionsCount: relevantSessions.length,
+        completionRate: Math.round(completionRate),
+        progressTimeline,
+      };
+    } catch (error: unknown) {
+      logger.error('Error getting objective analytics:', error);
+      throw error;
+    }
+  }
+
+  // Helper methods for objective analytics
+  private async analyzeWeakAreasForPlans(planIds: string[]): Promise<string[]> {
+    if (planIds.length === 0) {
+      return [];
+    }
+
+    const plans = await Promise.all(
+      planIds.map(
+        (id: string): Promise<Record<string, unknown> | null> =>
+          firebaseService.getDocument('learningPlans', id)
+      )
+    );
+
+    const weakCards: Array<Record<string, unknown>> = plans
+      .filter(
+        (plan: Record<string, unknown> | null): plan is Record<string, unknown> => plan != null
+      )
+      .flatMap((plan: Record<string, unknown>): Array<Record<string, unknown>> => {
+        const flashcards: unknown = plan['flashcards'];
+        if (Array.isArray(flashcards)) {
+          return (flashcards as Array<Record<string, unknown>>).filter(
+            (card: Record<string, unknown>): boolean => {
+              const masteryLevel: unknown = card['masteryLevel'];
+              return typeof masteryLevel === 'number' && masteryLevel < 50;
+            }
+          );
+        }
+        return [];
+      });
+
+    const weakCategories: string[] = [
+      ...new Set(
+        weakCards.map((card: Record<string, unknown>): string => {
+          const category: unknown = card['category'];
+          return typeof category === 'string' ? category : 'general';
+        })
+      ),
+    ];
+    return weakCategories.slice(0, 3);
+  }
+
+  private async analyzeStrongAreasForPlans(planIds: string[]): Promise<string[]> {
+    if (planIds.length === 0) {
+      return [];
+    }
+
+    const plans = await Promise.all(
+      planIds.map(
+        (id: string): Promise<Record<string, unknown> | null> =>
+          firebaseService.getDocument('learningPlans', id)
+      )
+    );
+
+    const strongCards: Array<Record<string, unknown>> = plans
+      .filter(
+        (plan: Record<string, unknown> | null): plan is Record<string, unknown> => plan != null
+      )
+      .flatMap((plan: Record<string, unknown>): Array<Record<string, unknown>> => {
+        const flashcards: unknown = plan['flashcards'];
+        if (Array.isArray(flashcards)) {
+          return (flashcards as Array<Record<string, unknown>>).filter(
+            (card: Record<string, unknown>): boolean => {
+              const masteryLevel: unknown = card['masteryLevel'];
+              return typeof masteryLevel === 'number' && masteryLevel >= 80;
+            }
+          );
+        }
+        return [];
+      });
+
+    const strongCategories: string[] = [
+      ...new Set(
+        strongCards.map((card: Record<string, unknown>): string => {
+          const category: unknown = card['category'];
+          return typeof category === 'string' ? category : 'general';
+        })
+      ),
+    ];
+    return strongCategories.slice(0, 3);
+  }
+
+  private buildProgressTimeline(
+    sessions: Array<Record<string, unknown>>,
+    days: number
+  ): Array<{ date: string; studyTime: number; masteryLevel: number; score: number }> {
+    const timeline: Array<{
+      date: string;
+      studyTime: number;
+      masteryLevel: number;
+      score: number;
+      count: number;
+    }> = [];
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Initialize timeline with zeros
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dateStr: string = date.toISOString().split('T')[0] ?? '';
+      timeline.push({
+        date: dateStr,
+        studyTime: 0,
+        masteryLevel: 0,
+        score: 0,
+        count: 0,
+      });
+    }
+
+    // Aggregate sessions by date
+    sessions.forEach((session: Record<string, unknown>): void => {
+      const startTime: unknown = session['startTime'];
+      if (startTime == null) {
+        return;
+      }
+      const sessionDate = new Date(startTime as Date | string);
+      const dateStr: string = sessionDate.toISOString().split('T')[0] ?? '';
+      const timelineEntry = timeline.find(
+        (entry: { date: string }): boolean => entry.date === dateStr
+      );
+
+      if (timelineEntry != null) {
+        const duration: unknown = session['duration'];
+        const score: unknown = session['score'];
+        timelineEntry.studyTime += typeof duration === 'number' ? duration : 0;
+        if (typeof score === 'number') {
+          timelineEntry.score += score;
+          timelineEntry.count += 1;
+        }
+      }
+    });
+
+    // Calculate averages and return
+    return timeline.map(
+      (entry: {
+        date: string;
+        studyTime: number;
+        masteryLevel: number;
+        score: number;
+        count: number;
+      }): { date: string; studyTime: number; masteryLevel: number; score: number } => ({
+        date: entry.date,
+        studyTime: Math.round(entry.studyTime / 60), // Convert to minutes
+        masteryLevel: 0, // Would need additional data to calculate per-day mastery
+        score: entry.count > 0 ? Math.round(entry.score / entry.count) : 0,
+      })
+    );
   }
 }
 
