@@ -7,8 +7,8 @@ import { Clock, Users, Star, Search } from 'lucide-react';
 const mockLearningPaths = [
   {
     id: '1',
-    title: 'Apprendre React de A à Z',
-    description: 'Un parcours complet pour maîtriser React, des bases aux concepts avancés.',
+    title: 'Learn React from A to Z',
+    description: 'A complete path to master React, from basics to advanced concepts.',
     difficulty: 'intermediate',
     estimatedDuration: 40,
     topics: ['React', 'JavaScript', 'TypeScript'],
@@ -18,8 +18,8 @@ const mockLearningPaths = [
   },
   {
     id: '2',
-    title: 'Introduction à TypeScript',
-    description: 'Découvrez TypeScript et ses avantages pour le développement moderne.',
+    title: 'Introduction to TypeScript',
+    description: 'Discover TypeScript and its benefits for modern development.',
     difficulty: 'beginner',
     estimatedDuration: 20,
     topics: ['TypeScript', 'JavaScript'],
@@ -29,8 +29,8 @@ const mockLearningPaths = [
   },
   {
     id: '3',
-    title: 'Architecture Microservices',
-    description: 'Concevez et implémentez des architectures microservices robustes.',
+    title: 'Microservices Architecture',
+    description: 'Design and implement robust microservices architectures.',
     difficulty: 'advanced',
     estimatedDuration: 60,
     topics: ['Microservices', 'Docker', 'Kubernetes'],
@@ -69,11 +69,11 @@ export function LearningPathsPage(): JSX.Element {
   const getDifficultyLabel = (difficulty: string): string => {
     switch (difficulty) {
       case 'beginner':
-        return 'Débutant';
+        return 'Beginner';
       case 'intermediate':
-        return 'Intermédiaire';
+        return 'Intermediate';
       case 'advanced':
-        return 'Avancé';
+        return 'Advanced';
       default:
         return difficulty;
     }
@@ -83,9 +83,9 @@ export function LearningPathsPage(): JSX.Element {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Parcours d&apos;apprentissage</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Learning Paths</h1>
         <p className="mt-2 text-gray-600">
-          Découvrez et suivez des parcours structurés pour développer vos compétences
+          Discover and follow structured paths to develop your skills
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export function LearningPathsPage(): JSX.Element {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Rechercher un parcours..."
+                placeholder="Search for a path..."
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
                   setSearchTerm(e.target.value);
@@ -117,10 +117,10 @@ export function LearningPathsPage(): JSX.Element {
               }}
               className="input"
             >
-              <option value="all">Tous les niveaux</option>
-              <option value="beginner">Débutant</option>
-              <option value="intermediate">Intermédiaire</option>
-              <option value="advanced">Avancé</option>
+              <option value="all">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
             </select>
           </div>
         </div>
@@ -174,7 +174,7 @@ export function LearningPathsPage(): JSX.Element {
               </div>
 
               <Link to={`/learning-paths/${path.id}`} className="btn btn-primary w-full">
-                Voir le parcours
+                View Path
               </Link>
             </div>
           )
@@ -183,8 +183,8 @@ export function LearningPathsPage(): JSX.Element {
 
       {filteredPaths.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Aucun parcours trouvé</p>
-          <p className="text-gray-400">Essayez de modifier vos critères de recherche</p>
+          <p className="text-gray-500 text-lg">No paths found</p>
+          <p className="text-gray-400">Try modifying your search criteria</p>
         </div>
       )}
     </div>

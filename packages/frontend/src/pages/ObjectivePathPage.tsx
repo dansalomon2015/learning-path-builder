@@ -594,7 +594,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
         }
       }
 
-      // Rediriger vers la page d'apprentissage
+      // Redirect to learning page
       navigate(`/objectives/${objectiveId}/paths/${pathId}/modules/${module.id}/learn`);
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -726,7 +726,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
                 ?.title ?? ''
             : ''
         }
-        message="Génération du contenu d'apprentissage en cours..."
+        message="Generating learning content..."
       />
     </div>
   );

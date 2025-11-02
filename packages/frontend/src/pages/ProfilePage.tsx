@@ -4,22 +4,22 @@ import { User, Mail, Calendar, BookOpen, Target } from 'lucide-react';
 // Mock data - to be replaced with API calls
 const mockUser = {
   id: '1',
-  name: 'Jean Dupont',
-  email: 'jean.dupont@example.com',
+  name: 'John Doe',
+  email: 'john.doe@example.com',
   avatar: null,
   role: 'student',
   createdAt: '2024-01-15',
   learningPaths: [
     {
       id: '1',
-      title: 'Apprendre React de A à Z',
+      title: 'Learn React from A to Z',
       progress: 75,
       completedResources: 3,
       totalResources: 4,
     },
     {
       id: '2',
-      title: 'Introduction à TypeScript',
+      title: 'Introduction to TypeScript',
       progress: 100,
       completedResources: 5,
       totalResources: 5,
@@ -58,7 +58,7 @@ const UserInfo: React.FC<UserInfoProps> = ({ name, email, createdAt }): JSX.Elem
           </div>
           <div className="flex items-center space-x-2">
             <Calendar className="h-4 w-4" />
-            <span>Membre depuis {new Date(createdAt).toLocaleDateString('fr-FR')}</span>
+            <span>Member since {new Date(createdAt).toLocaleDateString('en-US')}</span>
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@ const Stats: React.FC<StatsProps> = ({ stats }): JSX.Element => (
         <BookOpen className="h-6 w-6 text-blue-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-900">{stats.totalLearningPaths}</h3>
-      <p className="text-gray-600">Parcours suivis</p>
+      <p className="text-gray-600">Learning Paths</p>
     </div>
 
     <div className="card p-6 text-center">
@@ -90,7 +90,7 @@ const Stats: React.FC<StatsProps> = ({ stats }): JSX.Element => (
         <Target className="h-6 w-6 text-green-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-900">{stats.completedPaths}</h3>
-      <p className="text-gray-600">Parcours terminés</p>
+      <p className="text-gray-600">Completed Paths</p>
     </div>
 
     <div className="card p-6 text-center">
@@ -98,7 +98,7 @@ const Stats: React.FC<StatsProps> = ({ stats }): JSX.Element => (
         <Calendar className="h-6 w-6 text-yellow-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-900">{stats.totalHours}h</h3>
-      <p className="text-gray-600">Heures d&apos;apprentissage</p>
+      <p className="text-gray-600">Learning Hours</p>
     </div>
 
     <div className="card p-6 text-center">
@@ -106,7 +106,7 @@ const Stats: React.FC<StatsProps> = ({ stats }): JSX.Element => (
         <Target className="h-6 w-6 text-purple-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-900">{stats.averageRating}</h3>
-      <p className="text-gray-600">Note moyenne</p>
+      <p className="text-gray-600">Average Rating</p>
     </div>
   </div>
 );
@@ -132,15 +132,15 @@ const LearningPathCard: React.FC<LearningPathCardProps> = ({ path }): JSX.Elemen
           path.progress === 100 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
         }`}
       >
-        {path.progress === 100 ? 'Terminé' : 'En cours'}
+        {path.progress === 100 ? 'Completed' : 'In Progress'}
       </span>
     </div>
 
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-700">Progression</span>
+        <span className="text-sm font-medium text-gray-700">Progress</span>
         <span className="text-sm text-gray-500">
-          {path.completedResources}/{path.totalResources} ressources
+          {path.completedResources}/{path.totalResources} resources
         </span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -149,10 +149,10 @@ const LearningPathCard: React.FC<LearningPathCardProps> = ({ path }): JSX.Elemen
           style={{ width: `${path.progress}%` }}
         />
       </div>
-      <p className="text-sm text-gray-500 mt-1">{path.progress}% complété</p>
+      <p className="text-sm text-gray-500 mt-1">{path.progress}% completed</p>
     </div>
 
-    <button className="btn btn-primary">{path.progress === 100 ? 'Réviser' : 'Continuer'}</button>
+    <button className="btn btn-primary">{path.progress === 100 ? 'Review' : 'Continue'}</button>
   </div>
 );
 
@@ -163,8 +163,8 @@ export function ProfilePage(): JSX.Element {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Mon Profil</h1>
-        <p className="mt-2 text-gray-600">Gérez vos informations et suivez vos progrès</p>
+        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+        <p className="mt-2 text-gray-600">Manage your information and track your progress</p>
       </div>
 
       {/* User Info */}
@@ -175,7 +175,7 @@ export function ProfilePage(): JSX.Element {
 
       {/* Learning Paths */}
       <div className="card p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Mes Parcours</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">My Learning Paths</h2>
 
         <div className="space-y-6">
           {user.learningPaths.map(
@@ -188,10 +188,8 @@ export function ProfilePage(): JSX.Element {
         {user.learningPaths.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 text-lg">Aucun parcours suivi</p>
-            <p className="text-gray-400">
-              Commencez par explorer nos parcours d&apos;apprentissage
-            </p>
+            <p className="text-gray-500 text-lg">No learning paths followed</p>
+            <p className="text-gray-400">Start by exploring our learning paths</p>
           </div>
         )}
       </div>

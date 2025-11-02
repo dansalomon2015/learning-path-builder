@@ -28,10 +28,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
       } else {
         await signUp(formData.email, formData.password, formData.name);
       }
-      toast.success(mode === 'login' ? 'Connexion réussie !' : 'Compte créé avec succès !');
+      toast.success(mode === 'login' ? 'Login successful!' : 'Account created successfully!');
       onSuccess();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue.';
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred.';
       toast.error(errorMessage);
     }
   };
@@ -48,27 +48,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-            {mode === 'login' ? 'Connexion' : 'Créer un compte'}
+            {mode === 'login' ? 'Login' : 'Create Account'}
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
             {mode === 'login' ? (
               <>
-                Pas encore de compte ?{' '}
+                Don't have an account?{' '}
                 <button
                   onClick={onSwitchMode}
                   className="font-medium text-indigo-600 hover:text-indigo-500"
                 >
-                  Créer un compte
+                  Create Account
                 </button>
               </>
             ) : (
               <>
-                Déjà un compte ?{' '}
+                Already have an account?{' '}
                 <button
                   onClick={onSwitchMode}
                   className="font-medium text-indigo-600 hover:text-indigo-500"
                 >
-                  Se connecter
+                  Login
                 </button>
               </>
             )}
@@ -80,7 +80,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
             {mode === 'register' && (
               <div>
                 <label htmlFor="name" className="label">
-                  Nom complet
+                  Full Name
                 </label>
                 <input
                   id="name"
@@ -90,14 +90,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
                   value={formData.name}
                   onChange={handleInputChange}
                   className="input"
-                  placeholder="Votre nom complet"
+                  placeholder="Your full name"
                 />
               </div>
             )}
 
             <div>
               <label htmlFor="email" className="label">
-                Adresse email
+                Email Address
               </label>
               <input
                 id="email"
@@ -114,7 +114,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
 
             <div>
               <label htmlFor="password" className="label">
-                Mot de passe
+                Password
               </label>
               <input
                 id="password"
@@ -136,12 +136,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                  {mode === 'login' ? 'Connexion...' : 'Création...'}
+                  {mode === 'login' ? 'Logging in...' : 'Creating...'}
                 </div>
               ) : mode === 'login' ? (
-                'Se connecter'
+                'Login'
               ) : (
-                'Créer le compte'
+                'Create Account'
               )}
             </button>
           </div>
@@ -149,7 +149,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onSwitchMode, mode }): J
           {mode === 'login' && (
             <div className="text-center">
               <button type="button" className="text-sm text-indigo-600 hover:text-indigo-500">
-                Mot de passe oublié ?
+                Forgot password?
               </button>
             </div>
           )}

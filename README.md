@@ -1,125 +1,131 @@
 # FlashLearn AI
 
-Un système d'apprentissage adaptatif moderne alimenté par l'IA, conçu pour créer et étudier des flashcards dynamiques générées par IA. L'application met l'accent sur une expérience utilisateur propre, intuitive et engageante grâce à un design minimaliste et des animations fluides.
+A modern AI-powered adaptive learning system designed to create and study dynamic AI-generated flashcards. The application emphasizes a clean, intuitive, and engaging user experience through minimalist design and smooth animations.
 
 ## 🏗️ Architecture
 
 ```
-flashlearn-ai/
+learning-path-builder/
 ├── packages/
-│   ├── backend/          # API Node.js 22 + TypeScript + Express + Firebase + Gemini AI
-│   └── frontend/         # React + Vite + TypeScript + Tailwind CSS + Firebase Auth
-├── cloud-run/           # Configurations Cloud Run
-├── scripts/             # Scripts de déploiement
-├── .github/workflows/   # CI/CD GitHub Actions
-└── docker-compose.yml   # Développement local
+│   ├── backend/          # API Node.js 22 + TypeScript + Express + Firebase Admin + Gemini AI
+│   ├── frontend/         # React + Vite + TypeScript + Tailwind CSS + Nginx
+│   └── shared/           # Shared code between backend and frontend
+├── scripts/             # Deployment scripts
+├── .github/workflows/   # CI/CD GitHub Actions (CI, Deploy, Provision)
+└── docker-compose.yml   # Local development
 ```
 
-## 🚀 Fonctionnalités
+## 🚀 Features
 
 ### Backend
 
--   **Node.js 22** avec TypeScript
--   **Express.js** avec middleware de sécurité
--   **Firebase Admin SDK** pour l'authentification et Firestore
--   **Gemini AI** pour la génération de flashcards et quiz adaptatifs
--   **Algorithmes adaptatifs** pour l'ajustement automatique de la difficulté
--   **Upload de documents** (PDF, TXT, MD) avec traitement IA
--   **Export de données** (CSV, PDF) avec historique complet
--   **Health checks** avancés pour Cloud Run
--   **Monitoring** avec Winston et Cloud Logging
+-   **Node.js 22** with TypeScript
+-   **Express.js** with security middleware
+-   **Firebase Admin SDK** for authentication and Firestore
+-   **Gemini AI** for generating adaptive flashcards and quizzes
+-   **Adaptive algorithms** for automatic difficulty adjustment
+-   **Document upload** (PDF, TXT, MD) with AI processing
+-   **Data export** (CSV, PDF) with complete history
+-   **Advanced health checks** for Cloud Run
+-   **Monitoring** with Winston and Cloud Logging
 
 ### Frontend
 
--   **React 18** avec TypeScript
--   **Vite** pour le build rapide
--   **Tailwind CSS** pour le styling moderne
--   **Firebase Auth** pour l'authentification sécurisée
--   **Framer Motion** pour les animations fluides
--   **React Query** pour la gestion des données
--   **Zustand** pour l'état global
--   **React Hook Form** pour les formulaires
--   **Composants de flashcards** avec animations de retournement
--   **Mode quiz** avec questions à choix multiples adaptatives
+-   **React 18** with TypeScript
+-   **Vite** for fast builds
+-   **Tailwind CSS** for modern styling
+-   **Backend JWT Auth** - Authentication via backend with JWT tokens
+-   **Redux Toolkit + Redux Persist** for global state management
+-   **React Context API** for authentication
+-   **React Query** for data management
+-   **Framer Motion** for smooth animations
+-   **React Hook Form** for forms
+-   **Axios** for API calls with interceptors
+-   **Nginx** with proxy for API requests in production
+-   **Flashcard components** with flip animations
+-   **Quiz mode** with adaptive multiple-choice questions
 
-### Fonctionnalités Principales
+### Main Features
 
--   **Génération dynamique de quiz** : Création de quiz personnalisés basés sur le niveau de compétence et les performances passées
--   **Authentification utilisateur** : Connexion et inscription sécurisées (Firebase Auth)
--   **Suivi et sauvegarde des progrès** : Stockage persistant des résultats de quiz et statistiques
--   **Apprentissage adaptatif** : Ajustement automatique de la difficulté et suggestions de nouveaux sujets
--   **Upload et traitement de documents** : Conversion de documents en flashcards via IA
--   **Export et reprise de session** : Reprise de sessions incomplètes et export de l'historique
--   **Dashboard et analytics** : Tableaux de bord personnalisés avec analyses visuelles
--   **Gestion de profil utilisateur** : Édition des informations, niveau de compétence et objectifs
--   **Sécurité et protection des données** : Chiffrement des données et logs d'audit
+-   **Dynamic quiz generation** : Create personalized quizzes based on skill level and past performance
+-   **User authentication** : Secure login and registration (Firebase Auth)
+-   **Progress tracking and saving** : Persistent storage of quiz results and statistics
+-   **Adaptive learning** : Automatic difficulty adjustment and suggestions for new topics
+-   **Document upload and processing** : Convert documents to flashcards via AI
+-   **Export and session resume** : Resume incomplete sessions and export history
+-   **Dashboard and analytics** : Customized dashboards with visual analytics
+-   **User profile management** : Edit information, skill level, and objectives
+-   **Security and data protection** : Data encryption and audit logs
 
 ### DevOps
 
--   **Docker** multi-stage pour les builds optimisés
--   **GitHub Actions** pour le CI/CD automatique
--   **Google Cloud Run** pour le déploiement serverless
--   **Nginx** pour servir le frontend en production
--   **Cloud Build** pour les tests et déploiement automatisé
--   **Cloud Logging et Monitoring** avec alertes automatiques
+-   **Docker** multi-stage for optimized builds
+-   **GitHub Actions** for automated CI/CD
+-   **Google Cloud Run** for serverless deployment
+-   **Nginx** to serve the frontend in production
+-   **Cloud Build** for automated testing and deployment
+-   **Cloud Logging and Monitoring** with automatic alerts
 
-## 🛠️ Installation et Développement
+## 🛠️ Installation and Development
 
-### Prérequis
+### Prerequisites
 
 -   Node.js 22+
 -   npm 10+
 -   Firebase CLI
--   Google Cloud SDK (pour le déploiement)
--   Docker (optionnel pour le développement local)
+-   Google Cloud SDK (for deployment)
+-   Docker (optional for local development)
 
-### Configuration Firebase
+### Firebase Configuration
 
-1. **Créer un projet Firebase** :
+1. **Create a Firebase project** :
+    - Go to [Firebase Console](https://console.firebase.google.com/)
+    - Create a new project
+    - Enable Authentication (Email/Password) and Firestore
 
-    - Aller sur [Firebase Console](https://console.firebase.google.com/)
-    - Créer un nouveau projet
-    - Activer Authentication et Firestore
+2. **Get service account credentials** :
+    - Go to Project Settings > Service Accounts
+    - Generate a new private key (JSON)
+    - Save the JSON file
 
-2. **Configurer Authentication** :
+3. **Configure Firestore** :
+    - Create a database in production mode
+    - Configure security rules
 
-    - Activer Email/Password et Google Sign-In
-    - Configurer les domaines autorisés
+### Gemini AI Configuration
 
-3. **Configurer Firestore** :
-    - Créer une base de données en mode production
-    - Configurer les règles de sécurité
-
-### Configuration Gemini AI
-
-1. **Obtenir une clé API Gemini** :
-    - Aller sur [Google AI Studio](https://makersuite.google.com/app/apikey)
-    - Créer une nouvelle clé API
+1. **Get a Gemini API key** :
+    - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+    - Create a new API key
 
 ### Installation
 
 ```bash
-# Cloner le repository
+# Clone the repository
 git clone <repository-url>
 cd flashlearn-ai
 
-# Installer les dépendances
+# Install dependencies
 npm install
 
-# Copier les fichiers d'environnement
-cp packages/backend/env.example packages/backend/.env
-cp packages/frontend/env.example packages/frontend/.env
+# Copy environment files
+cp packages/backend/env.example packages/backend/.env.local
+cp packages/frontend/env.example packages/frontend/.env.local
 ```
 
-### Configuration des Variables d'Environnement
+### Environment Variables Configuration
 
-#### Backend (.env)
+#### Backend (.env.local)
+
+**Option 1: Use FIREBASE_CONFIG (recommended - JSON format, same as production)**
 
 ```env
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+# Firebase Configuration (JSON string)
+FIREBASE_CONFIG={"project_id":"your-project-id","serviceAccount":{"type":"service_account","project_id":"your-project-id","private_key_id":"key-id","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"xxx@xxx.iam.gserviceaccount.com","client_id":"123","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token"}}
+
+# Alternative: Use individual variables or firebase-service-account.json file
+# FIREBASE_PROJECT_ID=your-firebase-project-id
+# firebase-project-id=your-firebase-project-id
 
 # Gemini AI Configuration
 GEMINI_API_KEY=your-gemini-api-key
@@ -128,291 +134,363 @@ GEMINI_API_KEY=your-gemini-api-key
 NODE_ENV=development
 PORT=3000
 FRONTEND_URL=http://localhost:5173
+
+# Security Keys
+JWT_SECRET=your-jwt-secret-key-here
 ```
 
-#### Frontend (.env)
+**To generate FIREBASE_CONFIG from your service account JSON file:**
+```bash
+cd packages/backend
+jq -c '{project_id: .project_id, serviceAccount: .}' src/services/firebase-service-account.json
+```
+
+#### Frontend (.env.local)
 
 ```env
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=your-firebase-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-VITE_FIREBASE_APP_ID=your-firebase-app-id
-
 # API Configuration
 VITE_API_URL=http://localhost:3000/api
+
+# Note: Firebase client SDK is not used in the frontend.
+# Authentication is handled via the backend API with JWT tokens.
 ```
 
-### Développement Local
+### Local Development
 
-#### Option 1: Développement avec npm
+#### Option 1: Development with npm
 
 ```bash
-# Démarrer le backend en mode développement
+# Start the backend in development mode
 npm run dev:backend
 
-# Dans un autre terminal, démarrer le frontend
+# In another terminal, start the frontend
 npm run dev:frontend
 ```
 
-#### Option 2: Développement avec Docker
+#### Option 2: Development with Docker
 
 ```bash
-# Démarrer tous les services avec Docker Compose
+# Start all services with Docker Compose
 npm run docker:up
 
-# Arrêter les services
+# Stop services
 npm run docker:down
 ```
 
-### Scripts Disponibles
+### Available Scripts
 
-#### Racine du projet
+#### Root project
 
 ```bash
-npm run dev          # Démarrer backend + frontend en parallèle
-npm run build         # Build complet
-npm run test          # Tests complets
-npm run lint          # Linting complet
-npm run clean         # Nettoyer les builds
+npm run dev          # Start backend + frontend in parallel
+npm run build         # Full build
+npm run test          # Full tests
+npm run lint          # Full linting
+npm run clean         # Clean builds
 ```
 
 #### Backend
 
 ```bash
-npm run dev:backend   # Démarrer en mode développement
-npm run build:backend # Build TypeScript
-npm run start         # Démarrer en production
-npm run test          # Tests Jest
+npm run dev:backend   # Start in development mode (tsx watch)
+npm run build:backend # TypeScript build + tsc-alias
+npm run start         # Start in production
+npm run test          # Jest tests (watch mode)
+npm run test:ci       # Jest tests (CI mode, no watch)
 npm run lint          # ESLint
 ```
 
 #### Frontend
 
 ```bash
-npm run dev:frontend  # Démarrer Vite dev server
-npm run build:frontend # Build Vite
-npm run preview       # Prévisualiser le build
-npm run test          # Tests Vitest
+npm run dev:frontend  # Start Vite dev server
+npm run build:frontend # Vite build
+npm run preview       # Preview the build
+npm run test          # Vitest tests (watch mode)
+npm run test:ci       # Vitest tests (CI mode, no watch)
 npm run lint          # ESLint
 ```
 
-## 🚀 Déploiement
+## 🚀 Deployment
 
-### Configuration GitHub Actions
+### GitHub Actions Configuration
 
-1. **Créer un projet Google Cloud**
-2. **Activer les APIs nécessaires** :
+1. **Create a Google Cloud project**
+2. **Enable required APIs** :
 
     - Cloud Run API
     - Container Registry API
     - Cloud Build API
     - Firebase Admin API
 
-3. **Créer un Service Account** avec les permissions :
+3. **Create a Service Account** with permissions :
 
     - Cloud Run Admin
     - Storage Admin
     - Service Account User
     - Firebase Admin
 
-4. **Configurer les secrets GitHub** :
-    - `GCP_PROJECT_ID` : ID de votre projet GCP
-    - `GCP_SA_KEY` : Clé JSON du Service Account
-    - `FIREBASE_PROJECT_ID` : ID de votre projet Firebase
-    - `GEMINI_API_KEY` : Clé API Gemini
+4. **Configure GitHub secrets** :
+    - `GCP_PROJECT_ID` : Your GCP project ID
+    - `GCP_REGION` : GCP region (e.g., us-west1, us-central1)
+    - `GCP_SA_KEY` : Service Account JSON key with required permissions
 
-### Déploiement Automatique
+### Automatic Deployment
 
-Le déploiement se fait automatiquement à chaque push sur la branche `main` :
+Deployment happens automatically on every push to the `main` branch :
 
-1. **Tests** : Exécution des tests backend et frontend
-2. **Build** : Construction des images Docker
-3. **Deploy** : Déploiement sur Cloud Run
-4. **Health Check** : Vérification de la disponibilité des services
-5. **Notification** : Statut du déploiement
+1. **Tests** : Run backend and frontend tests (`test:ci`)
+2. **Build** : Build Docker images with multi-stage Dockerfile
+3. **Deploy** : Sequential deployment to Cloud Run (concurrency group to avoid conflicts)
+4. **Secrets** : Use Google Cloud Secret Manager for `FIREBASE_CONFIG` and `GEMINI_API_KEY`
+5. **Nginx Proxy** : Frontend configures nginx to proxy `/api/*` to backend
+6. **Health Check** : Verify service availability
 
-### Déploiement Manuel
+**Note** : Deployments are configured to not run concurrently (one deployment at a time).
+
+### Manual Deployment
 
 ```bash
-# Rendre le script exécutable
+# Make the script executable
 chmod +x scripts/deploy.sh
 
-# Déployer
+# Deploy
 ./scripts/deploy.sh YOUR_PROJECT_ID us-central1
 ```
 
-### URLs de Déploiement
+### Deployment URLs
 
-Après déploiement, vos services seront disponibles à :
+After deployment, your services will be available at :
 
--   **Frontend** : `https://flashlearn-ai-frontend-PROJECT_ID.a.run.app`
--   **Backend** : `https://flashlearn-ai-backend-PROJECT_ID.a.run.app`
--   **Health Check** : `https://flashlearn-ai-backend-PROJECT_ID.a.run.app/health`
+-   **Frontend** : `https://flashlearn-ai-frontend-PROJECT_ID.REGION.run.app`
+-   **Backend** : `https://flashlearn-ai-backend-PROJECT_ID.REGION.run.app`
+-   **Backend Health Check** : `https://flashlearn-ai-backend-PROJECT_ID.REGION.run.app/health`
 
-## 📁 Structure du Code
+**Required configuration before first deployment :**
+
+1. **Create secrets in Google Cloud Secret Manager** :
+   ```bash
+   # Firebase config (JSON object)
+   cat firebase-service-account.json | jq -c '{project_id: .project_id, serviceAccount: .}' | \
+     gcloud secrets create firebase-config --data-file=- --replication-policy="automatic"
+   
+   # Gemini API key (string)
+   echo -n 'your-gemini-api-key' | \
+     gcloud secrets create gemini-api-key --data-file=- --replication-policy="automatic"
+   ```
+
+2. **Run the provision workflow** (one time only) :
+    - Via GitHub Actions : Go to Actions > Provision > Run workflow
+    - Or manually with the provision script
+
+3. **Subsequent deployments** will be automatic via the `deploy.yml` workflow
+
+## 📁 Code Structure
 
 ### Backend (`packages/backend/`)
 
 ```
 src/
-├── index.ts                    # Point d'entrée
+├── index.ts                    # Entry point with health checks
 ├── middleware/                 # Middlewares Express
-│   ├── auth.ts                # Authentification Firebase
-│   ├── errorHandler.ts
-│   └── notFoundHandler.ts
-├── routes/                     # Routes API
-│   ├── learningPlan.ts        # Gestion des plans d'apprentissage
-│   └── document.ts            # Upload et export de documents
-├── services/                   # Services métier
-│   ├── firebase.ts            # Service Firebase Admin
-│   ├── gemini.ts              # Service Gemini AI
-│   └── adaptiveLearning.ts    # Algorithmes adaptatifs
-├── types/                      # Types TypeScript
-│   └── index.ts
-└── utils/                      # Utilitaires
-    └── logger.ts
+│   ├── auth.ts                # JWT authentication
+│   ├── errorHandler.ts        # Centralized error handling
+│   └── notFoundHandler.ts     # 404 handler
+├── routes/                     # API routes
+│   ├── auth.ts                # Authentication (login/register)
+│   ├── objectives.ts          # Learning objectives management
+│   ├── assessments.ts         # Skill assessments
+│   ├── learningPlan.ts        # Learning plans
+│   ├── document.ts            # Document upload and export
+│   ├── user.ts                # User profile
+│   └── analytics.ts           # Analytics and statistics
+├── services/                   # Business services
+│   ├── firebase.ts            # Firebase Admin service (Firestore + Auth)
+│   ├── gemini.ts              # Gemini AI service (content generation)
+│   ├── adaptiveLearning.ts    # Adaptive algorithms
+│   └── analytics.ts           # Analytics service
+├── types/                      # TypeScript types
+│   └── index.ts               # Shared types with enums
+└── utils/                      # Utilities
+    └── logger.ts              # Winston logger (Cloud Run compatible)
 ```
 
 ### Frontend (`packages/frontend/`)
 
 ```
 src/
-├── main.tsx                    # Point d'entrée React
-├── App.tsx                     # Composant principal
-├── components/                 # Composants réutilisables
-│   ├── Layout.tsx
-│   ├── FlashcardView.tsx
-│   ├── QuizView.tsx
-│   └── Dashboard.tsx
-├── pages/                      # Pages de l'application
-│   ├── HomePage.tsx
-│   ├── LoginPage.tsx
-│   ├── DashboardPage.tsx
-│   ├── StudyPage.tsx
-│   └── ProfilePage.tsx
-├── services/                   # Services API
-│   ├── api.ts
-│   └── firebase.ts
-├── types/                      # Types TypeScript
-│   └── index.ts
+├── main.tsx                    # React entry point
+├── App.tsx                     # Main component with routing
+├── components/                 # Reusable components
+│   ├── Layout.tsx             # Main layout
+│   ├── Header.tsx             # Navigation header
+│   ├── AuthForm.tsx           # Authentication form
+│   ├── FlashcardView.tsx      # Flashcard view
+│   ├── StudySession.tsx       # Complete study session
+│   ├── Dashboard.tsx          # Dashboard
+│   ├── ProfilePage.tsx        # Profile page
+│   ├── SkillAssessment.tsx    # Skill assessment
+│   ├── ModuleFlashcardStudy.tsx  # Module study
+│   ├── ValidationQuizModal.tsx   # Validation quiz
+│   ├── ContentGenerationModal.tsx # Content generation
+│   └── SuggestedResourcesPanel.tsx # Suggested resources
+├── pages/                      # Application pages
+│   ├── LandingPage.tsx        # Landing page
+│   ├── AuthPage.tsx           # Authentication page
+│   ├── DashboardPage.tsx      # Main dashboard
+│   ├── StudyPage.tsx          # Study page
+│   ├── ProfilePage.tsx        # User profile
+│   ├── LearningPathsPage.tsx  # Learning paths list
+│   ├── ObjectivePathPage.tsx  # Objective details
+│   └── ModuleLearnPage.tsx    # Module learning
+├── services/                   # API services
+│   ├── api.ts                 # Axios API service with interceptors
+│   ├── auth.ts                # Authentication service (backend JWT)
+│   └── sessionService.ts      # Study session management
+├── store/                      # Redux store
+│   ├── index.ts               # Store configuration with persist
+│   └── slices/                # Redux slices
+│       ├── authSlice.ts       # Authentication state
+│       └── learningPlansSlice.ts  # Learning plans state
+├── contexts/                   # React Context
+│   └── AuthContext.tsx        # Authentication context
+├── types/                      # TypeScript types
+│   └── index.ts               # Types with enums (SkillLevel, Difficulty, etc.)
 └── index.css                   # Styles Tailwind
 ```
 
 ## 🔧 Configuration
 
-### Variables d'Environnement
+### Environment Variables
 
-#### Backend
+#### Backend (Cloud Run)
 
-```env
-NODE_ENV=production
-PORT=3000
-FIREBASE_PROJECT_ID=your-firebase-project-id
-GEMINI_API_KEY=your-gemini-api-key
-FRONTEND_URL=https://your-frontend-url
-```
+Environment variables are configured via:
+- **Google Cloud Secret Manager secrets** :
+  - `FIREBASE_CONFIG` : JSON object with project_id and serviceAccount
+  - `GEMINI_API_KEY` : Gemini API key (string)
+- **Cloud Run environment variables** :
+  - `NODE_ENV=production`
+  - `BACKEND_URL` : Backend URL (for frontend nginx proxy)
+  - `PORT` : Automatically set by Cloud Run (3000)
 
-#### Frontend
+#### Frontend (Cloud Run)
 
-```env
-VITE_API_URL=https://your-backend-url/api
-VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
-VITE_FIREBASE_API_KEY=your-firebase-api-key
-```
+Environment variables are configured via:
+- **Cloud Run environment variables** :
+  - `VITE_API_URL` : Full backend URL with `/api` (used at build time)
+  - `BACKEND_URL` : Backend URL (used by nginx proxy at runtime)
 
-### Configuration Cloud Run
+**Note** : The frontend uses nginx which proxies `/api/*` requests to the backend configured in `BACKEND_URL`.
 
-Les services sont configurés avec :
+### Cloud Run Configuration
+
+Services are configured with :
 
 -   **Auto-scaling** : 0-10 instances (backend), 0-5 instances (frontend)
--   **Memory** : 512Mi (backend), 256Mi (frontend)
--   **CPU** : 1 vCPU pour les deux services
--   **Health checks** : Endpoints `/health` avec vérification des services
--   **Timeout** : 300 secondes
--   **Monitoring** : Cloud Logging et Cloud Monitoring intégrés
+-   **Memory** : 1Gi (backend), 512Mi (frontend)
+-   **CPU** : 1 vCPU for both services
+-   **Health checks** : `/health` endpoints with service verification (always returns 200 to prevent Cloud Run from killing the container)
+-   **Timeout** : 300 seconds (backend), 60 seconds (frontend)
+-   **Secrets** : Access to secrets via Secret Manager (FIREBASE_CONFIG, GEMINI_API_KEY)
+-   **Concurrency** : Sequential deployments (no concurrency)
+-   **Monitoring** : Integrated Cloud Logging and Cloud Monitoring
+-   **Frontend Nginx** : Proxy `/api/*` to backend, static file server
 
 ## 🧪 Tests
 
 ```bash
-# Tests backend
+# Tests backend (watch mode)
 npm run test --workspace=@flashlearn-ai/backend
 
-# Tests frontend
+# Tests backend (CI mode)
+npm run test:ci --workspace=@flashlearn-ai/backend
+
+# Tests frontend (watch mode)
 npm run test --workspace=@flashlearn-ai/frontend
 
-# Tests avec couverture
+# Tests frontend (CI mode)
+npm run test:ci --workspace=@flashlearn-ai/frontend
+
+# Tests with coverage
 npm run test:coverage --workspace=@flashlearn-ai/backend
 npm run test:coverage --workspace=@flashlearn-ai/frontend
+
+# Full tests (CI mode)
+npm run test:ci
 ```
 
 ## 📊 Monitoring
 
 ### Logs
 
--   **Backend** : Winston avec rotation des logs et intégration Cloud Logging
--   **Frontend** : Logs Nginx et erreurs JavaScript
--   **Cloud Run** : Logs intégrés dans Google Cloud Console
--   **Firebase** : Logs d'authentification et Firestore
+-   **Backend** : Winston with log rotation and Cloud Logging integration
+-   **Frontend** : Nginx logs and JavaScript errors
+-   **Cloud Run** : Integrated logs in Google Cloud Console
+-   **Firebase** : Authentication and Firestore logs
 
-### Métriques
+### Metrics
 
--   **Performance** : Temps de réponse, throughput, latence
--   **Erreurs** : Taux d'erreur, codes de statut, exceptions
--   **Ressources** : CPU, mémoire, requêtes, coûts
--   **Utilisateurs** : Sessions actives, conversions, rétention
+-   **Performance** : Response time, throughput, latency
+-   **Errors** : Error rate, status codes, exceptions
+-   **Resources** : CPU, memory, requests, costs
+-   **Users** : Active sessions, conversions, retention
 
-### Alertes
+### Alerts
 
--   **Erreurs critiques** : Alertes automatiques sur les erreurs 5xx
--   **Performance** : Alertes sur la latence élevée
--   **Ressources** : Alertes sur l'utilisation CPU/mémoire
--   **Sécurité** : Alertes sur les tentatives d'intrusion
+-   **Critical errors** : Automatic alerts on 5xx errors
+-   **Performance** : Alerts on high latency
+-   **Resources** : Alerts on CPU/memory usage
+-   **Security** : Alerts on intrusion attempts
 
-## 🔒 Sécurité
+## 🔒 Security
 
-### Authentification
+### Authentication
 
--   **Firebase Auth** avec JWT tokens
--   **OAuth 2.0** pour Google Sign-In
--   **Middleware d'authentification** sur toutes les routes protégées
+-   **Backend JWT** : Authentication via backend with JWT tokens
+-   **Firebase Admin SDK** : Used only on backend to create/verify users
+-   **Identity Toolkit API** : Server-side email/password verification
+-   **Authentication middleware** : API route protection with JWT verification
+-   **Redux Persist** : Authentication state persistence in frontend
+-   **Protected Routes** : Protected routes with redirect if not authenticated
 
-### Protection des Données
+### Data Protection
 
--   **Chiffrement en transit** : HTTPS/TLS
--   **Chiffrement au repos** : Firestore avec chiffrement automatique
--   **Validation des données** : Joi pour la validation des entrées
--   **Rate limiting** : Protection contre les attaques DDoS
+-   **Encryption in transit** : HTTPS/TLS (Cloud Run default)
+-   **Encryption at rest** : Firestore with automatic encryption
+-   **Secrets Management** : Google Cloud Secret Manager for sensitive credentials
+-   **Rate limiting** : Express rate limiting (100 requests/15min per IP)
+-   **CORS** : Strict configuration of allowed origins
+-   **Helmet** : HTTP security headers
+-   **JWT Tokens** : Signed tokens with expiration (7 days)
 
-### Conformité RGPD
+### GDPR Compliance
 
--   **Anonymisation** des données personnelles
--   **Logs d'audit** pour le suivi des accès
--   **Export des données** : Fonctionnalité d'export CSV/PDF
--   **Suppression des données** : API pour la suppression des comptes
+-   **Anonymization** of personal data
+-   **Audit logs** for access tracking
+-   **Data export** : CSV/PDF export functionality
+-   **Data deletion** : API for account deletion
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📄 Licence
+## 📄 License
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+This project is licensed under MIT. See the `LICENSE` file for more details.
 
 ## 🆘 Support
 
-Pour toute question ou problème :
+For questions or issues :
 
-1. Vérifier la documentation
-2. Consulter les issues GitHub
-3. Créer une nouvelle issue si nécessaire
+1. Check the documentation
+2. Consult GitHub issues
+3. Create a new issue if necessary
 
 ---
 
-**Développé avec ❤️ et alimenté par l'IA pour l'apprentissage adaptatif**
+**Developed with ❤️ and powered by AI for adaptive learning**

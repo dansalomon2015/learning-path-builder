@@ -4,9 +4,9 @@ import { Clock, Users, Star, Play, CheckCircle } from 'lucide-react';
 // Mock data - to be replaced with API calls
 const mockLearningPath = {
   id: '1',
-  title: 'Apprendre React de A à Z',
+  title: 'Learn React from A to Z',
   description:
-    'Un parcours complet pour maîtriser React, des bases aux concepts avancés. Ce parcours vous guidera à travers tous les aspects essentiels de React, des composants aux hooks avancés.',
+    'A complete path to master React, from basics to advanced concepts. This path will guide you through all essential aspects of React, from components to advanced hooks.',
   difficulty: 'intermediate',
   estimatedDuration: 40,
   topics: ['React', 'JavaScript', 'TypeScript', 'JSX', 'Hooks'],
@@ -16,34 +16,34 @@ const mockLearningPath = {
   resources: [
     {
       id: '1',
-      title: 'Introduction à React',
+      title: 'Introduction to React',
       type: 'video',
       duration: 45,
-      description: 'Découvrez les concepts fondamentaux de React',
+      description: 'Discover the fundamental concepts of React',
       completed: true,
     },
     {
       id: '2',
-      title: 'Composants et Props',
+      title: 'Components and Props',
       type: 'article',
       duration: 30,
-      description: 'Apprenez à créer et utiliser des composants',
+      description: 'Learn to create and use components',
       completed: true,
     },
     {
       id: '3',
-      title: 'State et Lifecycle',
+      title: 'State and Lifecycle',
       type: 'video',
       duration: 60,
-      description: "Maîtrisez la gestion d'état dans React",
+      description: 'Master state management in React',
       completed: false,
     },
     {
       id: '4',
-      title: 'Hooks en détail',
+      title: 'Hooks in Detail',
       type: 'course',
       duration: 90,
-      description: 'Explorez les hooks React modernes',
+      description: 'Explore modern React hooks',
       completed: false,
     },
   ],
@@ -72,11 +72,11 @@ export function LearningPathDetailPage(): JSX.Element {
   const getDifficultyLabel = (difficulty: string): string => {
     switch (difficulty) {
       case 'beginner':
-        return 'Débutant';
+        return 'Beginner';
       case 'intermediate':
-        return 'Intermédiaire';
+        return 'Intermediate';
       case 'advanced':
-        return 'Avancé';
+        return 'Advanced';
       default:
         return difficulty;
     }
@@ -148,7 +148,7 @@ export function LearningPathDetailPage(): JSX.Element {
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="h-5 w-5" />
-                <span>{learningPath.studentsCount} apprenants</span>
+                <span>{learningPath.studentsCount} learners</span>
               </div>
             </div>
           </div>
@@ -157,9 +157,9 @@ export function LearningPathDetailPage(): JSX.Element {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Progression</span>
+            <span className="text-sm font-medium text-gray-700">Progress</span>
             <span className="text-sm text-gray-500">
-              {completedResources}/{learningPath.resources.length} ressources
+              {completedResources}/{learningPath.resources.length} resources
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -168,18 +168,18 @@ export function LearningPathDetailPage(): JSX.Element {
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-1">{Math.round(progressPercentage)}% complété</p>
+          <p className="text-sm text-gray-500 mt-1">{Math.round(progressPercentage)}% completed</p>
         </div>
 
         <button className="btn btn-primary btn-lg">
           <Play className="mr-2 h-5 w-5" />
-          Continuer le parcours
+          Continue Path
         </button>
       </div>
 
       {/* Resources */}
       <div className="card p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Ressources du parcours</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Path Resources</h2>
 
         <div className="space-y-4">
           {learningPath.resources.map(
@@ -236,7 +236,7 @@ export function LearningPathDetailPage(): JSX.Element {
                           resource.completed === true ? 'btn-secondary' : 'btn-primary'
                         }`}
                       >
-                        {resource.completed === true ? 'Réviser' : 'Commencer'}
+                        {resource.completed === true ? 'Review' : 'Start'}
                       </button>
                     </div>
                   </div>

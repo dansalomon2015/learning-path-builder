@@ -1,124 +1,124 @@
-# 📚 FlashLearn AI - Documentation Détaillée du Développement
+# 📚 FlashLearn AI - Detailed Development Documentation
 
-## 🎯 Vue d'Ensemble
+## 🎯 Overview
 
-FlashLearn AI est une plateforme d'apprentissage adaptatif alimentée par l'IA qui permet aux utilisateurs de créer des objectifs d'apprentissage personnalisés, de passer des évaluations pour déterminer leur niveau actuel, et de suivre des parcours d'apprentissage progressifs avec des flashcards, des quiz de validation, et des ressources suggérées.
+FlashLearn AI is an AI-powered adaptive learning platform that allows users to create personalized learning objectives, take assessments to determine their current level, and follow progressive learning paths with flashcards, validation quizzes, and suggested resources.
 
 ---
 
-## 🏗️ Architecture Technique
+## 🏗️ Technical Architecture
 
-### Stack Technologique
+### Technology Stack
 
 **Backend :**
-- Node.js 22 avec TypeScript
-- Express.js avec middleware de sécurité
+- Node.js 22 with TypeScript
+- Express.js with security middleware
 - Firebase Admin SDK (Firestore + Authentication)
-- Gemini AI API pour génération de contenu intelligent
-- Winston pour le logging
+- Gemini AI API for intelligent content generation
+- Winston for logging
 
 **Frontend :**
-- React 18 avec TypeScript
-- Vite pour le build
-- Tailwind CSS pour le styling moderne
-- React Router pour la navigation
-- Redux Toolkit + Redux Persist pour la gestion d'état
-- React Context pour la session d'authentification
-- React Hot Toast pour les notifications
-- Lucide React pour les icônes
+- React 18 with TypeScript
+- Vite for building
+- Tailwind CSS for modern styling
+- React Router for navigation
+- Redux Toolkit + Redux Persist for state management
+- React Context for authentication session
+- React Hot Toast for notifications
+- Lucide React for icons
 
 ---
 
-## 🎨 Parcours Utilisateur Détaillé
+## 🎨 Detailed User Journey
 
-### Phase 1 : Arrivée et Authentification
+### Phase 1 : Landing and Authentication
 
-#### 📍 **Page Landing (`/`)**
+#### 📍 **Landing Page (`/`)**
 
-**Objectif UX :** Présenter la valeur de la plateforme et guider vers l'inscription
+**UX Goal :** Present the platform's value and guide towards registration
 
-**Éléments UI :**
-- Hero section avec value proposition claire
-- Call-to-action (CTA) vers l'authentification
-- Design minimaliste et moderne
+**UI Elements :**
+- Hero section with clear value proposition
+- Call-to-action (CTA) towards authentication
+- Minimalist and modern design
 
-**Actions utilisateur :**
-1. Arrivée sur la page d'accueil
-2. Lecture de la proposition de valeur
-3. Clic sur "Commencer" ou "Se connecter"
-4. Redirection vers `/auth`
+**User Actions :**
+1. Arrival on the homepage
+2. Reading the value proposition
+3. Click on "Get Started" or "Login"
+4. Redirect to `/auth`
 
 ---
 
-#### 🔐 **Page d'Authentification (`/auth`)**
+#### 🔐 **Authentication Page (`/auth`)**
 
-**Objectif UX :** Inscription/connexion rapide et intuitive
+**UX Goal :** Fast and intuitive registration/login
 
-**Composants :**
-- Formulaire d'authentification unifié (AuthForm)
-- Toggle entre "Se connecter" et "S'inscrire"
-- Validation en temps réel
-- Messages d'erreur clairs
-- Design épuré avec focus sur la simplicité
+**Components :**
+- Unified authentication form (AuthForm)
+- Toggle between "Login" and "Sign Up"
+- Real-time validation
+- Clear error messages
+- Clean design with focus on simplicity
 
-**Flux utilisateur :**
-1. Affichage du formulaire d'authentification
-2. Saisie email/password
-3. Validation côté client
-4. Soumission → Firebase Authentication
-5. Création du profil utilisateur (si nouveau)
-6. Redirection vers `/dashboard`
+**User Flow :**
+1. Display authentication form
+2. Enter email/password
+3. Client-side validation
+4. Submit → Firebase Authentication
+5. Create user profile (if new)
+6. Redirect to `/dashboard`
 
 **UX Features :**
-- ✅ Validation en temps réel
-- ✅ Messages d'erreur contextuels
-- ✅ Loading states pendant l'authentification
-- ✅ Persistance de session (Redux Persist)
+- ✅ Real-time validation
+- ✅ Contextual error messages
+- ✅ Loading states during authentication
+- ✅ Session persistence (Redux Persist)
 
 ---
 
-### Phase 2 : Dashboard et Vue d'Ensemble
+### Phase 2 : Dashboard and Overview
 
-#### 📊 **Dashboard Principal (`/dashboard`)**
+#### 📊 **Main Dashboard (`/dashboard`)**
 
-**Objectif UX :** Vue d'ensemble des objectifs et statistiques d'apprentissage
+**UX Goal :** Overview of objectives and learning statistics
 
-**Composants principaux :**
+**Main Components :**
 
 ##### 1. **AnalyticsDashboard**
-- **Statistiques globales :**
-  - Nombre total d'objectifs
-  - Taux de complétion
-  - Temps total d'étude
-  - Progression moyenne
-- **Graphiques visuels :**
-  - Progress bars pour chaque objectif
-  - Graphiques de tendances
-  - Indicateurs de performance
+- **Global Statistics :**
+  - Total number of objectives
+  - Completion rate
+  - Total study time
+  - Average progression
+- **Visual Charts :**
+  - Progress bars for each objective
+  - Trend charts
+  - Performance indicators
 
 **UX Features :**
-- ✅ Dashboard responsive
-- ✅ Cartes visuelles avec indicateurs colorés
-- ✅ Animations subtiles pour attirer l'attention
-- ✅ Données mises à jour en temps réel
+- ✅ Responsive dashboard
+- ✅ Visual cards with colored indicators
+- ✅ Subtle animations to attract attention
+- ✅ Real-time data updates
 
 ##### 2. **LearningObjectivesDashboard**
-- **Liste des objectifs d'apprentissage :**
-  - Cartes d'objectifs avec statut visuel
-  - Badges de progression
-  - Actions rapides (Évaluer, Voir détails, Supprimer)
+- **Learning Objectives List :**
+  - Objective cards with visual status
+  - Progress badges
+  - Quick actions (Assess, View details, Delete)
   
-**États visuels des objectifs :**
-- 🟢 **Avec parcours d'apprentissage :** Badge vert, bouton "Continuer"
-- 🔵 **Sans évaluation :** Badge bleu, bouton "Évaluer"
-- ⚪ **En attente de parcours :** Badge gris, indicateur de chargement
+**Visual States of Objectives :**
+- 🟢 **With learning path :** Green badge, "Continue" button
+- 🔵 **Without assessment :** Blue badge, "Assess" button
+- ⚪ **Awaiting path :** Gray badge, loading indicator
 
 **UX Features :**
-- ✅ Filtres par statut (tous, en cours, complétés)
-- ✅ Recherche d'objectifs
-- ✅ Tri par date/progression
-- ✅ Actions contextuelles selon l'état
-- ✅ Feedback visuel immédiat
+- ✅ Status filters (all, in progress, completed)
+- ✅ Objective search
+- ✅ Sort by date/progression
+- ✅ Contextual actions based on state
+- ✅ Immediate visual feedback
 
 ---
 

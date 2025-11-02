@@ -18,10 +18,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignUp }): JSX.Ele
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
           <button onClick={onLogin} className="btn btn-primary btn-lg px-8 py-4">
-            Se connecter
+            Login
           </button>
           <button onClick={onSignUp} className="btn btn-outline btn-lg px-8 py-4">
-            Créer un compte
+            Create Account
           </button>
         </div>
       </div>

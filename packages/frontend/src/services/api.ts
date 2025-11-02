@@ -91,7 +91,7 @@ class ApiService {
           } catch {
             // Ignore errors
           }
-          toast.error('Session expirée. Veuillez vous reconnecter.');
+          toast.error('Session expired. Please log in again.');
         }
         return Promise.reject(error);
       }

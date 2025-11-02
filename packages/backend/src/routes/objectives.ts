@@ -1115,13 +1115,13 @@ const generateAndUpdateModuleContent = async (params: {
     modules: Array<Record<string, unknown>>;
   } = params;
 
-  // Vérifier que le module est activé
+  // Check that the module is enabled
   const isEnabled: unknown = module['isEnabled'];
   if (isEnabled !== true) {
     throw new Error('Module is not enabled yet');
   }
 
-  // Vérifier que les flashcards n'ont pas déjà été générées
+  // Check that flashcards haven't already been generated
   if (checkModuleFlashcards(module)) {
     const flashcards: unknown = module['flashcards'];
     const suggestedResources: unknown = module['suggestedResources'];
@@ -1135,7 +1135,7 @@ const generateAndUpdateModuleContent = async (params: {
 
   const context = buildContextForGemini(objective, path);
 
-  // Générer flashcards et ressources
+  // Generate flashcards and resources
   let generatedFlashcards: Flashcard[];
   let generatedResources: Array<Record<string, unknown>>;
   try {

@@ -107,3 +107,4 @@ cloud-run/
 
 # TypeScript
 *.tsbuildinfo
+**/.env.*
