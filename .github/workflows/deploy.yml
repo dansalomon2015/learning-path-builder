@@ -264,12 +264,12 @@ jobs:
 
           # Build environment variables string
           ENV_VARS="VITE_API_URL=$BACKEND_URL/api"
-          
+
           # Add Firebase config if available (as env vars, not secrets, since they're public in frontend)
           if [ "${{ steps.firebase-config.outputs.config_exists }}" == "true" ]; then
             ENV_VARS="$ENV_VARS"
             if [ -n "${{ steps.firebase-config.outputs.api_key }}" ]; then
-              ENV_VARS="$ENV_VARS,VIREBASE_API_KEY=${{ steps.firebase-config.outputs.api_key }}"
+              ENV_VARS="$ENV_VARS,VITE_FIREBASE_API_KEY=${{ steps.firebase-config.outputs.api_key }}"
             fi
             if [ -n "${{ steps.firebase-config.outputs.auth_domain }}" ]; then
               ENV_VARS="$ENV_VARS,VITE_FIREBASE_AUTH_DOMAIN=${{ steps.firebase-config.outputs.auth_domain }}"
