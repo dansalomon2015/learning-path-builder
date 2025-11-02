@@ -141,8 +141,8 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars NODE_ENV=production \
-            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--set-secrets FIREBASE_CONFIG=firebase-config:latest,firebase-project-id=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest,FIREBASE_API_KEY=FIREBASE_API_KEY:latest" || echo "") \
+            --update-env-vars NODE_ENV=production \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--update-secrets FIREBASE_CONFIG=firebase-config:latest,firebase-project-id=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest,FIREBASE_API_KEY=FIREBASE_API_KEY:latest" || echo "") \
             --format="value(status.url)")
 
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
@@ -246,7 +246,7 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-            --set-env-vars VITE_API_URL=$BACKEND_URL/api,BACKEND_URL=$BACKEND_URL \
+            --update-env-vars VITE_API_URL=$BACKEND_URL/api,BACKEND_URL=$BACKEND_URL \
             --format="value(status.url)")
 
           echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT

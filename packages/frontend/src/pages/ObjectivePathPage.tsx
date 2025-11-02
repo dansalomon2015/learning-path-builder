@@ -374,21 +374,9 @@ const PathHeader: React.FC<PathHeaderProps> = ({
 // Helper component for path action buttons
 interface PathActionsProps {
   isCompleted: boolean;
-  isEnabled: boolean;
-  objectiveId: string | undefined;
-  pathId: string | undefined;
-  onStartPath: () => Promise<void>;
-  onCompletePath: () => Promise<void>;
 }
 
-const PathActions: React.FC<PathActionsProps> = ({
-  isCompleted,
-  isEnabled,
-  objectiveId,
-  pathId,
-  onStartPath,
-  onCompletePath,
-}): JSX.Element => {
+const PathActions: React.FC<PathActionsProps> = ({ isCompleted }): JSX.Element => {
   if (isCompleted) {
     return (
       <div className="flex items-center space-x-2">
@@ -400,29 +388,8 @@ const PathActions: React.FC<PathActionsProps> = ({
     );
   }
 
-  return (
-    <div className="flex items-center space-x-2">
-      <button
-        onClick={onStartPath}
-        disabled={!isEnabled}
-        className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 ${
-          isEnabled === true
-            ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
-            : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-        }`}
-      >
-        <Play className="w-4 h-4" />
-        <span>Start Path</span>
-      </button>
-      <button
-        onClick={onCompletePath}
-        disabled={objectiveId == null || pathId == null}
-        className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
-      >
-        Mark as Completed
-      </button>
-    </div>
-  );
+  // No action buttons needed - users can click directly on modules
+  return <div />;
 };
 
 // eslint-disable-next-line max-lines-per-function
@@ -680,43 +647,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
         onCompleteModule={handleCompleteModule}
       />
 
-      <PathActions
-        isCompleted={path.isCompleted}
-        isEnabled={path.isEnabled}
-        objectiveId={objectiveId}
-        pathId={pathId}
-        onStartPath={async (): Promise<void> => {
-          if (path.isEnabled !== true) {
-            toast.error('This path is locked. Complete previous paths first.');
-            return;
-          }
-          const firstEnabledModule: LearningModule | undefined = path.modules.find(
-            (m: LearningModule): boolean => m.isEnabled === true
-          );
-          if (firstEnabledModule != null) {
-            await handleStartModule(firstEnabledModule);
-          } else {
-            toast('No enabled modules available', { icon: 'ℹ️' });
-          }
-        }}
-        onCompletePath={async (): Promise<void> => {
-          if (objectiveId == null || pathId == null) {
-            return;
-          }
-          try {
-            const res = await apiService.completeLearningPath(objectiveId, pathId);
-            if (res.success) {
-              toast.success('Path marked as completed');
-              await reloadData();
-            } else {
-              const errorMsg = res.error?.message ?? 'Failed to complete path';
-              toast.error(errorMsg);
-            }
-          } catch (e: unknown) {
-            toast.error('Failed to complete path');
-          }
-        }}
-      />
+      <PathActions isCompleted={path.isCompleted} />
 
       <ContentGenerationModal
         isOpen={generatingContent != null}
