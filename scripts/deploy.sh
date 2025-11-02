@@ -73,7 +73,7 @@ gcloud run deploy $FRONTEND_SERVICE \
   --memory 512Mi \
   --cpu 1 \
   --min-instances 0 \
-  --max-instances 5 \
+  --max-instances 2 \
   --timeout 60 \
   --set-env-vars VITE_API_URL=$BACKEND_URL/api
 
