@@ -240,7 +240,7 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --timeout 60 \
-            --set-env-vars VITE_API_URL=$BACKEND_URL/api \
+            --set-env-vars VITE_API_URL=$BACKEND_URL/api,BACKEND_URL=$BACKEND_URL \
             --format="value(status.url)")
 
           echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
