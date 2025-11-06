@@ -4,6 +4,13 @@ import { logger } from '@/utils/logger';
 import rateLimit from 'express-rate-limit';
 import { geminiService } from '@/services/gemini';
 import { type Flashcard, type QuizQuestion } from '@/types';
+import {
+  calculateProgress,
+  activateNextModule,
+  updatePathProgressAndCheckCompletion,
+  activateNextPath,
+  completeModuleAndUpdateProgress,
+} from '@/utils/progressHelpers';
 
 const router = Router();
 
@@ -230,13 +237,7 @@ const calculateQuizScore = (
   return { correctAnswers, totalQuestions, score, feedback };
 };
 
-const calculateProgress = (items: Array<Record<string, unknown>>, completedKey: string): number => {
-  const completed: number = items.filter((item: Record<string, unknown>): boolean => {
-    const isCompleted: unknown = item[completedKey];
-    return isCompleted === true;
-  }).length;
-  return items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
-};
+// calculateProgress moved to @/utils/progressHelpers
 
 const cleanModules = (modules: Array<Record<string, unknown>>): Array<Record<string, unknown>> => {
   return modules.map((mod: Record<string, unknown>): Record<string, unknown> => {
@@ -279,106 +280,13 @@ const updateModuleAfterValidation = (
   return baseUpdate;
 };
 
-const activateNextModule = (modules: Array<Record<string, unknown>>, moduleIndex: number): void => {
-  const nextModuleIndex: number = moduleIndex + 1;
-  if (nextModuleIndex < modules.length) {
-    const nextModuleUnknown: unknown = modules[nextModuleIndex];
-    const nextModule: Record<string, unknown> =
-      nextModuleUnknown != null ? (nextModuleUnknown as Record<string, unknown>) : {};
-    modules[nextModuleIndex] = {
-      ...nextModule,
-      isEnabled: true,
-    };
-    logger.info(`Activated next module: ${String(nextModule['id'])} after validation passed`);
-  }
-};
+// activateNextModule moved to @/utils/progressHelpers
 
-const updatePathProgressAndCheckCompletion = (
-  learningPaths: Array<Record<string, unknown>>,
-  pathIndex: number,
-  path: Record<string, unknown>,
-  modules: Array<Record<string, unknown>>
-): { pathProgress: number; allModulesCompleted: boolean } => {
-  const pathProgress: number = calculateProgress(modules, 'isCompleted');
-  const allModulesCompleted: boolean = modules.every((m: Record<string, unknown>): boolean => {
-    const mIsCompleted: unknown = m['isCompleted'];
-    return mIsCompleted === true;
-  });
-  learningPaths[pathIndex] = {
-    ...path,
-    modules,
-    progress: pathProgress,
-    isCompleted: allModulesCompleted,
-    updatedAt: new Date().toISOString(),
-  };
-  return { pathProgress, allModulesCompleted };
-};
+// updatePathProgressAndCheckCompletion moved to @/utils/progressHelpers
 
-const activateNextPath = (
-  learningPaths: Array<Record<string, unknown>>,
-  pathIndex: number
-): void => {
-  const nextPathIndex: number = pathIndex + 1;
-  if (nextPathIndex < learningPaths.length) {
-    const nextPathUnknown: unknown = learningPaths[nextPathIndex];
-    const nextPath: Record<string, unknown> =
-      nextPathUnknown != null ? (nextPathUnknown as Record<string, unknown>) : {};
-    learningPaths[nextPathIndex] = {
-      ...nextPath,
-      isEnabled: true,
-      updatedAt: new Date().toISOString(),
-    };
-    logger.info(`Activated next path: ${String(nextPath['id'])} after completing all modules`);
-  }
-};
+// activateNextPath moved to @/utils/progressHelpers
 
-const completeModuleAndUpdateProgress = (params: {
-  learningPaths: Array<Record<string, unknown>>;
-  pathIndex: number;
-  path: Record<string, unknown>;
-  modules: Array<Record<string, unknown>>;
-  moduleIndex: number;
-  module: Record<string, unknown>;
-}): { objectiveProgress: number } => {
-  const {
-    learningPaths,
-    pathIndex,
-    path,
-    modules,
-    moduleIndex,
-    module,
-  }: {
-    learningPaths: Array<Record<string, unknown>>;
-    pathIndex: number;
-    path: Record<string, unknown>;
-    modules: Array<Record<string, unknown>>;
-    moduleIndex: number;
-    module: Record<string, unknown>;
-  } = params;
-  // Marquer le module comme complété
-  modules[moduleIndex] = {
-    ...module,
-    isCompleted: true,
-    progress: 100,
-  };
-
-  // Activer le module suivant s'il existe (même path, order suivant)
-  activateNextModule(modules, moduleIndex);
-
-  // Recalculer le progress du path
-  const { allModulesCompleted }: { pathProgress: number; allModulesCompleted: boolean } =
-    updatePathProgressAndCheckCompletion(learningPaths, pathIndex, path, modules);
-
-  // Si le path est complété, activer le path suivant
-  if (allModulesCompleted) {
-    activateNextPath(learningPaths, pathIndex);
-  }
-
-  // Recalculer le progress de l'objective
-  const objectiveProgress: number = calculateProgress(learningPaths, 'isCompleted');
-
-  return { objectiveProgress };
-};
+// completeModuleAndUpdateProgress moved to @/utils/progressHelpers
 
 const parseModuleType = (moduleType: unknown): 'theory' | 'practice' | 'project' | 'assessment' => {
   const moduleTypeStr: string = typeof moduleType === 'string' ? moduleType : '';
@@ -1020,6 +928,7 @@ router.patch(
         modules,
         moduleIndex,
         module,
+        context: 'after manual completion',
       });
 
       await firebaseService.updateDocument('objectives', id, {
@@ -1580,7 +1489,7 @@ const processValidationQuiz = async (params: {
 
   // Si passé, activer le module suivant
   if (passed) {
-    activateNextModule(modules, moduleIndex);
+    activateNextModule(modules, moduleIndex, 'after validation passed');
   }
 
   // Recalculer le progress du path (only if module was passed and completed)
