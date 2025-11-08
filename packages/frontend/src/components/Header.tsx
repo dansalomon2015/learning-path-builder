@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onViewProfile 
                 <span className="text-sm font-medium hidden sm:block">{user.name}</span>
                 <img
                   src={
-                    user.avatar != null && user.avatar !== '' ? user.avatar : '/default-avatar.png'
+                    user.avatar != null && user.avatar !== '' ? user.avatar : '/icon-192.png'
                   }
                   alt="User avatar"
                   className="w-9 h-9 rounded-full border-2 border-indigo-200"
