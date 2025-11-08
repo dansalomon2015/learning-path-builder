@@ -53,6 +53,15 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     reason?: string;
   } | null>(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
+  const [moduleProgress, setModuleProgress] = useState<{
+    progress: number;
+    resourceWeight: number;
+    finalExamWeight: number;
+    resourceCount: number;
+    completedResourceCount: number;
+    finalExamPassed: boolean;
+  } | null>(null);
+  const [loadingModuleProgress, setLoadingModuleProgress] = useState(false);
 
   const reloadData = useCallback(async (): Promise<void> => {
     try {
@@ -102,6 +111,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
         // Check final exam eligibility
         if (m != null && moduleId != null && moduleId !== '') {
           void checkFinalExamEligibility(moduleId);
+          void loadModuleProgress();
         }
 
         // Check if flashcards need to be generated
@@ -136,6 +146,29 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     });
     return undefined;
   }, [objectiveId, pathId, moduleId, reloadData]);
+
+  const loadModuleProgress = useCallback(async (): Promise<void> => {
+    if (objectiveId == null || pathId == null || moduleId == null) {
+      return;
+    }
+    try {
+      setLoadingModuleProgress(true);
+      const res = await apiService.getModuleProgress(objectiveId, pathId, moduleId);
+      if (res.success && res.data != null) {
+        setModuleProgress(res.data);
+      }
+    } catch (error: unknown) {
+      console.error('Error loading module progress:', error);
+    } finally {
+      setLoadingModuleProgress(false);
+    }
+  }, [objectiveId, pathId, moduleId]);
+
+  useEffect((): void => {
+    if (objectiveId != null && pathId != null && moduleId != null && module != null) {
+      void loadModuleProgress();
+    }
+  }, [objectiveId, pathId, moduleId, module, loadModuleProgress]);
 
   const checkFinalExamEligibility = async (modId: string): Promise<void> => {
     try {
@@ -333,8 +366,11 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
   const flashcards: Flashcard[] = module.flashcards;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const currentCard: Flashcard | undefined = flashcards[currentIndex];
-  const progress = flashcards.length > 0 ? (studiedCards.size / flashcards.length) * 100 : 0;
+  const flashcardProgress = flashcards.length > 0 ? (studiedCards.size / flashcards.length) * 100 : 0;
   const allCardsStudied = flashcards.length > 0 && studiedCards.size === flashcards.length;
+  
+  // Use module progress (weighted: resources + final exam) if available, otherwise fallback to flashcard progress
+  const moduleProgressValue = moduleProgress?.progress ?? (typeof module.progress === 'number' ? module.progress : flashcardProgress);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -358,18 +394,26 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                 <Logo size="md" />
                 <div>
                   <h1 className="font-semibold">{module.title}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {currentIndex + 1} / {flashcards.length}
-                  </p>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm font-medium">{Math.round(progress)}%</div>
-              <p className="text-xs text-muted-foreground">Progression</p>
+              <div className="text-sm font-medium">{Math.round(moduleProgressValue)}%</div>
+              <p className="text-xs text-muted-foreground">
+                {moduleProgress != null
+                  ? `Module: ${moduleProgress.completedResourceCount}/${moduleProgress.resourceCount} resources${moduleProgress.finalExamPassed ? ' + Exam' : ''}`
+                  : 'Progress'}
+              </p>
             </div>
           </div>
-          <Progress value={progress} className="mt-4" />
+          <Progress value={moduleProgressValue} className="mt-4" />
+          {moduleProgress != null && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              <span>
+                Progress based on resources ({moduleProgress.resourceWeight}% each) and final exam ({moduleProgress.finalExamWeight}%)
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -487,6 +531,8 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
             moduleId={moduleId ?? ''}
             objectiveId={objectiveId ?? ''}
             onAssessmentComplete={async (_resourceId: string): Promise<void> => {
+              // Reload module progress after resource assessment completion
+              await loadModuleProgress();
               // Re-evaluate eligibility after resource assessment is completed
               if (moduleId != null && moduleId !== '') {
                 await checkFinalExamEligibility(moduleId);
@@ -504,16 +550,16 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                   <Trophy className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">Examen final du module</h3>
+                  <h3 className="text-lg font-semibold mb-2">Module Final Exam</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Pour passer l&apos;examen final et terminer ce module, vous devez d&apos;abord réussir
-                    au moins un test d&apos;auto-évaluation (avec un score de 80% ou plus) pour chaque
-                    ressource suggérée du module.
+                    To take the final exam and complete this module, you must first pass
+                    at least one self-assessment test (with a score of 80% or more) for each
+                    suggested resource in the module.
                   </p>
                   {checkingEligibility ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Vérification de l&apos;éligibilité...
+                      Checking eligibility...
                     </div>
                   ) : finalExamEligibility != null ? (
                     <>
@@ -521,7 +567,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-sm text-green-600">
                             <CheckCircle2 className="h-4 w-4" />
-                            <span>Vous êtes éligible pour passer l&apos;examen final</span>
+                            <span>You are eligible to take the final exam</span>
                           </div>
                           <Button
                             onClick={(): void => {
@@ -530,7 +576,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                             className="w-full sm:w-auto"
                           >
                             <Trophy className="h-4 w-4 mr-2" />
-                            Passer l&apos;examen final
+                            Take Final Exam
                           </Button>
                         </div>
                       ) : (
@@ -539,13 +585,13 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                             <AlertCircle className="h-4 w-4" />
                             <span>
                               {finalExamEligibility.reason ??
-                                'Vous devez compléter les prérequis pour passer l&apos;examen final'}
+                                'You must complete the prerequisites to take the final exam'}
                             </span>
                           </div>
                           {finalExamEligibility.missingResources != null &&
                             finalExamEligibility.missingResources.length > 0 && (
                               <div className="text-sm text-muted-foreground">
-                                <p className="font-medium mb-1">Ressources à compléter :</p>
+                                <p className="font-medium mb-1">Resources to complete:</p>
                                 <ul className="list-disc list-inside space-y-1">
                                   {finalExamEligibility.missingResources.map((resource, index) => (
                                     <li key={index}>{resource}</li>
@@ -568,10 +614,9 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
           <Card className="border-2 bg-gradient-to-br from-primary/5 to-primary/10 mb-6">
             <CardContent className="p-8 text-center space-y-4">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-              <h3 className="text-2xl font-bold">Module terminé !</h3>
+              <h3 className="text-2xl font-bold">Module Completed!</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Vous avez étudié toutes les flashcards. Passez le quiz de validation pour débloquer
-                le module suivant.
+                You have studied all flashcards. Take the validation quiz to unlock the next module.
               </p>
               <Button
                 size="lg"
@@ -596,9 +641,9 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
           <Card className="border-2 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 mb-6">
             <CardContent className="p-8 text-center space-y-4">
               <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto" />
-              <h3 className="text-2xl font-bold">Module terminé !</h3>
+              <h3 className="text-2xl font-bold">Module Completed!</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Félicitations ! Vous avez terminé ce module avec succès.
+                Congratulations! You have successfully completed this module.
               </p>
               <Button
                 size="lg"
@@ -609,7 +654,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                 }}
                 className="bg-green-600 hover:bg-green-700"
               >
-                Continuer vers le module suivant
+                Continue to Next Module
               </Button>
             </CardContent>
           </Card>
@@ -673,6 +718,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
           }}
           onComplete={async (): Promise<void> => {
             await reloadData();
+            await loadModuleProgress();
             setShowFinalExam(false);
           }}
         />
@@ -682,3 +728,4 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
 };
 
 export default ModuleLearnPage;
+

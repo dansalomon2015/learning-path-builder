@@ -143,3 +143,70 @@ export function completeModuleAndUpdateProgress(params: {
   return { objectiveProgress };
 }
 
+/**
+ * Calculate progress weights for module resources and final exam
+ * @param resourceCount Number of resources in the module
+ * @returns Object with resourceWeight and finalExamWeight
+ */
+export function calculateModuleProgressWeights(resourceCount: number): {
+  resourceWeight: number;
+  finalExamWeight: number;
+} {
+  if (resourceCount === 0) {
+    // No resources, final exam is worth 100%
+    return { resourceWeight: 0, finalExamWeight: 100 };
+  }
+
+  const totalElements = resourceCount + 1; // resources + final exam
+  const baseWeight = 100 / totalElements;
+
+  // Round down resource weight to integer
+  let resourceWeight = Math.floor(baseWeight);
+
+  // Calculate final exam weight (remaining percentage)
+  let finalExamWeight = 100 - resourceWeight * resourceCount;
+
+  // Ensure minimum 20% for final exam
+  const MIN_FINAL_EXAM_WEIGHT = 20;
+  if (finalExamWeight < MIN_FINAL_EXAM_WEIGHT) {
+    finalExamWeight = MIN_FINAL_EXAM_WEIGHT;
+    // Recalculate resource weight with final exam fixed at 20%
+    resourceWeight = Math.floor((100 - MIN_FINAL_EXAM_WEIGHT) / resourceCount);
+  }
+
+  return { resourceWeight, finalExamWeight };
+}
+
+/**
+ * Calculate current module progress based on completed resources and final exam
+ * @param module Module object with suggestedResources
+ * @param completedResourceIds Set of resource IDs that have been completed (score >= min)
+ * @param finalExamPassed Whether the final exam has been passed
+ * @returns Current progress percentage (0-100)
+ */
+export function calculateModuleProgress(
+  module: Record<string, unknown>,
+  completedResourceIds: Set<string>,
+  finalExamPassed: boolean
+): number {
+  const suggestedResources = (module['suggestedResources'] as Array<Record<string, unknown>>) ?? [];
+  const resourceCount = suggestedResources.length;
+
+  const { resourceWeight, finalExamWeight } = calculateModuleProgressWeights(resourceCount);
+
+  // Calculate progress from resources
+  const completedResources = suggestedResources.filter((resource: Record<string, unknown>): boolean => {
+    const resourceId: unknown = resource['id'];
+    return resourceId != null && typeof resourceId === 'string' && completedResourceIds.has(resourceId);
+  }).length;
+
+  const resourcesProgress = completedResources * resourceWeight;
+
+  // Add final exam progress if passed
+  const finalExamProgress = finalExamPassed ? finalExamWeight : 0;
+
+  const totalProgress = Math.min(100, resourcesProgress + finalExamProgress);
+
+  return Math.round(totalProgress);
+}
+

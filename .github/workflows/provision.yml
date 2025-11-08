@@ -100,6 +100,26 @@ jobs:
             echo "⚠️  Note: Update FIREBASE_API_KEY secret with actual value"
           fi
 
+          # Check and create JWT_SECRET secret
+          if ! gcloud secrets describe JWT_SECRET --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "Creating JWT_SECRET secret (placeholder)..."
+            echo -n 'dev-jwt-secret-key-here' | gcloud secrets create JWT_SECRET \
+              --data-file=- \
+              --replication-policy="automatic" \
+              --project=${{ env.PROJECT_ID }}
+            echo "⚠️  Note: Update JWT_SECRET secret with actual value (generate a strong random key)"
+          fi
+
+          # Check and create ENCRYPTION_KEY secret
+          if ! gcloud secrets describe encryption-key --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "Creating encryption-key secret (placeholder)..."
+            echo -n 'dev-encryption-key-32-chars-long' | gcloud secrets create encryption-key \
+              --data-file=- \
+              --replication-policy="automatic" \
+              --project=${{ env.PROJECT_ID }}
+            echo "⚠️  Note: Update encryption-key secret with actual value (must be 32 characters)"
+          fi
+
           echo "✅ Secrets created/verified"
 
       - name: Update secret versions from GitHub secrets
@@ -110,6 +130,8 @@ jobs:
           echo "   cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-"
           echo "   echo -n 'your-actual-api-key' | gcloud secrets versions add gemini-api-key --data-file=-"
           echo "   echo -n 'your-firebase-api-key' | gcloud secrets versions add FIREBASE_API_KEY --data-file=-"
+          echo "   echo -n 'your-jwt-secret' | gcloud secrets versions add JWT_SECRET --data-file=-"
+          echo "   echo -n 'your-32-char-encryption-key' | gcloud secrets versions add encryption-key --data-file=-"
 
       - name: Grant Cloud Run access to secrets
         run: |
@@ -131,6 +153,16 @@ jobs:
             --project=${{ env.PROJECT_ID }} || true
 
           gcloud secrets add-iam-policy-binding FIREBASE_API_KEY \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          gcloud secrets add-iam-policy-binding JWT_SECRET \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          gcloud secrets add-iam-policy-binding encryption-key \
             --member="serviceAccount:${CLOUD_RUN_SA}" \
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
@@ -176,7 +208,7 @@ jobs:
               --min-instances 0 \
               --max-instances 10 \
               --timeout 300 \
-              --set-env-vars NODE_ENV=production \
+              --set-env-vars NODE_ENV=production,STREAK_RECOVERY_COOLDOWN_HOURS=1,RESOURCE_ASSESSMENT_COOLDOWN_HOURS=1,PARSE_INT_BASE=10,STREAK_RECOVERY_MAX_DAYS=7,STREAK_RECOVERY_QUESTIONS_PER_DAY=10,STREAK_RECOVERY_MAX_QUESTIONS=30,ASSESSMENT_QUESTION_COUNT=25,MODULE_FINAL_EXAM_QUESTION_COUNT=10,MODULE_FINAL_EXAM_MIN_SCORE=80,RESOURCE_ASSESSMENT_MIN_SCORE=80 \
               --format="value(status.url)")
             
             echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
@@ -242,4 +274,6 @@ jobs:
           echo "   - firebase-config: \`cat firebase-config.json | gcloud secrets versions add firebase-config --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "   - gemini-api-key: \`echo -n 'your-api-key' | gcloud secrets versions add gemini-api-key --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "   - FIREBASE_API_KEY: \`echo -n 'your-firebase-api-key' | gcloud secrets versions add FIREBASE_API_KEY --data-file=-\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - JWT_SECRET: \`echo -n 'your-jwt-secret' | gcloud secrets versions add JWT_SECRET --data-file=-\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - encryption-key: \`echo -n 'your-32-char-encryption-key' | gcloud secrets versions add encryption-key --data-file=-\`" >> $GITHUB_STEP_SUMMARY
           echo "2. Run the deploy workflow to build and deploy your application" >> $GITHUB_STEP_SUMMARY

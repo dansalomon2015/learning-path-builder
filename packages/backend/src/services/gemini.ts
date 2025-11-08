@@ -7,7 +7,7 @@ class GeminiService {
 
   constructor() {
     try {
-      const apiKey = process.env['GEMINI_API_KEY'];
+      const apiKey = process.env['GEMINI_API_KEY'] ?? 'AIzaSyDnrVhc80hVmd_dcBvxbWedHkmOtRiwq_U';
       if (apiKey == null || apiKey === '') {
         throw new Error('GEMINI_API_KEY environment variable is not set');
       }
@@ -19,6 +19,21 @@ class GeminiService {
       logger.error('Failed to initialize Gemini AI service:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get default assessment question count from environment variable
+   * Default: 25 questions
+   */
+  private getDefaultAssessmentQuestionCount(): number {
+    const questionCountEnv = process.env['ASSESSMENT_QUESTION_COUNT'];
+    if (questionCountEnv != null && questionCountEnv !== '') {
+      const parsed = Number.parseInt(questionCountEnv, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    return 25; // Default: 25 questions
   }
 
   async generateFlashcards(
@@ -109,15 +124,39 @@ class GeminiService {
       currentLevel: string;
       targetLevel: string;
     },
-    count: number = 25
+    count?: number
   ): Promise<QuizQuestion[]> {
+    const questionCount: number = count ?? this.getDefaultAssessmentQuestionCount();
     try {
-      const prompt = this.buildAssessmentPrompt(objective, count);
+      const prompt = this.buildAssessmentPrompt(objective, questionCount);
       const response = await this.callGeminiAPI(prompt);
 
       return this.parseQuizQuestionsFromResponse(response);
     } catch (error: unknown) {
       logger.error('Error generating assessment:', error);
+      throw error;
+    }
+  }
+
+  async generateRecoveryAssessmentQuestions(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    missedDays: number,
+    questionCount: number
+  ): Promise<QuizQuestion[]> {
+    try {
+      const prompt = this.buildRecoveryAssessmentPrompt(objective, missedDays, questionCount);
+      const response = await this.callGeminiAPI(prompt);
+
+      return this.parseQuizQuestionsFromResponse(response);
+    } catch (error: unknown) {
+      logger.error('Error generating recovery assessment questions:', error);
       throw error;
     }
   }
@@ -381,6 +420,65 @@ Keep the explanation encouraging and educational.
         `.trim();
   }
 
+  private buildRecoveryAssessmentPrompt(
+    objective: {
+      title: string;
+      description: string;
+      category: string;
+      targetRole: string;
+      currentLevel: string;
+      targetLevel: string;
+    },
+    missedDays: number,
+    questionCount: number
+  ): string {
+    return `
+Generate ${questionCount} questions for a streak recovery assessment.
+
+Context: The user has missed ${missedDays} day(s) of study and needs to prove they continued learning during this period.
+
+Objective:
+- Title: ${objective.title}
+- Description: ${objective.description}
+- Category: ${objective.category}
+- Target Role: ${objective.targetRole}
+- Current Level: ${objective.currentLevel}
+- Target Level: ${objective.targetLevel}
+
+Create questions that:
+1. Test understanding of key concepts related to ${objective.title}
+2. Cover the essential skills for ${objective.targetRole}
+3. Are appropriate for someone progressing from ${objective.currentLevel} to ${objective.targetLevel}
+4. Focus on practical application rather than pure memorization
+5. Vary in difficulty (mix of easy, medium, and hard)
+6. Help verify the user has maintained their knowledge during the break
+
+Format the response as JSON:
+{
+  "questions": [
+    {
+      "question": "What is...?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "The correct answer is...",
+      "difficulty": "easy|medium|hard",
+      "category": "category name",
+      "skills": ["skill1", "skill2"],
+      "usageExample": "In practice, this means..."
+    }
+  ]
+}
+
+STRICT INSTRUCTIONS:
+- Respond ONLY with valid JSON, no prose, no markdown, no code fences.
+- Ensure the top-level object has a "questions" array exactly as specified.
+- Do not include trailing commas.
+- Generate exactly ${questionCount} questions.
+
+Make questions specific to ${objective.category} and relevant for ${objective.targetRole} role.
+        `.trim();
+  }
+
   private buildAssessmentPrompt(
     objective: {
       title: string;
@@ -583,18 +681,44 @@ Respond ONLY with JSON in this format:
   private parseQuizQuestionsFromResponse(response: string): QuizQuestion[] {
     const normalize = (raw: string): string => {
       // Extract JSON inside code fences if present
-      const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
+      const codeFenceMatch = raw.match(/```(?:json)?\n?([\s\S]*?)```/i);
       const matchValue: string | undefined = codeFenceMatch?.[1];
       if (matchValue != null && matchValue !== '') {
         return matchValue.trim();
       }
 
-      // If extra prose exists, try to find the first '{' and last '}'
-      const firstBrace = raw.indexOf('{');
-      const lastBrace = raw.lastIndexOf('}');
+      // Try to find JSON object boundaries more robustly
+      // Look for the first '{' that starts a valid JSON object
+      let firstBrace = -1;
+      let braceCount = 0;
+      let lastBrace = -1;
+
+      for (let i = 0; i < raw.length; i++) {
+        if (raw[i] === '{') {
+          if (firstBrace === -1) {
+            firstBrace = i;
+          }
+          braceCount++;
+        } else if (raw[i] === '}') {
+          braceCount--;
+          if (braceCount === 0 && firstBrace !== -1) {
+            lastBrace = i;
+            break;
+          }
+        }
+      }
+
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         return raw.slice(firstBrace, lastBrace + 1);
       }
+
+      // Fallback: try to find first '{' and last '}'
+      const simpleFirstBrace = raw.indexOf('{');
+      const simpleLastBrace = raw.lastIndexOf('}');
+      if (simpleFirstBrace !== -1 && simpleLastBrace !== -1 && simpleLastBrace > simpleFirstBrace) {
+        return raw.slice(simpleFirstBrace, simpleLastBrace + 1);
+      }
+
       return raw.trim();
     };
 
@@ -607,12 +731,33 @@ Respond ONLY with JSON in this format:
     };
 
     const cleaned = normalize(response);
+
+    // Console log for debugging
+    console.log('=== GEMINI RESPONSE DEBUG ===');
+    console.log('Raw response length:', response.length);
+    console.log('Raw response (full):', response);
+    console.log('Cleaned response (full):', cleaned);
+    console.log('============================');
+
     let parsed: Record<string, unknown> | null = tryParse(cleaned);
 
     if (parsed == null) {
       // Try to coerce common issues: single quotes → double quotes
       const coerced = cleaned.replace(/'([^']*)'/g, '"$1"');
+      console.log('After coercion:', coerced);
       parsed = tryParse(coerced);
+    }
+
+    console.log('Parsed result:', parsed);
+    if (parsed != null && parsed instanceof Object) {
+      console.log('Parsed object keys:', Object.keys(parsed));
+      if ('questions' in parsed) {
+        console.log('Questions type:', typeof parsed['questions']);
+        console.log('Is array?', Array.isArray(parsed['questions']));
+        if (Array.isArray(parsed['questions'])) {
+          console.log('Questions count:', parsed['questions'].length);
+        }
+      }
     }
 
     if (
@@ -621,10 +766,13 @@ Respond ONLY with JSON in this format:
       !('questions' in parsed) ||
       !Array.isArray((parsed as { questions: unknown }).questions)
     ) {
-      logger.error(
-        'Gemini response JSON parse failed. Raw response sample:',
-        cleaned.slice(0, 400)
-      );
+      logger.error('Gemini response JSON parse failed.');
+      logger.error('Raw response (first 1000 chars):', response.slice(0, 1000));
+      logger.error('Cleaned response (first 1000 chars):', cleaned.slice(0, 1000));
+      logger.error('Parsed result:', parsed);
+      if (parsed != null && parsed instanceof Object) {
+        logger.error('Parsed object keys:', Object.keys(parsed));
+      }
       throw new Error('Failed to parse quiz questions from AI response');
     }
 
@@ -1224,6 +1372,209 @@ Ensure resources are:
         };
       }
     );
+  }
+
+  /**
+   * Generate quiz questions for resource assessment
+   */
+  async generateResourceAssessmentQuestions(
+    resource: {
+      id: string;
+      title: string;
+      description: string;
+      type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+      url?: string;
+      author?: string;
+    },
+    context: {
+      moduleTitle: string;
+      moduleDescription: string;
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    },
+    questionCount: number = 5
+  ): Promise<QuizQuestion[]> {
+    try {
+      logger.info(
+        `Generating ${questionCount} resource assessment questions for: ${resource.title}`
+      );
+      const prompt = this.buildResourceAssessmentPrompt(resource, context, questionCount);
+      const response = await this.callGeminiAPI(prompt);
+      logger.debug(
+        'Gemini API response received for resource assessment, length:',
+        response.length
+      );
+      if (response.length > 0) {
+        logger.debug('Raw Gemini response (first 500 chars):', response.substring(0, 500));
+      }
+      const questions = this.parseQuizQuestionsFromResponse(response);
+      logger.info(`Successfully parsed ${questions.length} resource assessment questions`);
+      return questions;
+    } catch (error: unknown) {
+      logger.error('Error generating resource assessment questions:', error);
+      throw error;
+    }
+  }
+
+  private buildResourceAssessmentPrompt(
+    resource: {
+      title: string;
+      description: string;
+      type: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+      author?: string;
+    },
+    context: {
+      moduleTitle: string;
+      moduleDescription: string;
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
+    },
+    questionCount: number
+  ): string {
+    return `
+Génère ${questionCount} questions de quiz pour valider la compréhension d'une ressource d'apprentissage.
+
+Ressource:
+- Titre: ${resource.title}
+- Description: ${resource.description}
+- Type: ${resource.type}
+- Auteur: ${resource.author ?? 'N/A'}
+
+Contexte:
+- Module: ${context.moduleTitle}
+- Description du module: ${context.moduleDescription}
+- Objectif: ${context.objectiveTitle}
+- Catégorie: ${context.objectiveCategory}
+- Niveau: ${context.difficulty}
+- Rôle cible: ${context.targetRole}
+
+Les questions doivent:
+1. Tester la compréhension des concepts clés de la ressource
+2. Être adaptées au niveau ${context.difficulty}
+3. Être pratiques et applicatives
+4. Inclure des explications détaillées
+5. Se concentrer sur les aspects essentiels de la ressource pour le rôle ${context.targetRole}
+6. Varier en difficulté (mélange de easy, medium, et hard)
+
+Format the response as JSON:
+{
+  "questions": [
+    {
+      "question": "What is...?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "The correct answer is...",
+      "difficulty": "easy|medium|hard",
+      "category": "${context.objectiveCategory}",
+      "skills": ["skill1", "skill2"]
+    }
+  ]
+}
+
+STRICT INSTRUCTIONS:
+- Respond ONLY with valid JSON, no prose, no markdown, no code fences, no explanations.
+- The response must start with { and end with }.
+- Ensure the top-level object has a "questions" array exactly as specified.
+- Do not include trailing commas.
+- Generate exactly ${questionCount} questions.
+- Questions should be specific to the resource content and relevant for ${context.targetRole} role.
+- Make questions test understanding of key concepts from: ${resource.title}
+
+CRITICAL: Your response must be ONLY the JSON object, nothing else before or after it. No text, no explanations, just the JSON.
+    `.trim();
+  }
+
+  /**
+   * Generate quiz questions for module final exam
+   */
+  async generateModuleFinalExamQuestions(
+    module: {
+      moduleTitle: string;
+      moduleDescription: string;
+      moduleType: string;
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+    },
+    questionCount: number = 10
+  ): Promise<QuizQuestion[]> {
+    try {
+      logger.info(
+        `Generating ${questionCount} final exam questions for module: ${module.moduleTitle}`
+      );
+      const prompt = this.buildModuleFinalExamPrompt(module, context, questionCount);
+      const response = await this.callGeminiAPI(prompt);
+      return this.parseQuizQuestionsFromResponse(response);
+    } catch (error: unknown) {
+      logger.error('Error generating module final exam questions:', error);
+      throw error;
+    }
+  }
+
+  private buildModuleFinalExamPrompt(
+    module: {
+      moduleTitle: string;
+      moduleDescription: string;
+      moduleType: string;
+    },
+    context: {
+      objectiveTitle: string;
+      objectiveCategory: string;
+      targetRole: string;
+    },
+    questionCount: number
+  ): string {
+    return `
+Génère ${questionCount} questions de quiz pour l'examen final d'un module d'apprentissage.
+
+Module:
+- Titre: ${module.moduleTitle}
+- Description: ${module.moduleDescription}
+- Type: ${module.moduleType}
+
+Contexte:
+- Objectif: ${context.objectiveTitle}
+- Catégorie: ${context.objectiveCategory}
+- Rôle cible: ${context.targetRole}
+
+Les questions doivent:
+1. Tester la compréhension complète du module
+2. Couvrir tous les concepts clés du module
+3. Être adaptées au niveau du module
+4. Être pratiques et applicatives
+5. Inclure des explications détaillées
+6. Varier en difficulté (mélange de easy, medium, et hard)
+7. Tester la capacité à appliquer les connaissances acquises
+
+Format the response as JSON:
+{
+  "questions": [
+    {
+      "question": "What is...?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "The correct answer is...",
+      "difficulty": "easy|medium|hard",
+      "category": "${context.objectiveCategory}",
+      "skills": ["skill1", "skill2"]
+    }
+  ]
+}
+
+STRICT INSTRUCTIONS:
+- Respond ONLY with valid JSON, no prose, no markdown, no code fences.
+- Ensure the top-level object has a "questions" array exactly as specified.
+- Do not include trailing commas.
+- Generate exactly ${questionCount} questions.
+- Questions should comprehensively test understanding of the entire module: ${module.moduleTitle}
+- Make questions relevant for ${context.targetRole} role.
+    `.trim();
   }
 
   // Health check

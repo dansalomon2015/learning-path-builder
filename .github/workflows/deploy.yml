@@ -107,6 +107,16 @@ jobs:
             --role="roles/secretmanager.secretAccessor" \
             --project=${{ env.PROJECT_ID }} || true
 
+          gcloud secrets add-iam-policy-binding JWT_SECRET \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
+          gcloud secrets add-iam-policy-binding encryption-key \
+            --member="serviceAccount:${CLOUD_RUN_SA}" \
+            --role="roles/secretmanager.secretAccessor" \
+            --project=${{ env.PROJECT_ID }} || true
+
           echo "✅ Permissions verified"
 
       - name: Check if secrets exist
@@ -116,7 +126,9 @@ jobs:
           if gcloud secrets describe firebase-config --project=${{ env.PROJECT_ID }} &>/dev/null && \
              gcloud secrets describe firebase-project-id --project=${{ env.PROJECT_ID }} &>/dev/null && \
              gcloud secrets describe gemini-api-key --project=${{ env.PROJECT_ID }} &>/dev/null && \
-             gcloud secrets describe FIREBASE_API_KEY --project=${{ env.PROJECT_ID }} &>/dev/null; then
+             gcloud secrets describe FIREBASE_API_KEY --project=${{ env.PROJECT_ID }} &>/dev/null && \
+             gcloud secrets describe JWT_SECRET --project=${{ env.PROJECT_ID }} &>/dev/null && \
+             gcloud secrets describe encryption-key --project=${{ env.PROJECT_ID }} &>/dev/null; then
             echo "secrets_exist=true" >> $GITHUB_OUTPUT
             echo "✅ Secrets exist in Secret Manager"
           else
@@ -141,8 +153,8 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --update-env-vars NODE_ENV=production \
-            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--update-secrets FIREBASE_CONFIG=firebase-config:latest,firebase-project-id=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest,FIREBASE_API_KEY=FIREBASE_API_KEY:latest" || echo "") \
+            --update-env-vars NODE_ENV=production,STREAK_RECOVERY_COOLDOWN_HOURS=1,RESOURCE_ASSESSMENT_COOLDOWN_HOURS=1,PARSE_INT_BASE=10,STREAK_RECOVERY_MAX_DAYS=7,STREAK_RECOVERY_QUESTIONS_PER_DAY=10,STREAK_RECOVERY_MAX_QUESTIONS=30,ASSESSMENT_QUESTION_COUNT=25,MODULE_FINAL_EXAM_QUESTION_COUNT=10,MODULE_FINAL_EXAM_MIN_SCORE=80,RESOURCE_ASSESSMENT_MIN_SCORE=80 \
+            $([ "${{ steps.check-secrets.outputs.secrets_exist }}" == "true" ] && echo "--update-secrets FIREBASE_CONFIG=firebase-config:latest,firebase-project-id=firebase-project-id:latest,GEMINI_API_KEY=gemini-api-key:latest,FIREBASE_API_KEY=FIREBASE_API_KEY:latest,JWT_SECRET=JWT_SECRET:latest,ENCRYPTION_KEY=encryption-key:latest" || echo "") \
             --format="value(status.url)")
 
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT

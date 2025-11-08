@@ -54,7 +54,7 @@ Vous devez configurer les secrets suivants dans GitHub (Settings > Secrets and v
 
 ### Configuration des Secrets dans Secret Manager
 
-Les secrets Firebase et Gemini doivent être stockés dans Google Cloud Secret Manager:
+Les secrets sensibles doivent être stockés dans Google Cloud Secret Manager:
 
 #### Firebase Config
 ```bash
@@ -97,6 +97,60 @@ cat gemini-config.json | gcloud secrets versions add gemini-config \
   --data-file=- \
   --project=YOUR_PROJECT_ID
 ```
+
+#### JWT Secret
+```bash
+# Créer le secret JWT (générer une clé aléatoire forte)
+echo -n 'your-strong-random-jwt-secret-key' | gcloud secrets create JWT_SECRET \
+  --replication-policy="automatic" \
+  --project=YOUR_PROJECT_ID
+
+# Ou ajouter une version
+echo -n 'your-strong-random-jwt-secret-key' | gcloud secrets versions add JWT_SECRET \
+  --data-file=- \
+  --project=YOUR_PROJECT_ID
+```
+
+#### Encryption Key
+```bash
+# Créer le secret d'encryption (doit être exactement 32 caractères)
+echo -n 'your-32-character-encryption-key' | gcloud secrets create encryption-key \
+  --replication-policy="automatic" \
+  --project=YOUR_PROJECT_ID
+
+# Ou ajouter une version
+echo -n 'your-32-character-encryption-key' | gcloud secrets versions add encryption-key \
+  --data-file=- \
+  --project=YOUR_PROJECT_ID
+```
+
+#### Firebase API Key
+```bash
+# Créer le secret Firebase API Key
+echo -n 'your-firebase-api-key' | gcloud secrets create FIREBASE_API_KEY \
+  --replication-policy="automatic" \
+  --project=YOUR_PROJECT_ID
+
+# Ou ajouter une version
+echo -n 'your-firebase-api-key' | gcloud secrets versions add FIREBASE_API_KEY \
+  --data-file=- \
+  --project=YOUR_PROJECT_ID
+```
+
+## 🔧 Variables d'Environnement Configurables
+
+Le workflow de déploiement configure automatiquement les variables d'environnement suivantes avec des valeurs par défaut. Vous pouvez les modifier dans le workflow `deploy.yml` si nécessaire:
+
+- `STREAK_RECOVERY_COOLDOWN_HOURS=1` - Cooldown entre les tentatives de récupération de série
+- `RESOURCE_ASSESSMENT_COOLDOWN_HOURS=1` - Cooldown entre les tentatives d'évaluation de ressource
+- `PARSE_INT_BASE=10` - Base pour le parsing des entiers (2-36)
+- `STREAK_RECOVERY_MAX_DAYS=7` - Nombre maximum de jours récupérables
+- `STREAK_RECOVERY_QUESTIONS_PER_DAY=10` - Nombre de questions par jour récupérable
+- `STREAK_RECOVERY_MAX_QUESTIONS=30` - Nombre maximum total de questions pour la récupération
+- `ASSESSMENT_QUESTION_COUNT=25` - Nombre de questions par défaut pour les évaluations d'objectif
+- `MODULE_FINAL_EXAM_QUESTION_COUNT=10` - Nombre de questions pour l'examen final du module
+- `MODULE_FINAL_EXAM_MIN_SCORE=80` - Score minimum pour réussir l'examen final (en %)
+- `RESOURCE_ASSESSMENT_MIN_SCORE=80` - Score minimum pour réussir une évaluation de ressource (en %)
 
 ## 🚀 Déploiement Automatique
 

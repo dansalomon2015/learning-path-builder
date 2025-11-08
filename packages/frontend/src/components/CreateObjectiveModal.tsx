@@ -1,6 +1,19 @@
 import type React from 'react';
 import { useState } from 'react';
-import { XIcon, TargetIcon, CalendarIcon, TrophyIcon } from './icons';
+import { Target, Calendar, Trophy, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface CreateObjectiveModalProps {
   isOpen: boolean;
@@ -134,272 +147,278 @@ const CreateObjectiveModal: React.FC<CreateObjectiveModalProps> = ({
     }));
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <div className="flex items-center space-x-3">
-            <TargetIcon className="w-6 h-6 text-indigo-600" />
-            <h2 className="text-xl font-bold text-slate-800">Create Learning Objective</h2>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open: boolean): void => {
+        if (!open) {
+          handleClose();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <Target className="h-6 w-6 text-primary" />
+            <DialogTitle className="text-xl">Create Learning Objective</DialogTitle>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <XIcon className="w-5 h-5 text-slate-500" />
-          </button>
-        </div>
+          <DialogDescription>
+            Define your learning objective and we&apos;ll create a personalized learning path for
+            you
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6 py-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Basic Information</h3>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800">Basic Information</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Objective Title *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e): void => {
-                  setFormData((prev): typeof formData => ({ ...prev, title: e.target.value }));
-                }}
-                placeholder="e.g., Become Senior Java Developer"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Description *</label>
-              <textarea
-                value={formData.description}
-                onChange={(e): void => {
-                  setFormData((prev): typeof formData => ({
-                    ...prev,
-                    description: e.target.value,
-                  }));
-                }}
-                placeholder="Describe what you want to achieve and why it's important to you..."
-                rows={3}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Category and Role */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800">Career Focus</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Category *</label>
-              <select
-                value={formData.category}
-                onChange={(e): void => handleCategoryChange(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map(
-                  (category: string): JSX.Element => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-
-            {formData.category !== '' && formData.category in popularRoles && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Target Role *
-                </label>
-                <select
-                  value={formData.targetRole}
-                  onChange={(e): void => {
-                    setFormData((prev): typeof formData => ({
-                      ...prev,
-                      targetRole: e.target.value,
-                    }));
-                  }}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                  required
-                >
-                  <option value="">Select a role</option>
-                  {popularRoles[formData.category as keyof typeof popularRoles].map(
-                    (role: string): JSX.Element => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-            )}
-
-            {formData.category !== '' && !(formData.category in popularRoles) && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Target Role *
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="title">Objective Title *</Label>
+                <Input
+                  id="title"
                   type="text"
-                  value={formData.targetRole}
-                  onChange={(e): void => {
-                    setFormData((prev): typeof formData => ({
-                      ...prev,
-                      targetRole: e.target.value,
-                    }));
+                  placeholder="e.g., Become Senior Java Developer"
+                  value={formData.title}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                    setFormData((prev): typeof formData => ({ ...prev, title: e.target.value }));
                   }}
-                  placeholder="Enter your target role"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   required
+                  disabled={isCreating}
                 />
               </div>
-            )}
-          </div>
 
-          {/* Timeline and Levels */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800">Learning Plan</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Target Timeline (months)
-              </label>
-              <div className="flex items-center space-x-4">
-                <input
-                  type="range"
-                  min="1"
-                  max="24"
-                  value={formData.targetTimeline}
-                  onChange={(e): void => {
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what you want to achieve and why it's important to you..."
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>): void => {
                     setFormData((prev): typeof formData => ({
                       ...prev,
-                      targetTimeline: parseInt(e.target.value, 10),
+                      description: e.target.value,
                     }));
                   }}
-                  className="flex-1"
+                  rows={3}
+                  required
+                  disabled={isCreating}
                 />
-                <div className="flex items-center space-x-2 text-slate-600">
-                  <CalendarIcon className="w-4 h-4" />
-                  <span className="font-semibold">{formData.targetTimeline} months</span>
+              </div>
+            </div>
+
+            {/* Category and Role */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Career Focus</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={handleCategoryChange}
+                  required
+                  disabled={isCreating}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(
+                      (category: string): JSX.Element => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.category !== '' && formData.category in popularRoles && (
+                <div className="space-y-2">
+                  <Label htmlFor="targetRole">Target Role *</Label>
+                  <Select
+                    value={formData.targetRole}
+                    onValueChange={(value: string): void => {
+                      setFormData((prev): typeof formData => ({
+                        ...prev,
+                        targetRole: value,
+                      }));
+                    }}
+                    required
+                    disabled={isCreating}
+                  >
+                    <SelectTrigger id="targetRole">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {popularRoles[formData.category as keyof typeof popularRoles].map(
+                        (role: string): JSX.Element => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formData.category !== '' && !(formData.category in popularRoles) && (
+                <div className="space-y-2">
+                  <Label htmlFor="targetRole">Target Role *</Label>
+                  <Input
+                    id="targetRole"
+                    type="text"
+                    placeholder="Enter your target role"
+                    value={formData.targetRole}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                      setFormData((prev): typeof formData => ({
+                        ...prev,
+                        targetRole: e.target.value,
+                      }));
+                    }}
+                    required
+                    disabled={isCreating}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Timeline and Levels */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Learning Plan</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="timeline">Target Timeline (months)</Label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="timeline"
+                    type="range"
+                    min="1"
+                    max="24"
+                    value={formData.targetTimeline}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                      setFormData((prev): typeof formData => ({
+                        ...prev,
+                        targetTimeline: parseInt(e.target.value, 10),
+                      }));
+                    }}
+                    className="flex-1"
+                    disabled={isCreating}
+                  />
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formData.targetTimeline} months</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentLevel">Current Level</Label>
+                  <Select
+                    value={formData.currentLevel}
+                    onValueChange={(value: string): void => {
+                      if (
+                        value === 'beginner' ||
+                        value === 'intermediate' ||
+                        value === 'advanced'
+                      ) {
+                        setFormData((prev): typeof formData => ({ ...prev, currentLevel: value }));
+                      }
+                    }}
+                    disabled={isCreating}
+                  >
+                    <SelectTrigger id="currentLevel">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="targetLevel">Target Level</Label>
+                  <Select
+                    value={formData.targetLevel}
+                    onValueChange={(value: string): void => {
+                      if (
+                        value === 'beginner' ||
+                        value === 'intermediate' ||
+                        value === 'advanced' ||
+                        value === 'expert'
+                      ) {
+                        setFormData((prev): typeof formData => ({ ...prev, targetLevel: value }));
+                      }
+                    }}
+                    disabled={isCreating}
+                  >
+                    <SelectTrigger id="targetLevel">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Current Level
-                </label>
-                <select
-                  value={formData.currentLevel}
-                  onChange={(e): void => {
-                    const value = e.target.value;
-                    if (value === 'beginner' || value === 'intermediate' || value === 'advanced') {
-                      setFormData((prev): typeof formData => ({ ...prev, currentLevel: value }));
-                    }
-                  }}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
+            {/* AI-Powered Suggestions */}
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                <h4 className="text-sm font-semibold">AI-Powered Learning Path</h4>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Target Level
-                </label>
-                <select
-                  value={formData.targetLevel}
-                  onChange={(e): void => {
-                    const value = e.target.value;
-                    if (
-                      value === 'beginner' ||
-                      value === 'intermediate' ||
-                      value === 'advanced' ||
-                      value === 'expert'
-                    ) {
-                      setFormData((prev): typeof formData => ({ ...prev, targetLevel: value }));
-                    }
-                  }}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="expert">Expert</option>
-                </select>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Once you create this objective, our AI will generate a personalized learning path
+                with:
+              </p>
+              <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                <li>Skill assessment to evaluate your current level</li>
+                <li>Structured learning modules tailored to your timeline</li>
+                <li>Milestones and progress tracking</li>
+                <li>Practice projects and real-world applications</li>
+              </ul>
             </div>
           </div>
-
-          {/* AI-Powered Suggestions */}
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrophyIcon className="w-5 h-5 text-indigo-600" />
-              <h4 className="text-sm font-semibold text-indigo-800">AI-Powered Learning Path</h4>
-            </div>
-            <p className="text-sm text-indigo-700">
-              Once you create this objective, our AI will generate a personalized learning path
-              with:
-            </p>
-            <ul className="text-sm text-indigo-700 mt-2 space-y-1">
-              <li>• Skill assessment to evaluate your current level</li>
-              <li>• Structured learning modules tailored to your timeline</li>
-              <li>• Milestones and progress tracking</li>
-              <li>• Practice projects and real-world applications</li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors"
-            >
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isCreating}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={
-                isCreating === true ||
+                isCreating ||
                 formData.title === '' ||
                 formData.description === '' ||
                 formData.category === '' ||
                 formData.targetRole === ''
               }
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {isCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                  <span>Creating...</span>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
                 </>
               ) : (
                 <>
-                  <TargetIcon className="w-4 h-4" />
-                  <span>Create Objective</span>
+                  <Target className="mr-2 h-4 w-4" />
+                  Create Objective
                 </>
               )}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

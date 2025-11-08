@@ -369,9 +369,9 @@ class ApiService {
   async checkModuleFinalExamEligibility(
     moduleId: string
   ): Promise<ApiResponse<{ canTake: boolean; missingResources?: string[]; reason?: string }>> {
-    const response = await this.api.get<ApiResponse<{ canTake: boolean; missingResources?: string[]; reason?: string }>>(
-      `/module-final-exams/modules/${moduleId}/can-take`
-    );
+    const response = await this.api.get<
+      ApiResponse<{ canTake: boolean; missingResources?: string[]; reason?: string }>
+    >(`/module-final-exams/modules/${moduleId}/can-take`);
     return response.data;
   }
 
@@ -707,15 +707,22 @@ class ApiService {
     return response.data;
   }
 
-  async getResourceAssessmentStatus(
-    resourceId: string
-  ): Promise<ApiResponse<{ hasAssessment: boolean; assessmentId?: string; isCompleted: boolean; lastScore?: number }>> {
-    const response = await this.api.get<ApiResponse<{
+  async getResourceAssessmentStatus(resourceId: string): Promise<
+    ApiResponse<{
       hasAssessment: boolean;
       assessmentId?: string;
       isCompleted: boolean;
       lastScore?: number;
-    }>>(`/resource-assessments/resource/${resourceId}/status`);
+    }>
+  > {
+    const response = await this.api.get<
+      ApiResponse<{
+        hasAssessment: boolean;
+        assessmentId?: string;
+        isCompleted: boolean;
+        lastScore?: number;
+      }>
+    >(`/resource-assessments/resource/${resourceId}/status`);
     return response.data;
   }
 
@@ -725,6 +732,35 @@ class ApiService {
     const response = await this.api.get<ApiResponse<ResourceAssessmentResult[]>>(
       `/resource-assessments/resource/${resourceId}/history`
     );
+    return response.data;
+  }
+
+  async getModuleProgress(
+    objectiveId: string,
+    pathId: string,
+    moduleId: string
+  ): Promise<
+    ApiResponse<{
+      progress: number;
+      resourceWeight: number;
+      finalExamWeight: number;
+      resourceCount: number;
+      completedResources: string[];
+      completedResourceCount: number;
+      finalExamPassed: boolean;
+    }>
+  > {
+    const response = await this.api.get<
+      ApiResponse<{
+        progress: number;
+        resourceWeight: number;
+        finalExamWeight: number;
+        resourceCount: number;
+        completedResources: string[];
+        completedResourceCount: number;
+        finalExamPassed: boolean;
+      }>
+    >(`/objectives/${objectiveId}/paths/${pathId}/modules/${moduleId}/progress`);
     return response.data;
   }
 }

@@ -4,6 +4,7 @@ import { geminiService } from '@/services/gemini';
 import { logger } from '@/utils/logger';
 import type { QuizQuestion } from '@/types';
 import { completeModuleAndUpdateProgress } from '@/utils/progressHelpers';
+import { moduleProgressService } from '@/services/moduleProgressService';
 
 export interface ModuleFinalExam {
   id: string;
@@ -393,9 +394,14 @@ class ModuleFinalExamService {
       };
       await firebaseService.createDocument('moduleFinalExamResults', resultData, resultId);
 
-      // If passed, mark module as completed
+      // Update module progress (this will mark as completed if progress >= 100% and final exam passed)
       if (passed) {
-        await this.completeModule(exam.objectiveId, exam.pathId, exam.moduleId);
+        await moduleProgressService.updateModuleProgress(
+          exam.objectiveId,
+          exam.pathId,
+          exam.moduleId,
+          userId
+        );
       }
 
       logger.info(`Module final exam ${examId} submitted. Score: ${score}%, Passed: ${passed}`);

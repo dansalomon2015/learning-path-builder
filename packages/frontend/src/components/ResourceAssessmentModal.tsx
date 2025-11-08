@@ -61,15 +61,15 @@ const QuizResults: React.FC<QuizResultsProps> = ({
                 result.passed ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {result.passed ? 'Félicitations !' : 'À refaire'}
+              {result.passed ? 'Congratulations!' : 'Retry'}
             </h3>
             <p className="text-lg text-slate-600 mb-4">
-              Vous avez obtenu <span className="font-bold">{result.score}%</span>
+              You scored <span className="font-bold">{result.score}%</span>
             </p>
             <p className="text-sm text-slate-500">
               {result.passed
-                ? 'Vous avez validé votre compréhension de cette ressource !'
-                : 'Vous devez obtenir 70% pour valider. Réessayez après avoir relu la ressource.'}
+                ? 'You have validated your understanding of this resource!'
+                : 'You need to score 70% to pass. Try again after reviewing the resource.'}
             </p>
           </div>
 
@@ -77,17 +77,17 @@ const QuizResults: React.FC<QuizResultsProps> = ({
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
               <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-green-700">{correctCount}</p>
-              <p className="text-sm text-green-600">Correctes</p>
+              <p className="text-sm text-green-600">Correct</p>
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
               <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-red-700">{incorrectCount}</p>
-              <p className="text-sm text-red-600">Incorrectes</p>
+              <p className="text-sm text-red-600">Incorrect</p>
             </div>
           </div>
 
           <div className="space-y-4 mb-6">
-            <h4 className="font-semibold text-slate-800">Détails des réponses</h4>
+            <h4 className="font-semibold text-slate-800">Answer Details</h4>
             {result.feedback.map((feedback, index) => {
               return (
                 <div
@@ -108,14 +108,14 @@ const QuizResults: React.FC<QuizResultsProps> = ({
                       </p>
                       <div className="space-y-1 text-sm">
                         <p>
-                          <span className="font-medium">Votre réponse:</span>{' '}
+                          <span className="font-medium">Your answer:</span>{' '}
                           <span className={feedback.correct ? 'text-green-700' : 'text-red-700'}>
                             {String(feedback.userAnswer)}
                           </span>
                         </p>
                         {!feedback.correct && (
                           <p>
-                            <span className="font-medium">Bonne réponse:</span>{' '}
+                            <span className="font-medium">Correct answer:</span>{' '}
                             <span className="text-green-700">{String(feedback.correctAnswer)}</span>
                           </p>
                         )}
@@ -134,13 +134,13 @@ const QuizResults: React.FC<QuizResultsProps> = ({
               className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              Refaire le quiz
+              Retake Quiz
             </button>
             <button
               onClick={onClose}
               className="flex-1 bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-colors"
             >
-              Fermer
+              Close
             </button>
           </div>
         </div>
@@ -342,10 +342,10 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="w-12 h-12 text-primary animate-spin" />
             <p className="text-lg font-medium text-slate-800">
-              Génération du quiz en cours...
+              Generating quiz...
             </p>
             <p className="text-sm text-slate-500 text-center">
-              Nous préparons des questions personnalisées pour valider votre compréhension de{' '}
+              We are preparing personalized questions to validate your understanding of{' '}
               <span className="font-medium">{resourceTitle}</span>
             </p>
           </div>
@@ -365,7 +365,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Auto-évaluation</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Self-Assessment</h2>
               <p className="text-sm text-slate-500 mt-1">{resourceTitle}</p>
             </div>
             <button
@@ -380,7 +380,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">
-                Question {currentQuestionIndex + 1} sur {assessment.questions.length}
+                Question {currentQuestionIndex + 1} of {assessment.questions.length}
               </span>
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Clock className="w-4 h-4" />
@@ -438,7 +438,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
               disabled={currentQuestionIndex === 0}
               className="px-4 py-2 text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Précédent
+              Previous
             </button>
 
             {currentQuestionIndex === assessment.questions.length - 1 ? (
@@ -450,11 +450,11 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Envoi...
+                    Submitting...
                   </>
                 ) : (
                   <>
-                    Soumettre
+                    Submit
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -465,7 +465,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
                 disabled={selectedAnswer == null}
                 className="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Suivant
+                Next
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}

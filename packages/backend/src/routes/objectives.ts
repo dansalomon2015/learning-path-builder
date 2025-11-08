@@ -10,8 +10,11 @@ import {
   updatePathProgressAndCheckCompletion,
   activateNextPath,
   completeModuleAndUpdateProgress,
+  calculateModuleProgressWeights,
+  calculateModuleProgress,
 } from '@/utils/progressHelpers';
 import { streakService } from '@/services/streakService';
+import { moduleProgressService } from '@/services/moduleProgressService';
 
 const router = Router();
 
@@ -1843,6 +1846,84 @@ router.post(
     }
   }
 );
+
+// Get detailed module progress
+router.get('/:id/paths/:pathId/modules/:moduleId/progress', async (req: Request, res: Response): Promise<Response> => {
+  const uid: string | undefined = req.user?.uid;
+  if (uid == null || uid === '') {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  const objectiveId: string | undefined = req.params['id'];
+  const pathId: string | undefined = req.params['pathId'];
+  const moduleId: string | undefined = req.params['moduleId'];
+
+  if (objectiveId == null || pathId == null || moduleId == null) {
+    return res.status(400).json({
+      success: false,
+      message: 'objectiveId, pathId, and moduleId are required',
+    });
+  }
+
+  try {
+    // Verify objective ownership
+    const objectiveDoc = await firebaseService.getDocument('objectives', objectiveId);
+    if (objectiveDoc == null) {
+      return res.status(404).json({ success: false, message: 'Objective not found' });
+    }
+
+    const objective = objectiveDoc as Record<string, unknown>;
+    const objectiveUserId: unknown = objective['userId'];
+    if (objectiveUserId !== uid) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    // Get module
+    const learningPaths = (objective['learningPaths'] as Array<Record<string, unknown>>) ?? [];
+    const path = learningPaths.find((p: Record<string, unknown>): boolean => p['id'] === pathId);
+    if (path == null) {
+      return res.status(404).json({ success: false, message: 'Path not found' });
+    }
+
+    const modules = (path['modules'] as Array<Record<string, unknown>>) ?? [];
+    const module = modules.find((m: Record<string, unknown>): boolean => m['id'] === moduleId);
+    if (module == null) {
+      return res.status(404).json({ success: false, message: 'Module not found' });
+    }
+
+    // Get completed resources and final exam status
+    const completedResourceIds = await moduleProgressService.getCompletedResourceIds(uid, moduleId);
+    const finalExamPassed = await moduleProgressService.isFinalExamPassed(uid, moduleId);
+
+    // Calculate weights
+    const suggestedResources = (module['suggestedResources'] as Array<Record<string, unknown>>) ?? [];
+    const resourceCount = suggestedResources.length;
+    const { resourceWeight, finalExamWeight } = calculateModuleProgressWeights(resourceCount);
+
+    // Calculate current progress
+    const progress = calculateModuleProgress(module, completedResourceIds, finalExamPassed);
+
+    return res.json({
+      success: true,
+      data: {
+        progress,
+        resourceWeight,
+        finalExamWeight,
+        resourceCount,
+        completedResources: Array.from(completedResourceIds),
+        completedResourceCount: completedResourceIds.size,
+        finalExamPassed,
+      },
+    });
+  } catch (error: unknown) {
+    logger.error('Error getting module progress:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(500).json({
+      success: false,
+      error: { message: errorMessage },
+    });
+  }
+});
 
 // Cascade delete objective and related assessments/results
 router.delete('/:id', async (req: Request, res: Response): Promise<Response | void> => {

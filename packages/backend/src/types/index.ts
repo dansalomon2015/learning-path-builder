@@ -84,6 +84,108 @@ export interface SessionPerformance {
   recommendations: string[];
 }
 
+export interface Streak {
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastStudyDate: Date;
+  missedDays: number;
+  recoveryHistory: Array<{
+    date: Date;
+    recoveredDays: number;
+    assessmentId: string;
+    objectiveId: string;
+  }>;
+  updatedAt: Date;
+}
+
+export interface RecoveryAssessment {
+  id: string;
+  userId: string;
+  objectiveId: string;
+  objectiveTitle: string;
+  missedDays: number;
+  questionCount: number;
+  questions: QuizQuestion[];
+  status: 'pending' | 'completed';
+  score?: number;
+  passed?: boolean;
+  recoveredDays?: number;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface RecoveryResult {
+  assessmentId: string;
+  score: number;
+  passed: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  recoveredDays: number;
+  newStreak: number;
+  feedback?: Array<{
+    questionId: string;
+    question: string;
+    correct: boolean;
+    userAnswer: string | number;
+    correctAnswer: string | number;
+    explanation: string;
+  }>;
+  averageTimePerQuestion?: number; // in seconds
+  suspiciousPattern?: boolean;
+}
+
+export interface ResourceAssessment {
+  id: string;
+  userId: string;
+  resourceId: string;
+  moduleId: string;
+  pathId: string;
+  objectiveId: string;
+  resourceTitle: string;
+  resourceType: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+  resourceUrl?: string;
+  questions: QuizQuestion[];
+  status: 'pending' | 'completed';
+  createdAt: Date;
+  completedAt?: Date;
+  score?: number;
+  passed?: boolean; // >= 70%
+  correctAnswers?: number;
+  totalQuestions?: number;
+  timeSpent?: number; // en secondes
+}
+
+export interface ResourceAssessmentResult {
+  id: string;
+  userId: string;
+  resourceId: string;
+  assessmentId: string;
+  moduleId: string;
+  objectiveId: string;
+  resourceTitle: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  timeSpent: number;
+  passed: boolean;
+  answers: Array<{
+    questionId: string;
+    selectedAnswer: string | number;
+    correct: boolean;
+    explanation?: string;
+  }>;
+  feedback: Array<{
+    questionId: string;
+    question: string;
+    correct: boolean;
+    userAnswer: string | number;
+    correctAnswer: string | number;
+    explanation: string;
+  }>;
+  completedAt: Date;
+}
+
 export interface AdaptiveAlgorithm {
   userId: string;
   learningPlanId: string;

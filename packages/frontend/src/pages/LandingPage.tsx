@@ -1,126 +1,212 @@
-import type React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpenIcon, SparklesIcon, TrophyIcon } from '../components/icons';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Target, Sparkles, TrendingUp, BookOpen, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Logo } from '../components/Logo';
 
 // eslint-disable-next-line max-lines-per-function
-const LandingPage: React.FC = (): JSX.Element => {
-  const navigate = useNavigate();
+export default function LandingPage(): JSX.Element {
   const { isAuthenticated } = useAuth();
 
-  const handleLogin = (): void => {
-    if (isAuthenticated === true) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
-  };
-
-  const handleSignUp = (): void => {
-    navigate('/auth');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <BookOpenIcon className="h-8 w-8 text-indigo-600" />
-              <h1 className="text-2xl font-bold text-slate-900">FlashLearn AI</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleLogin}
-                className="text-slate-600 hover:text-slate-900 font-medium"
-              >
-                {isAuthenticated ? 'Dashboard' : 'Login'}
-              </button>
-              <button
-                onClick={handleSignUp}
-                className="relative inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_10px_20px_-10px_rgba(79,70,229,0.7)] hover:from-indigo-500 hover:to-purple-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <span className="mr-2">Create Account</span>
-                <span className="inline-block rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                  Free
-                </span>
-              </button>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Navigation */}
+      <nav className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Logo size="lg" />
+            <span className="text-2xl font-bold text-balance">FlashLearn AI</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/auth">
+              <Button variant="ghost">Se connecter</Button>
+            </Link>
+            <Link to="/auth">
+              <Button>Commencer</Button>
+            </Link>
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-slate-900 mb-6">
-            Learn with AI
-            <span className="text-indigo-600"> FlashLearn</span>
+      <section className="container mx-auto px-4 py-20 md:py-32">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+            <Sparkles className="h-4 w-4" />
+            <span>Apprentissage adaptatif propulsé par l&apos;IA</span>
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-bold text-balance leading-tight">
+            Apprenez plus vite avec l&apos;intelligence artificielle
           </h1>
-          <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
-            Transform your documents into intelligent flashcards and progress with an adaptive
-            learning system.
+
+          <p className="text-xl text-muted-foreground text-pretty max-w-2xl mx-auto leading-relaxed">
+            FlashLearn AI crée des parcours d&apos;apprentissage personnalisés basés sur vos
+            objectifs. Des flashcards intelligentes aux quiz adaptatifs, maîtrisez n&apos;importe
+            quel sujet efficacement.
           </p>
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={handleSignUp}
-              className="group relative inline-flex items-center justify-center px-7 py-3.5 rounded-2xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_20px_35px_-15px_rgba(79,70,229,0.8)] hover:from-indigo-500 hover:to-purple-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <span className="mr-2">Get Started Free</span>
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/20 group-hover:bg-white/30 transition">
-                →
-              </span>
-            </button>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link to={isAuthenticated ? '/dashboard' : '/auth'}>
+              <Button size="lg" className="text-lg px-8">
+                Commencer gratuitement
+              </Button>
+            </Link>
+            <a href="#features">
+              <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent">
+                Découvrir les fonctionnalités
+              </Button>
+            </a>
           </div>
         </div>
+      </section>
 
-        {/* Features */}
-        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
-              <SparklesIcon className="h-8 w-8 text-indigo-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">AI Generation</h3>
-            <p className="text-slate-600">
-              Automatically create flashcards from your documents with Gemini AI.
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
-              <BookOpenIcon className="h-8 w-8 text-purple-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Adaptive Learning</h3>
-            <p className="text-slate-600">
-              The system adapts to your level and adjusts difficulty automatically.
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <TrophyIcon className="h-8 w-8 text-green-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Progress Tracking</h3>
-            <p className="text-slate-600">
-              Visualize your progress with detailed statistics and recommendations.
-            </p>
-          </div>
+      {/* Features Section */}
+      <section id="features" className="container mx-auto px-4 py-20">
+        <div className="text-center space-y-4 mb-16">
+          <h2 className="text-4xl font-bold text-balance">Comment ça marche</h2>
+          <p className="text-xl text-muted-foreground text-pretty max-w-2xl mx-auto">
+            Une approche en 4 étapes pour un apprentissage optimal
+          </p>
         </div>
-      </main>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Target className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Définissez vos objectifs</CardTitle>
+              <CardDescription>
+                Créez des objectifs d&apos;apprentissage personnalisés avec un niveau cible et une
+                date limite
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Logo size="md" />
+              </div>
+              <CardTitle>Évaluation IA</CardTitle>
+              <CardDescription>
+                Passez une évaluation de 25 questions générée par l&apos;IA pour déterminer votre
+                niveau actuel
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <BookOpen className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Parcours adaptatifs</CardTitle>
+              <CardDescription>
+                Recevez des parcours d&apos;apprentissage personnalisés avec des modules progressifs
+                et des flashcards
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Award className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>Validez vos acquis</CardTitle>
+              <CardDescription>
+                Complétez des quiz de validation pour débloquer de nouveaux modules et progresser
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <Card className="border-2 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="p-12">
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                  <h3 className="text-3xl font-bold text-balance">Pourquoi FlashLearn AI ?</h3>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <TrendingUp className="h-6 w-6 text-primary shrink-0 mt-1" />
+                      <div>
+                        <p className="font-semibold">Apprentissage adaptatif</p>
+                        <p className="text-muted-foreground text-sm">
+                          Le contenu s&apos;adapte à votre niveau et à votre progression
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Sparkles className="h-6 w-6 text-primary shrink-0 mt-1" />
+                      <div>
+                        <p className="font-semibold">Contenu généré par IA</p>
+                        <p className="text-muted-foreground text-sm">
+                          Des flashcards et quiz créés automatiquement pour chaque sujet
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Target className="h-6 w-6 text-primary shrink-0 mt-1" />
+                      <div>
+                        <p className="font-semibold">Suivi de progression</p>
+                        <p className="text-muted-foreground text-sm">
+                          Visualisez vos progrès et débloquez de nouveaux contenus
+                        </p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+                    <img src="/icon-512.png" alt="FlashLearn AI" className="h-48 w-48 relative" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-3xl mx-auto text-center space-y-8 bg-primary text-primary-foreground rounded-2xl p-12">
+          <h2 className="text-4xl font-bold text-balance">
+            Prêt à transformer votre apprentissage ?
+          </h2>
+          <p className="text-lg text-pretty opacity-90">
+            Rejoignez des milliers d&apos;apprenants qui utilisent l&apos;IA pour atteindre leurs
+            objectifs plus rapidement.
+          </p>
+          <Link to={isAuthenticated ? '/dashboard' : '/auth'}>
+            <Button size="lg" variant="secondary" className="text-lg px-8">
+              Commencer maintenant
+            </Button>
+          </Link>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12 mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <BookOpenIcon className="h-6 w-6 text-indigo-400" />
-            <span className="text-xl font-bold">FlashLearn AI</span>
+      <footer className="border-t bg-muted/30 mt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Logo size="md" />
+              <span className="font-semibold">FlashLearn AI</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2025 FlashLearn AI. Tous droits réservés.
+            </p>
           </div>
-          <p className="text-slate-400">© 2024 FlashLearn AI. All rights reserved.</p>
         </div>
       </footer>
     </div>
   );
-};
-
-export default LandingPage;
+}

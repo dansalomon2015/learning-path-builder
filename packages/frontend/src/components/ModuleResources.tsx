@@ -23,17 +23,17 @@ const getTypeLabel = (type: ResourceType): string => {
     case ResourceType.ARTICLE:
       return 'Article';
     case ResourceType.VIDEO:
-      return 'Vidéo';
+      return 'Video';
     case ResourceType.DOCUMENTATION:
       return 'Documentation';
     case ResourceType.TUTORIAL:
-      return 'Tutoriel';
+      return 'Tutorial';
     case ResourceType.BOOK:
-      return 'Livre';
+      return 'Book';
     case ResourceType.OFFICIAL_GUIDE:
-      return 'Guide officiel';
+      return 'Official Guide';
     default:
-      return 'Ressource';
+      return 'Resource';
   }
 };
 
@@ -154,12 +154,12 @@ export function ModuleResources({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Ressources suggérées
+            Suggested Resources
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Aucune ressource disponible pour le moment.
+            No resources available at the moment.
           </p>
         </CardContent>
       </Card>
@@ -195,7 +195,7 @@ export function ModuleResources({
                     {isLoadingStatus && (
                       <Badge variant="outline" className="bg-slate-500/10 text-slate-500 border-slate-500/20">
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        Chargement...
+                        Loading...
                       </Badge>
                     )}
                     {isAssessed && !isLoadingStatus && (
@@ -204,7 +204,7 @@ export function ModuleResources({
                         className="bg-green-500/10 text-green-500 border-green-500/20"
                       >
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Auto-évalué
+                        Self-Assessed
                         {lastScore != null && ` - ${lastScore}%`}
                       </Badge>
                     )}
@@ -218,7 +218,7 @@ export function ModuleResources({
                   <Button size="sm" variant="outline" asChild>
                     <a href={resource.url} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Consulter
+                      View
                     </a>
                   </Button>
                 )}
@@ -229,7 +229,7 @@ export function ModuleResources({
                     onClick={(): void => handleShowHistory(resource.id, resource.title)}
                   >
                     <History className="h-4 w-4 mr-2" />
-                    Historique
+                    History
                   </Button>
                 )}
                 <Button
@@ -238,7 +238,7 @@ export function ModuleResources({
                   disabled={isLoadingStatus}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {isAssessed ? 'Refaire l\'évaluation' : 'Auto-évaluer'}
+                  {isAssessed ? 'Retake Assessment' : 'Self-Assess'}
                 </Button>
               </div>
             </div>

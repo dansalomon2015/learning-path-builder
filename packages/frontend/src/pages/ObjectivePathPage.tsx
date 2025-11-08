@@ -66,41 +66,11 @@ interface ModuleCardProps {
   module: LearningModule;
   isEnabled: boolean;
   hasFlashcards: boolean;
-  progress: number;
   isCompleted: boolean;
   isLoading: boolean;
   onStartModule: (module: LearningModule) => Promise<void>;
   onCompleteModule: (module: LearningModule) => Promise<void>;
 }
-
-// Helper component for module progress bar
-interface ModuleProgressProps {
-  hasFlashcards: boolean;
-  progress: number;
-}
-
-const ModuleProgress: React.FC<ModuleProgressProps> = ({
-  hasFlashcards,
-  progress,
-}): JSX.Element | null => {
-  if (!hasFlashcards || progress <= 0) {
-    return null;
-  }
-  return (
-    <div className="mb-2">
-      <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-        <span>Progress</span>
-        <span className="font-semibold">{progress}%</span>
-      </div>
-      <div className="w-full bg-slate-200 rounded-full h-1.5">
-        <div
-          className="bg-indigo-600 h-1.5 rounded-full transition-all"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
-};
 
 // Helper component for module button
 interface ModuleButtonProps {
@@ -162,7 +132,6 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   module,
   isEnabled,
   hasFlashcards,
-  progress,
   isCompleted,
   isLoading,
   onStartModule,
@@ -193,7 +162,6 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             </span>
           </div>
           <div className="text-xs text-slate-600 mb-2">{module.description}</div>
-          <ModuleProgress hasFlashcards={hasFlashcards} progress={progress} />
           {module.dueDate != null && module.dueDate !== '' ? (
             <div className="text-xs text-slate-500 mt-1">
               Due: {new Date(module.dueDate).toLocaleDateString()}
@@ -304,7 +272,6 @@ const ModulesList: React.FC<ModulesListProps> = ({
         {modules.map((m: LearningModule): JSX.Element => {
           const isEnabled: boolean = m.isEnabled === true;
           const hasFlashcards: boolean = m.hasFlashcards === true;
-          const progress: number = typeof m.progress === 'number' ? m.progress : 0;
           const isCompleted: boolean = m.isCompleted === true;
           const isLoading: boolean =
             (generatingContent != null && generatingContent === m.id) ||
@@ -316,7 +283,6 @@ const ModulesList: React.FC<ModulesListProps> = ({
               module={m}
               isEnabled={isEnabled}
               hasFlashcards={hasFlashcards}
-              progress={progress}
               isCompleted={isCompleted}
               isLoading={isLoading}
               onStartModule={onStartModule}
@@ -336,6 +302,7 @@ interface PathHeaderProps {
   difficulty: string;
   estimatedDuration: number;
   skills: string[];
+  onBackToPaths: () => void;
   onBackToDashboard: () => void;
 }
 
@@ -345,11 +312,20 @@ const PathHeader: React.FC<PathHeaderProps> = ({
   difficulty,
   estimatedDuration,
   skills,
+  onBackToPaths,
   onBackToDashboard,
 }): JSX.Element => (
   <>
     <div className="flex items-start justify-between mb-6">
-      <div>
+      <div className="flex-1">
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={onBackToPaths}
+            className="px-3 py-1 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
+          >
+            ← Back to Paths
+          </button>
+        </div>
         <h1 className="text-2xl font-bold text-slate-800">{pathTitle}</h1>
         <p className="text-slate-600">{objectiveTitle}</p>
       </div>
@@ -357,7 +333,7 @@ const PathHeader: React.FC<PathHeaderProps> = ({
         onClick={onBackToDashboard}
         className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50"
       >
-        Back to Dashboard
+        Dashboard
       </button>
     </div>
 
@@ -618,6 +594,27 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
     );
   }
 
+  // Calculate path progress based on modules (100% / number of modules)
+  const calculatePathProgress = (modules: LearningModule[]): number => {
+    if (modules.length === 0) {
+      return 0;
+    }
+    const moduleWeight = 100 / modules.length;
+    const totalProgress = modules.reduce((sum: number, module: LearningModule): number => {
+      const moduleProgress: number = typeof module.progress === 'number' ? module.progress : 0;
+      return sum + (moduleProgress * moduleWeight) / 100;
+    }, 0);
+    return Math.round(totalProgress);
+  };
+
+  const pathProgress = calculatePathProgress(path.modules);
+
+  const handleBackToPaths = (): void => {
+    if (objectiveId != null) {
+      navigate(`/objectives/${objectiveId}/paths`);
+    }
+  };
+
   const handleBackToDashboard = (): void => {
     navigate('/dashboard');
   };
@@ -630,6 +627,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
         difficulty={path.difficulty}
         estimatedDuration={path.estimatedDuration}
         skills={path.skills}
+        onBackToPaths={handleBackToPaths}
         onBackToDashboard={handleBackToDashboard}
       />
 
@@ -639,7 +637,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
         moduleGenerationError={moduleGenerationError}
         generatingContent={generatingContent}
         loadingModule={loadingModule}
-        pathProgress={path.progress}
+        pathProgress={pathProgress}
         onRetryGenerate={async (): Promise<void> => {
           await generateModules(true);
         }}

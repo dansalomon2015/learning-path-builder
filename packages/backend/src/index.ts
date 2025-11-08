@@ -51,6 +51,9 @@ import { documentRoutes } from '@/routes/document';
 import authRoutes from '@/routes/auth';
 import objectivesRoutes from '@/routes/objectives';
 import assessmentsRoutes from '@/routes/assessments';
+import streakRoutes from '@/routes/streak';
+import resourceAssessmentsRoutes from '@/routes/resourceAssessments';
+import moduleFinalExamsRoutes from '@/routes/moduleFinalExams';
 import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 
@@ -107,6 +110,9 @@ app.use('/api/learning-plans', authMiddleware, learningPlanRoutes);
 app.use('/api/documents', authMiddleware, documentRoutes);
 app.use('/api/objectives', authMiddleware, objectivesRoutes);
 app.use('/api/assessments', authMiddleware, assessmentsRoutes);
+app.use('/api/streak', authMiddleware, streakRoutes);
+app.use('/api/resource-assessments', authMiddleware, resourceAssessmentsRoutes);
+app.use('/api/module-final-exams', authMiddleware, moduleFinalExamsRoutes);
 
 // Health check endpoint with service status
 app.get('/health', async (_req, res) => {

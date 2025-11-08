@@ -468,6 +468,7 @@ export interface ResourceAssessment {
   userId: string;
   resourceId: string;
   moduleId: string;
+  pathId: string;
   objectiveId: string;
   resourceTitle: string;
   resourceType: ResourceType;

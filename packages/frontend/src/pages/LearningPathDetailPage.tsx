@@ -193,7 +193,7 @@ export function LearningPathDetailPage(): JSX.Element {
                 }`}
               >
                 <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                         resource.completed === true

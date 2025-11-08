@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Flame, Trophy, Calendar } from 'lucide-react';
@@ -20,14 +20,9 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
   const [showRecoveryAssessment, setShowRecoveryAssessment] = useState(false);
   const [missedDays, setMissedDays] = useState(0);
   const [selectedObjective, setSelectedObjective] = useState<LearningObjective | null>(null);
+  const hasLoadedRef = useRef(false);
 
-  useEffect((): void => {
-    if (userId !== '') {
-      void loadStreakData();
-    }
-  }, [userId]);
-
-  const loadStreakData = async (): Promise<void> => {
+  const loadStreakData = useCallback(async (): Promise<void> => {
     try {
       // Load full streak data
       const streakResponse = await apiService.getStreak(userId);
@@ -47,7 +42,15 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
       const err = error as { message?: string };
       toast.error(err.message ?? 'Failed to load streak data');
     }
-  };
+  }, [userId]);
+
+  useEffect((): void => {
+    if (userId !== '' && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      void loadStreakData();
+    }
+  }, [userId, loadStreakData]);
+
 
   const handleRecoverStreak = (): void => {
     setShowObjectiveSelection(true);

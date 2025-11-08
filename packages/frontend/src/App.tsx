@@ -10,7 +10,9 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePageRoute from './pages/ProfilePageRoute';
 import StudyPage from './pages/StudyPage';
 import ObjectivePathPage from './pages/ObjectivePathPage';
+import ObjectivePathsListPage from './pages/ObjectivePathsListPage';
 import ModuleLearnPage from './pages/ModuleLearnPage';
+import AssessmentPage from './pages/AssessmentPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const App: React.FC = (): JSX.Element => {
@@ -51,6 +53,14 @@ const App: React.FC = (): JSX.Element => {
               />
 
               <Route
+                path="/objectives/:objectiveId/paths"
+                element={
+                  <ProtectedRoute>
+                    <ObjectivePathsListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/objectives/:objectiveId/paths/:pathId"
                 element={
                   <ProtectedRoute>
@@ -63,6 +73,14 @@ const App: React.FC = (): JSX.Element => {
                 element={
                   <ProtectedRoute>
                     <ModuleLearnPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assessment/:objectiveId"
+                element={
+                  <ProtectedRoute>
+                    <AssessmentPage />
                   </ProtectedRoute>
                 }
               />
