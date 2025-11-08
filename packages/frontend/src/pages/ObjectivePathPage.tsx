@@ -489,7 +489,7 @@ const ObjectivePathPage: React.FC = (): JSX.Element => {
     const load = async (): Promise<void> => {
       try {
         if (objectiveId == null || objectiveId === '') {
-          setLoading(false);
+        setLoading(false);
           return;
         }
 

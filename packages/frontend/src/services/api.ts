@@ -638,14 +638,14 @@ class ApiService {
     objectiveId: string,
     missedDays: number
   ): Promise<ApiResponse<RecoveryAssessment>> {
-    const response = await this.api.post<ApiResponse<RecoveryAssessment>>(
-      '/streak/recovery/generate',
-      {
-        objectiveId,
-        missedDays,
-      }
-    );
-    return response.data;
+      const response = await this.api.post<ApiResponse<RecoveryAssessment>>(
+        '/streak/recovery/generate',
+        {
+          objectiveId,
+          missedDays,
+        }
+      );
+      return response.data;
   }
 
   async submitRecoveryAssessment(

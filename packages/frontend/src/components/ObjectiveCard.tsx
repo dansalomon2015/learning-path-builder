@@ -93,7 +93,7 @@ export function ObjectiveCard({ objective, onDelete }: ObjectiveCardProps): JSX.
         <div className="flex items-start justify-between mb-2">
           <Target className="h-5 w-5 text-primary" />
           <div className="flex items-center gap-3">
-            {getStatusBadge()}
+          {getStatusBadge()}
             {onDelete != null && (
               <button
                 onClick={(e): void => {

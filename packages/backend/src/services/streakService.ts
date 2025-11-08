@@ -510,7 +510,7 @@ class StreakService {
             recoveredDays: number;
             assessmentId: string;
             objectiveId: string;
-          }): { date: Date; recoveredDays: number; assessmentId: string; objectiveId: string } => ({
+          }): Record<string, unknown> => ({
             ...entry,
             date: admin.firestore.Timestamp.fromDate(entry.date),
           })
