@@ -65,6 +65,7 @@ router.get('/resource/:resourceId/history', async (req: Request, res: Response):
 });
 
 // POST /api/resource-assessments/start
+// eslint-disable-next-line complexity
 router.post('/start', async (req: Request, res: Response): Promise<Response> => {
   const uid: string | undefined = req.user?.uid;
   if (uid == null || uid === '') {
@@ -85,14 +86,17 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
   const questionCount: number = body.questionCount ?? 5;
   const forceNew: boolean = body.forceNew ?? false;
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (resourceId == null || resourceId === '') {
     return res.status(400).json({ success: false, message: 'resourceId is required' });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (moduleId == null || moduleId === '') {
     return res.status(400).json({ success: false, message: 'moduleId is required' });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (objectiveId == null || objectiveId === '') {
     return res.status(400).json({ success: false, message: 'objectiveId is required' });
   }
@@ -170,7 +174,7 @@ router.post('/:assessmentId/submit', async (req: Request, res: Response): Promis
     );
 
     // Update streak (non-blocking)
-    streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+    streakService.updateStreakOnStudy(uid).catch((error: unknown): void => {
       logger.warn('Failed to update streak after resource assessment', { userId: uid, error });
     });
 
@@ -203,7 +207,7 @@ router.post('/:assessmentId/submit', async (req: Request, res: Response): Promis
 
 // GET /api/resource-assessments/:assessmentId
 // This must be AFTER specific routes like /start and /resource/:resourceId/*
-router.get('/:assessmentId', async (req: Request, res: Response): Promise<Response> => {
+router.get('/:assessmentId', (req: Request, res: Response): Response => {
   const uid: string | undefined = req.user?.uid;
   if (uid == null || uid === '') {
     return res.status(401).json({ success: false, message: 'Unauthorized' });

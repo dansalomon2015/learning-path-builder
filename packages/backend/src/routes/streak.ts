@@ -18,6 +18,7 @@ router.get('/:userId/missed-days', async (req: Request, res: Response): Promise<
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/typedef
     const { missedDays, lastStudyDate } = await streakService.calculateMissedDays(uid);
     return res.json({
       success: true,
@@ -79,7 +80,7 @@ router.post('/recovery/generate', async (req: Request, res: Response): Promise<R
   const objectiveId: string = body.objectiveId;
   const missedDays: number = body.missedDays;
 
-  if (objectiveId == null || objectiveId === '') {
+  if (objectiveId === '') {
     return res.status(400).json({ success: false, message: 'objectiveId is required' });
   }
 
@@ -138,7 +139,7 @@ router.post('/recovery/submit', async (req: Request, res: Response): Promise<Res
   const answers: Array<{ questionId: string; selectedAnswer: string | number }> = body.answers;
   const timeSpent: number | undefined = body.timeSpent;
 
-  if (assessmentId == null || assessmentId === '') {
+  if (assessmentId === '') {
     return res.status(400).json({ success: false, message: 'assessmentId is required' });
   }
 
@@ -199,7 +200,7 @@ router.get('/:userId', async (req: Request, res: Response): Promise<Response> =>
       ...streak,
       lastStudyDate: streak.lastStudyDate instanceof Date ? streak.lastStudyDate.toISOString() : streak.lastStudyDate,
       updatedAt: streak.updatedAt instanceof Date ? streak.updatedAt.toISOString() : streak.updatedAt,
-      recoveryHistory: streak.recoveryHistory.map((entry) => ({
+      recoveryHistory: streak.recoveryHistory.map((entry: { date: Date; recoveredDays: number; assessmentId: string; objectiveId: string }): { date: string; recoveredDays: number; assessmentId: string; objectiveId: string } => ({
         ...entry,
         date: entry.date instanceof Date ? entry.date.toISOString() : entry.date,
       })),

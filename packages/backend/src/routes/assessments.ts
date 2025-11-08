@@ -54,8 +54,9 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
     }
 
     // Update objective status to 'in_progress' if it's still in 'planning'
-    const objective = objectiveDoc as Record<string, unknown>;
-    const objectiveStatus: string = (objective['status'] as string) ?? 'planning';
+    const objective: Record<string, unknown> = objectiveDoc;
+    const objectiveStatusValue: unknown = objective['status'];
+    const objectiveStatus: string = typeof objectiveStatusValue === 'string' ? objectiveStatusValue : 'planning';
     if (objectiveStatus === 'planning') {
       try {
         await firebaseService.updateDocument('objectives', objectiveId, {
@@ -263,7 +264,7 @@ router.post('/:assessmentId/submit', async (req: Request, res: Response): Promis
   }
 
   // Update streak (non-blocking)
-  streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+  streakService.updateStreakOnStudy(uid).catch((error: unknown): void => {
     logger.warn('Failed to update streak after assessment', { userId: uid, error });
   });
 

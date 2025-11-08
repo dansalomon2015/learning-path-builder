@@ -942,7 +942,7 @@ router.patch(
       });
 
       // Update streak (non-blocking)
-      streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+      streakService.updateStreakOnStudy(uid).catch((error: unknown): void => {
         logger.warn('Failed to update streak after module completion', { userId: uid, error });
       });
 
@@ -1615,7 +1615,7 @@ router.post(
 
       // Update streak if validation passed (non-blocking)
       if (passed) {
-        streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+        streakService.updateStreakOnStudy(uid).catch((error: unknown): void => {
           logger.warn('Failed to update streak after module validation', { userId: uid, error });
         });
       }
@@ -1872,19 +1872,21 @@ router.get('/:id/paths/:pathId/modules/:moduleId/progress', async (req: Request,
       return res.status(404).json({ success: false, message: 'Objective not found' });
     }
 
-    const objective = objectiveDoc as Record<string, unknown>;
+    const objective: Record<string, unknown> = objectiveDoc;
     const objectiveUserId: unknown = objective['userId'];
     if (objectiveUserId !== uid) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
     // Get module
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unnecessary-condition
     const learningPaths = (objective['learningPaths'] as Array<Record<string, unknown>>) ?? [];
     const path = learningPaths.find((p: Record<string, unknown>): boolean => p['id'] === pathId);
     if (path == null) {
       return res.status(404).json({ success: false, message: 'Path not found' });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const modules = (path['modules'] as Array<Record<string, unknown>>) ?? [];
     const module = modules.find((m: Record<string, unknown>): boolean => m['id'] === moduleId);
     if (module == null) {
@@ -1896,9 +1898,12 @@ router.get('/:id/paths/:pathId/modules/:moduleId/progress', async (req: Request,
     const finalExamPassed = await moduleProgressService.isFinalExamPassed(uid, moduleId);
 
     // Calculate weights
-    const suggestedResources = (module['suggestedResources'] as Array<Record<string, unknown>>) ?? [];
+    const suggestedResourcesValue: unknown = module['suggestedResources'];
+    const suggestedResources = Array.isArray(suggestedResourcesValue)
+      ? (suggestedResourcesValue as Array<Record<string, unknown>>)
+      : [];
     const resourceCount = suggestedResources.length;
-    const { resourceWeight, finalExamWeight } = calculateModuleProgressWeights(resourceCount);
+    const { resourceWeight, finalExamWeight }: { resourceWeight: number; finalExamWeight: number } = calculateModuleProgressWeights(resourceCount);
 
     // Calculate current progress
     const progress = calculateModuleProgress(module, completedResourceIds, finalExamPassed);

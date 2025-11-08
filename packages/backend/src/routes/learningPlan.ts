@@ -541,7 +541,7 @@ router.post('/:id/quiz-submit', async (req: Request, res: Response): Promise<Res
   );
 
   // Update streak (non-blocking)
-  streakService.updateStreakOnStudy(userId).catch((error: unknown) => {
+  streakService.updateStreakOnStudy(userId).catch((error: unknown): void => {
     logger.warn('Failed to update streak after quiz', { userId, error });
   });
 

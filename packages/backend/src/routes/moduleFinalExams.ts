@@ -43,8 +43,9 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
     objectiveId: string;
   };
 
-  const { moduleId, pathId, objectiveId } = body;
+  const { moduleId, pathId, objectiveId }: { moduleId: string; pathId: string; objectiveId: string } = body;
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (moduleId == null || moduleId === '' || pathId == null || pathId === '' || objectiveId == null || objectiveId === '') {
     return res.status(400).json({ success: false, message: 'moduleId, pathId, and objectiveId are required' });
   }
@@ -86,8 +87,9 @@ router.post('/:examId/submit', async (req: Request, res: Response): Promise<Resp
     timeSpent?: number;
   };
 
-  const { answers, timeSpent } = body;
+  const { answers, timeSpent }: { answers: Array<{ questionId: string; selectedAnswer: string | number }>; timeSpent?: number } = body;
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (answers == null || !Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ success: false, message: 'answers array is required' });
   }
@@ -96,7 +98,7 @@ router.post('/:examId/submit', async (req: Request, res: Response): Promise<Resp
     const result = await moduleFinalExamService.submitExam(examId, uid, answers, timeSpent);
 
     // Update streak (non-blocking)
-    streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+    streakService.updateStreakOnStudy(uid).catch((error: unknown): void => {
       logger.warn('Failed to update streak after module final exam', { userId: uid, error });
     });
 

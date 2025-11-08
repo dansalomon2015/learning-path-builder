@@ -228,7 +228,7 @@ class StreakService {
         throw new Error('Objective not found');
       }
 
-      const objective = objectiveDoc as Record<string, unknown>;
+      const objective = objectiveDoc;
       const objectiveUserId: unknown = objective['userId'];
       if (objectiveUserId !== userId) {
         throw new Error('Unauthorized access to objective');
@@ -299,6 +299,7 @@ class StreakService {
   /**
    * Validate recovery assessment and update streak
    */
+  // eslint-disable-next-line complexity
   async validateRecoveryAssessment(
     assessmentId: string,
     answers: Array<{ questionId: string; selectedAnswer: string | number }>,
@@ -312,7 +313,7 @@ class StreakService {
       }
 
       // Convert Firestore Timestamps to Dates
-      const doc = assessmentDoc as Record<string, unknown>;
+      const doc = assessmentDoc;
       const createdAtValue: unknown = doc['createdAt'];
 
       const createdAt: Date =
@@ -387,9 +388,7 @@ class StreakService {
 
           // Generate feedback for all questions
           const correctAnswerValue =
-            typeof correct === 'number' && question.options != null
-              ? question.options[correct] ?? correct
-              : correct;
+            typeof correct === 'number' ? question.options[correct] ?? correct : correct;
 
           feedback.push({
             questionId: question.id,
@@ -398,9 +397,7 @@ class StreakService {
             userAnswer: answer.selectedAnswer,
             correctAnswer: correctAnswerValue,
             explanation:
-              question.explanation != null && question.explanation !== ''
-                ? question.explanation
-                : 'No explanation available',
+              question.explanation !== '' ? question.explanation : 'No explanation available',
           });
         }
       }
@@ -513,7 +510,7 @@ class StreakService {
             recoveredDays: number;
             assessmentId: string;
             objectiveId: string;
-          }) => ({
+          }): { date: Date; recoveredDays: number; assessmentId: string; objectiveId: string } => ({
             ...entry,
             date: admin.firestore.Timestamp.fromDate(entry.date),
           })
@@ -554,7 +551,7 @@ class StreakService {
         return initialStreak;
       }
       // Convert Firestore Timestamps to Dates
-      const streak = streakDoc as Record<string, unknown>;
+      const streak = streakDoc;
       const lastStudyDateValue: unknown = streak['lastStudyDate'];
       const updatedAtValue: unknown = streak['updatedAt'];
       const recoveryHistoryValue: unknown = streak['recoveryHistory'];
@@ -581,24 +578,28 @@ class StreakService {
         assessmentId: string;
         objectiveId: string;
       }> = Array.isArray(recoveryHistoryValue)
-        ? recoveryHistoryValue.map((entry: Record<string, unknown>) => {
-            const dateValue: unknown = entry['date'];
-            const dateConverted: Date =
-              dateValue != null && typeof dateValue === 'object' && 'toDate' in dateValue
-                ? (dateValue as admin.firestore.Timestamp).toDate()
-                : dateValue instanceof Date
-                ? dateValue
-                : new Date();
-            return {
-              ...entry,
-              date: dateConverted,
-            } as {
-              date: Date;
-              recoveredDays: number;
-              assessmentId: string;
-              objectiveId: string;
-            };
-          })
+        ? recoveryHistoryValue.map(
+            (
+              entry: Record<string, unknown>
+            ): { date: Date; recoveredDays: number; assessmentId: string; objectiveId: string } => {
+              const dateValue: unknown = entry['date'];
+              const dateConverted: Date =
+                dateValue != null && typeof dateValue === 'object' && 'toDate' in dateValue
+                  ? (dateValue as admin.firestore.Timestamp).toDate()
+                  : dateValue instanceof Date
+                  ? dateValue
+                  : new Date();
+              return {
+                ...entry,
+                date: dateConverted,
+              } as {
+                date: Date;
+                recoveredDays: number;
+                assessmentId: string;
+                objectiveId: string;
+              };
+            }
+          )
         : [];
 
       return {

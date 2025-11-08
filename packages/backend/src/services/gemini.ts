@@ -7,7 +7,8 @@ class GeminiService {
 
   constructor() {
     try {
-      const apiKey = process.env['GEMINI_API_KEY'] ?? 'AIzaSyDnrVhc80hVmd_dcBvxbWedHkmOtRiwq_U';
+      const apiKey = process.env['GEMINI_API_KEY'];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (apiKey == null || apiKey === '') {
         throw new Error('GEMINI_API_KEY environment variable is not set');
       }
@@ -732,30 +733,30 @@ Respond ONLY with JSON in this format:
 
     const cleaned = normalize(response);
 
-    // Console log for debugging
-    console.log('=== GEMINI RESPONSE DEBUG ===');
-    console.log('Raw response length:', response.length);
-    console.log('Raw response (full):', response);
-    console.log('Cleaned response (full):', cleaned);
-    console.log('============================');
+    // Debug logging for troubleshooting
+    logger.debug('=== GEMINI RESPONSE DEBUG ===');
+    logger.debug(`Raw response length: ${response.length}`);
+    logger.debug(`Raw response (full): ${response}`);
+    logger.debug(`Cleaned response (full): ${cleaned}`);
+    logger.debug('============================');
 
     let parsed: Record<string, unknown> | null = tryParse(cleaned);
 
     if (parsed == null) {
       // Try to coerce common issues: single quotes → double quotes
       const coerced = cleaned.replace(/'([^']*)'/g, '"$1"');
-      console.log('After coercion:', coerced);
+      logger.debug(`After coercion: ${coerced}`);
       parsed = tryParse(coerced);
     }
 
-    console.log('Parsed result:', parsed);
+    logger.debug(`Parsed result: ${JSON.stringify(parsed)}`);
     if (parsed != null && parsed instanceof Object) {
-      console.log('Parsed object keys:', Object.keys(parsed));
+      logger.debug(`Parsed object keys: ${Object.keys(parsed).join(', ')}`);
       if ('questions' in parsed) {
-        console.log('Questions type:', typeof parsed['questions']);
-        console.log('Is array?', Array.isArray(parsed['questions']));
+        logger.debug(`Questions type: ${typeof parsed['questions']}`);
+        logger.debug(`Is array? ${Array.isArray(parsed['questions'])}`);
         if (Array.isArray(parsed['questions'])) {
-          console.log('Questions count:', parsed['questions'].length);
+          logger.debug(`Questions count: ${parsed['questions'].length}`);
         }
       }
     }

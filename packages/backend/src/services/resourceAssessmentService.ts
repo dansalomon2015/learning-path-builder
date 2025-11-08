@@ -22,6 +22,106 @@ class ResourceAssessmentService {
   }
 
   /**
+   * Prepare context for Gemini question generation
+   */
+  // eslint-disable-next-line complexity
+  private prepareGeminiContext(
+    module: Record<string, unknown>,
+    objective: Record<string, unknown>,
+    resource: Record<string, unknown>
+  ): {
+    moduleTitle: string;
+    moduleDescription: string;
+    objectiveTitle: string;
+    objectiveCategory: string;
+    targetRole: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    resourceTitle: string;
+    resourceDescription: string;
+    resourceType: 'documentation' | 'book' | 'article' | 'video' | 'tutorial' | 'official_guide';
+  } {
+    const moduleTitleValue: unknown = module['title'];
+    const moduleTitle: string = typeof moduleTitleValue === 'string' ? moduleTitleValue : '';
+    const moduleDescriptionValue: unknown = module['description'];
+    const moduleDescription: string =
+      typeof moduleDescriptionValue === 'string' ? moduleDescriptionValue : '';
+    const objectiveTitleValue: unknown = objective['title'];
+    const objectiveTitle: string =
+      typeof objectiveTitleValue === 'string' ? objectiveTitleValue : '';
+    const objectiveCategoryValue: unknown = objective['category'];
+    const objectiveCategory: string =
+      typeof objectiveCategoryValue === 'string' ? objectiveCategoryValue : '';
+    const targetRoleValue: unknown = objective['targetRole'];
+    const targetRole: string = typeof targetRoleValue === 'string' ? targetRoleValue : '';
+    const targetLevelValue: unknown = objective['targetLevel'];
+    const difficulty: 'beginner' | 'intermediate' | 'advanced' =
+      targetLevelValue === 'beginner' ||
+      targetLevelValue === 'intermediate' ||
+      targetLevelValue === 'advanced'
+        ? targetLevelValue
+        : 'beginner';
+    const resourceTitleValue: unknown = resource['title'];
+    const resourceTitle: string = typeof resourceTitleValue === 'string' ? resourceTitleValue : '';
+    const resourceDescriptionValue: unknown = resource['description'];
+    const resourceDescription: string =
+      typeof resourceDescriptionValue === 'string' ? resourceDescriptionValue : '';
+    const typeValue: unknown = resource['type'];
+    const resourceType:
+      | 'documentation'
+      | 'book'
+      | 'article'
+      | 'video'
+      | 'tutorial'
+      | 'official_guide' =
+      typeValue === 'documentation' ||
+      typeValue === 'book' ||
+      typeValue === 'article' ||
+      typeValue === 'video' ||
+      typeValue === 'tutorial' ||
+      typeValue === 'official_guide'
+        ? typeValue
+        : 'documentation';
+
+    return {
+      moduleTitle,
+      moduleDescription,
+      objectiveTitle,
+      objectiveCategory,
+      targetRole,
+      difficulty,
+      resourceTitle,
+      resourceDescription,
+      resourceType,
+    };
+  }
+
+  /**
+   * Update objective status to 'in_progress' if it's still in 'planning'
+   * This is a best-effort update that doesn't throw errors
+   */
+  private async updateObjectiveStatusIfPlanning(objectiveId: string): Promise<void> {
+    try {
+      const objectiveDoc = await firebaseService.getDocument('objectives', objectiveId);
+      if (objectiveDoc != null) {
+        const objective = objectiveDoc;
+        const objectiveStatusValue: unknown = objective['status'];
+        const objectiveStatus: string =
+          typeof objectiveStatusValue === 'string' ? objectiveStatusValue : 'planning';
+        if (objectiveStatus === 'planning') {
+          await firebaseService.updateDocument('objectives', objectiveId, {
+            status: 'in_progress',
+            updatedAt: new Date().toISOString(),
+          });
+          logger.info(`Objective ${objectiveId} status updated from 'planning' to 'in_progress'`);
+        }
+      }
+    } catch (updateError: unknown) {
+      // Log but don't fail - this is a best-effort update
+      logger.warn('Failed to update objective status to in_progress:', updateError);
+    }
+  }
+
+  /**
    * Get minimum score for resource assessment from environment variable
    * Default: 80%
    */
@@ -94,6 +194,7 @@ class ResourceAssessmentService {
   /**
    * Create a new resource assessment
    */
+  // eslint-disable-next-line complexity
   async createAssessment(
     userId: string,
     resourceId: string,
@@ -108,21 +209,29 @@ class ResourceAssessmentService {
         throw new Error('Objective not found');
       }
 
-      const objective = objectiveDoc as Record<string, unknown>;
+      const objective = objectiveDoc;
       const objectiveUserId: unknown = objective['userId'];
       if (objectiveUserId !== userId) {
         throw new Error('Unauthorized access to objective');
       }
 
       // Find module in learning paths
-      const learningPaths = (objective['learningPaths'] as Array<Record<string, unknown>>) ?? [];
+      const learningPathsValue: unknown = objective['learningPaths'];
+      const learningPaths = Array.isArray(learningPathsValue)
+        ? (learningPathsValue as Array<Record<string, unknown>>)
+        : [];
       let module: Record<string, unknown> | null = null;
       let pathId: string | null = null;
 
       for (const path of learningPaths) {
         const pathIdCandidate: unknown = path['id'];
-        const modules = (path['modules'] as Array<Record<string, unknown>>) ?? [];
-        const foundModule = modules.find((m: Record<string, unknown>): boolean => m['id'] === moduleId);
+        const modulesValue: unknown = path['modules'];
+        const modules = Array.isArray(modulesValue)
+          ? (modulesValue as Array<Record<string, unknown>>)
+          : [];
+        const foundModule = modules.find(
+          (m: Record<string, unknown>): boolean => m['id'] === moduleId
+        );
         if (foundModule != null) {
           module = foundModule;
           if (pathIdCandidate != null && typeof pathIdCandidate === 'string') {
@@ -155,60 +264,40 @@ class ResourceAssessmentService {
       }
 
       // Update objective status to 'in_progress' if it's still in 'planning'
-      const objectiveStatus: string = (objective['status'] as string) ?? 'planning';
-      if (objectiveStatus === 'planning') {
-        try {
-          await firebaseService.updateDocument('objectives', objectiveId, {
-            status: 'in_progress',
-            updatedAt: new Date().toISOString(),
-          });
-          logger.info(`Objective ${objectiveId} status updated from 'planning' to 'in_progress'`);
-        } catch (updateError: unknown) {
-          // Log but don't fail the assessment creation if status update fails
-          logger.warn('Failed to update objective status to in_progress:', updateError);
-        }
-      }
+      await this.updateObjectiveStatusIfPlanning(objectiveId);
 
       // Prepare context for Gemini
-      const moduleTitle: string = (module['title'] as string) ?? '';
-      const moduleDescription: string = (module['description'] as string) ?? '';
-      const objectiveTitle: string = (objective['title'] as string) ?? '';
-      const objectiveCategory: string = (objective['category'] as string) ?? '';
-      const targetRole: string = (objective['targetRole'] as string) ?? '';
-      const difficulty: 'beginner' | 'intermediate' | 'advanced' =
-        (objective['targetLevel'] as 'beginner' | 'intermediate' | 'advanced') ?? 'beginner';
+      const context = this.prepareGeminiContext(module, objective, resource);
 
       // Generate questions using Gemini
-      logger.info(`Generating ${questionCount} resource assessment questions for resource ${resourceId}`);
+      logger.info(
+        `Generating ${questionCount} resource assessment questions for resource ${resourceId}`
+      );
       const questions: QuizQuestion[] = await geminiService.generateResourceAssessmentQuestions(
         {
           id: resourceId,
-          title: (resource['title'] as string) ?? '',
-          description: (resource['description'] as string) ?? '',
-          type: (resource['type'] as
-            | 'documentation'
-            | 'book'
-            | 'article'
-            | 'video'
-            | 'tutorial'
-            | 'official_guide') ?? 'documentation',
+          title: context.resourceTitle,
+          description: context.resourceDescription,
+          type: context.resourceType,
           url: resource['url'] as string | undefined,
           author: resource['author'] as string | undefined,
         },
         {
-          moduleTitle,
-          moduleDescription,
-          objectiveTitle,
-          objectiveCategory,
-          targetRole,
-          difficulty,
+          moduleTitle: context.moduleTitle,
+          moduleDescription: context.moduleDescription,
+          objectiveTitle: context.objectiveTitle,
+          objectiveCategory: context.objectiveCategory,
+          targetRole: context.targetRole,
+          difficulty: context.difficulty,
         },
         questionCount
       );
 
       // Create assessment document
       const now = new Date();
-      const assessmentId = `resource_assessment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const assessmentId = `resource_assessment_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
       const assessment: ResourceAssessment = {
         id: assessmentId,
         userId,
@@ -216,14 +305,8 @@ class ResourceAssessmentService {
         moduleId,
         pathId,
         objectiveId,
-        resourceTitle: (resource['title'] as string) ?? '',
-        resourceType: (resource['type'] as
-          | 'documentation'
-          | 'book'
-          | 'article'
-          | 'video'
-          | 'tutorial'
-          | 'official_guide') ?? 'documentation',
+        resourceTitle: context.resourceTitle,
+        resourceType: context.resourceType,
         resourceUrl: resource['url'] as string | undefined,
         questions,
         status: 'pending',
@@ -249,6 +332,7 @@ class ResourceAssessmentService {
    * Get or create an assessment (returns existing pending if available)
    * Note: questionCount is not used when returning existing assessment
    */
+  // eslint-disable-next-line max-params
   async getOrCreateAssessment(
     userId: string,
     resourceId: string,
@@ -278,32 +362,14 @@ class ResourceAssessmentService {
 
           // Ensure objective status is updated to 'in_progress' if still in 'planning'
           // This handles the case where an assessment was created but status update failed
-          try {
-            const objectiveDoc = await firebaseService.getDocument('objectives', objectiveId);
-            if (objectiveDoc != null) {
-              const objective = objectiveDoc as Record<string, unknown>;
-              const objectiveStatus: string = (objective['status'] as string) ?? 'planning';
-              if (objectiveStatus === 'planning') {
-                await firebaseService.updateDocument('objectives', objectiveId, {
-                  status: 'in_progress',
-                  updatedAt: new Date().toISOString(),
-                });
-                logger.info(
-                  `Objective ${objectiveId} status updated from 'planning' to 'in_progress' (existing assessment)`
-                );
-              }
-            }
-          } catch (updateError: unknown) {
-            // Log but don't fail - this is a best-effort update
-            logger.warn('Failed to update objective status in getOrCreateAssessment:', updateError);
-          }
+          await this.updateObjectiveStatusIfPlanning(objectiveId);
 
           return {
             id: existing['id'] as string,
             userId: existing['userId'] as string,
             resourceId: existing['resourceId'] as string,
             moduleId: existing['moduleId'] as string,
-            pathId: (existing['pathId'] as string) ?? '',
+            pathId: typeof existing['pathId'] === 'string' ? existing['pathId'] : '',
             objectiveId: existing['objectiveId'] as string,
             resourceTitle: existing['resourceTitle'] as string,
             resourceType: existing['resourceType'] as
@@ -348,6 +414,7 @@ class ResourceAssessmentService {
   /**
    * Submit and validate resource assessment
    */
+  // eslint-disable-next-line complexity, max-lines-per-function
   async submitAssessment(
     assessmentId: string,
     userId: string,
@@ -361,7 +428,7 @@ class ResourceAssessmentService {
         throw new Error('Assessment not found');
       }
 
-      const doc = assessmentDoc as Record<string, unknown>;
+      const doc = assessmentDoc;
       const assessmentUserId: string = doc['userId'] as string;
       if (assessmentUserId !== userId) {
         throw new Error('Unauthorized access to assessment');
@@ -382,7 +449,7 @@ class ResourceAssessmentService {
         userId: doc['userId'] as string,
         resourceId: doc['resourceId'] as string,
         moduleId: doc['moduleId'] as string,
-        pathId: (doc['pathId'] as string) ?? '',
+        pathId: typeof doc['pathId'] === 'string' ? doc['pathId'] : '',
         objectiveId: doc['objectiveId'] as string,
         resourceTitle: doc['resourceTitle'] as string,
         resourceType: doc['resourceType'] as
@@ -447,14 +514,10 @@ class ResourceAssessmentService {
 
           // Generate feedback
           const correctAnswerValue =
-            typeof correct === 'number' && question.options != null
-              ? question.options[correct] ?? correct
-              : correct;
+            typeof correct === 'number' ? question.options[correct] ?? correct : correct;
 
           const explanation =
-            question.explanation != null && question.explanation !== ''
-              ? question.explanation
-              : 'No explanation available';
+            question.explanation !== '' ? question.explanation : 'No explanation available';
 
           feedback.push({
             questionId: question.id,
@@ -490,7 +553,9 @@ class ResourceAssessmentService {
       });
 
       // Create result document
-      const resultId = `resource_result_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const resultId = `resource_result_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
       const result: ResourceAssessmentResult = {
         id: resultId,
         userId,
@@ -520,10 +585,15 @@ class ResourceAssessmentService {
       );
 
       // Update module progress if assessment passed (non-blocking)
-      if (passed && assessment.pathId != null && assessment.pathId !== '') {
+      if (passed && assessment.pathId !== '') {
         moduleProgressService
-          .updateModuleProgress(assessment.objectiveId, assessment.pathId, assessment.moduleId, userId)
-          .catch((error: unknown) => {
+          .updateModuleProgress(
+            assessment.objectiveId,
+            assessment.pathId,
+            assessment.moduleId,
+            userId
+          )
+          .catch((error: unknown): void => {
             logger.warn('Failed to update module progress after resource assessment', {
               userId,
               moduleId: assessment.moduleId,
@@ -562,23 +632,25 @@ class ResourceAssessmentService {
       }
 
       // Get the most recent assessment
-      const sorted = assessments.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
-        const aCreated = a['createdAt'];
-        const bCreated = b['createdAt'];
-        const aDate =
-          aCreated instanceof admin.firestore.Timestamp
-            ? aCreated.toDate()
-            : aCreated instanceof Date
-            ? aCreated
-            : new Date(0);
-        const bDate =
-          bCreated instanceof admin.firestore.Timestamp
-            ? bCreated.toDate()
-            : bCreated instanceof Date
-            ? bCreated
-            : new Date(0);
-        return bDate.getTime() - aDate.getTime();
-      });
+      const sorted = assessments.sort(
+        (a: Record<string, unknown>, b: Record<string, unknown>): number => {
+          const aCreated = a['createdAt'];
+          const bCreated = b['createdAt'];
+          const aDate =
+            aCreated instanceof admin.firestore.Timestamp
+              ? aCreated.toDate()
+              : aCreated instanceof Date
+              ? aCreated
+              : new Date(0);
+          const bDate =
+            bCreated instanceof admin.firestore.Timestamp
+              ? bCreated.toDate()
+              : bCreated instanceof Date
+              ? bCreated
+              : new Date(0);
+          return bDate.getTime() - aDate.getTime();
+        }
+      );
 
       const latest = sorted[0] as Record<string, unknown>;
       const status = latest['status'] as 'pending' | 'completed';
@@ -610,23 +682,25 @@ class ResourceAssessmentService {
       ]);
 
       // Sort by completedAt descending (most recent first)
-      const sorted = results.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
-        const aCompleted = a['completedAt'];
-        const bCompleted = b['completedAt'];
-        const aDate =
-          aCompleted instanceof admin.firestore.Timestamp
-            ? aCompleted.toDate()
-            : aCompleted instanceof Date
-            ? aCompleted
-            : new Date(0);
-        const bDate =
-          bCompleted instanceof admin.firestore.Timestamp
-            ? bCompleted.toDate()
-            : bCompleted instanceof Date
-            ? bCompleted
-            : new Date(0);
-        return bDate.getTime() - aDate.getTime();
-      });
+      const sorted = results.sort(
+        (a: Record<string, unknown>, b: Record<string, unknown>): number => {
+          const aCompleted = a['completedAt'];
+          const bCompleted = b['completedAt'];
+          const aDate =
+            aCompleted instanceof admin.firestore.Timestamp
+              ? aCompleted.toDate()
+              : aCompleted instanceof Date
+              ? aCompleted
+              : new Date(0);
+          const bDate =
+            bCompleted instanceof admin.firestore.Timestamp
+              ? bCompleted.toDate()
+              : bCompleted instanceof Date
+              ? bCompleted
+              : new Date(0);
+          return bDate.getTime() - aDate.getTime();
+        }
+      );
 
       return sorted.map((result: Record<string, unknown>): ResourceAssessmentResult => {
         const completedAtValue: unknown = result['completedAt'];
@@ -702,4 +776,3 @@ class ResourceAssessmentService {
 }
 
 export const resourceAssessmentService = new ResourceAssessmentService();
-

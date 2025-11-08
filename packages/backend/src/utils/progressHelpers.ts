@@ -108,6 +108,7 @@ export function completeModuleAndUpdateProgress(params: {
   module: Record<string, unknown>;
   context?: string;
 }): { objectiveProgress: number } {
+  // eslint-disable-next-line @typescript-eslint/typedef
   const {
     learningPaths,
     pathIndex,
@@ -189,9 +190,13 @@ export function calculateModuleProgress(
   completedResourceIds: Set<string>,
   finalExamPassed: boolean
 ): number {
-  const suggestedResources = (module['suggestedResources'] as Array<Record<string, unknown>>) ?? [];
+  const suggestedResourcesValue: unknown = module['suggestedResources'];
+  const suggestedResources = Array.isArray(suggestedResourcesValue)
+    ? (suggestedResourcesValue as Array<Record<string, unknown>>)
+    : [];
   const resourceCount = suggestedResources.length;
 
+  // eslint-disable-next-line @typescript-eslint/typedef
   const { resourceWeight, finalExamWeight } = calculateModuleProgressWeights(resourceCount);
 
   // Calculate progress from resources

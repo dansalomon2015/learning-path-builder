@@ -1,8 +1,6 @@
-import * as admin from 'firebase-admin';
 import { firebaseService } from '@/services/firebase';
 import { logger } from '@/utils/logger';
-import { calculateModuleProgress, calculateModuleProgressWeights } from '@/utils/progressHelpers';
-import { completeModuleAndUpdateProgress } from '@/utils/progressHelpers';
+import { calculateModuleProgress, completeModuleAndUpdateProgress } from '@/utils/progressHelpers';
 
 class ModuleProgressService {
   /**
@@ -134,7 +132,10 @@ class ModuleProgressService {
         throw new Error('Objective not found');
       }
 
-      const learningPaths = (objectiveDoc['learningPaths'] as Array<Record<string, unknown>>) ?? [];
+      const learningPathsValue: unknown = objectiveDoc['learningPaths'];
+      const learningPaths = Array.isArray(learningPathsValue)
+        ? (learningPathsValue as Array<Record<string, unknown>>)
+        : [];
       const pathIndex = learningPaths.findIndex((p: Record<string, unknown>): boolean => p['id'] === pathId);
       if (pathIndex === -1) {
         throw new Error('Path not found');
@@ -145,7 +146,8 @@ class ModuleProgressService {
         throw new Error('Path not found');
       }
 
-      const modules = (path['modules'] as Array<Record<string, unknown>>) ?? [];
+      const modulesValue: unknown = path['modules'];
+      const modules = Array.isArray(modulesValue) ? (modulesValue as Array<Record<string, unknown>>) : [];
       const moduleIndex = modules.findIndex((m: Record<string, unknown>): boolean => m['id'] === moduleId);
       if (moduleIndex === -1) {
         throw new Error('Module not found');
@@ -190,13 +192,16 @@ class ModuleProgressService {
       // If module just became completed, activate next modules/paths
       const isCompletedNow: unknown = modules[moduleIndex]['isCompleted'];
       if (!wasCompletedBefore && isCompletedNow === true) {
-        const { objectiveProgress } = completeModuleAndUpdateProgress({
+        // pathIndex and moduleIndex are guaranteed to be valid at this point
+        const pathForUpdate: Record<string, unknown> = learningPaths[pathIndex];
+        const moduleForUpdate: Record<string, unknown> = modules[moduleIndex];
+        const { objectiveProgress }: { objectiveProgress: number } = completeModuleAndUpdateProgress({
           learningPaths,
           pathIndex,
-          path: learningPaths[pathIndex] ?? {},
+          path: pathForUpdate,
           modules,
           moduleIndex,
-          module: modules[moduleIndex] ?? {},
+          module: moduleForUpdate,
           context: 'after weighted progress reached 100%',
         });
 
