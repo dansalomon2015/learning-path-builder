@@ -638,19 +638,14 @@ class ApiService {
     objectiveId: string,
     missedDays: number
   ): Promise<ApiResponse<RecoveryAssessment>> {
-    try {
-      const response = await this.api.post<ApiResponse<RecoveryAssessment>>(
-        '/streak/recovery/generate',
-        {
-          objectiveId,
-          missedDays,
-        }
-      );
-      return response.data;
-    } catch (error: unknown) {
-      // Re-throw to let the component handle 429 (cooldown) errors
-      throw error;
-    }
+    const response = await this.api.post<ApiResponse<RecoveryAssessment>>(
+      '/streak/recovery/generate',
+      {
+        objectiveId,
+        missedDays,
+      }
+    );
+    return response.data;
   }
 
   async submitRecoveryAssessment(
@@ -674,22 +669,17 @@ class ApiService {
     questionCount?: number,
     forceNew?: boolean
   ): Promise<ApiResponse<ResourceAssessment>> {
-    try {
-      const response = await this.api.post<ApiResponse<ResourceAssessment>>(
-        '/resource-assessments/start',
-        {
-          resourceId,
-          moduleId,
-          objectiveId,
-          questionCount,
-          forceNew,
-        }
-      );
-      return response.data;
-    } catch (error: unknown) {
-      // Re-throw to let the component handle 429 (cooldown) errors
-      throw error;
-    }
+    const response = await this.api.post<ApiResponse<ResourceAssessment>>(
+      '/resource-assessments/start',
+      {
+        resourceId,
+        moduleId,
+        objectiveId,
+        questionCount,
+        forceNew,
+      }
+    );
+    return response.data;
   }
 
   async submitResourceAssessment(

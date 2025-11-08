@@ -91,7 +91,7 @@ export default function DashboardPage(): JSX.Element | null {
   };
 
   const handleDeleteObjective = (objectiveId: string): void => {
-    const obj = objectives.find((o) => o.id === objectiveId);
+    const obj = objectives.find((o): boolean => o.id === objectiveId);
     setConfirmDeleteId(objectiveId);
     setConfirmDeleteTitle(obj?.title ?? 'this objective');
   };
@@ -109,7 +109,7 @@ export default function DashboardPage(): JSX.Element | null {
     try {
       const res = await apiService.deleteObjective(confirmDeleteId);
       if (res.success === true) {
-        setObjectives((prev) => prev.filter((o) => o.id !== confirmDeleteId));
+        setObjectives((prev): LearningObjective[] => prev.filter((o): boolean => o.id !== confirmDeleteId));
         toast.success('Objective deleted');
       } else {
         const errorMessage =

@@ -37,22 +37,31 @@ export default function ObjectivePathsListPage(): JSX.Element | null {
     }
   }, [objectiveId, navigate]);
 
-  useEffect((): void => {
-    void loadObjective();
+  useEffect((): undefined => {
+    loadObjective().catch((error: unknown): void => {
+      console.error('Error loading objective:', error);
+    });
+    return undefined;
   }, [loadObjective]);
 
   // Reload data when page becomes visible (user returns from module page)
   useEffect((): (() => void) => {
-    const handleVisibilityChange = (): void => {
+    const handleVisibilityChange = (): undefined => {
       if (document.visibilityState === 'visible' && objectiveId != null) {
-        void loadObjective();
+        loadObjective().catch((error: unknown): void => {
+          console.error('Error loading objective:', error);
+        });
       }
+      return undefined;
     };
 
-    const handleFocus = (): void => {
+    const handleFocus = (): undefined => {
       if (objectiveId != null) {
-        void loadObjective();
+        loadObjective().catch((error: unknown): void => {
+          console.error('Error loading objective:', error);
+        });
       }
+      return undefined;
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -138,10 +147,11 @@ export default function ObjectivePathsListPage(): JSX.Element | null {
 
   // Calculate dynamic progress
   const dynamicProgress = useMemo((): number => {
-    if (objective == null || objective.learningPaths == null) {
+    if (objective?.learningPaths == null) {
       return 0;
     }
     return calculateObjectiveProgress(objective.learningPaths);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [objective]);
 
   if (loading) {
@@ -159,6 +169,7 @@ export default function ObjectivePathsListPage(): JSX.Element | null {
     return null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const paths: LearningPath[] = objective.learningPaths ?? [];
   const completedPaths = paths.filter((p): boolean => p.isCompleted === true).length;
   const totalPaths = paths.length;

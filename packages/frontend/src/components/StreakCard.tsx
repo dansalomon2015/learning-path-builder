@@ -44,11 +44,14 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
     }
   }, [userId]);
 
-  useEffect((): void => {
+  useEffect((): undefined => {
     if (userId !== '' && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      void loadStreakData();
+      loadStreakData().catch((error: unknown): void => {
+        console.error('Error loading streak data:', error);
+      });
     }
+    return undefined;
   }, [userId, loadStreakData]);
 
 
@@ -69,7 +72,9 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
     if (result.passed) {
       toast.success(`Récupération réussie ! ${result.recoveredDays} jour(s) récupéré(s)`);
       // Reload all streak data to get updated longestStreak if needed
-      void loadStreakData();
+      loadStreakData().catch((error: unknown): void => {
+        console.error('Error loading streak data:', error);
+      });
     } else {
       toast.error(`Récupération échouée. Score: ${Math.round(result.score)}% (minimum: 70%)`);
     }

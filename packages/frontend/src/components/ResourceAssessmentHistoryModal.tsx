@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ResourceAssessmentResult } from '../types';
 import { X, CheckCircle, XCircle, Clock, Trophy, Calendar, Loader2 } from 'lucide-react';
 import { apiService } from '../services/api';
@@ -22,20 +22,14 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
   const [loading, setLoading] = useState(false);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
 
-  useEffect((): void => {
-    if (isOpen && resourceId !== '') {
-      void loadHistory();
-    }
-  }, [isOpen, resourceId]);
-
-  const loadHistory = async (): Promise<void> => {
+  const loadHistory = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
       const response = await apiService.getResourceAssessmentHistory(resourceId);
       if (response.success && response.data != null) {
         setHistory(response.data);
       } else {
-        toast.error('Erreur lors du chargement de l\'historique');
+        toast.error('Erreur lors du chargement de l&apos;historique');
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -43,7 +37,16 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
     } finally {
       setLoading(false);
     }
-  };
+  }, [resourceId]);
+
+  useEffect((): undefined => {
+    if (isOpen && resourceId !== '') {
+      loadHistory().catch((error: unknown): void => {
+        console.error('Error loading history:', error);
+      });
+    }
+    return undefined;
+  }, [isOpen, resourceId, loadHistory]);
 
   const formatDate = (date: string | Date): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -91,7 +94,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
           {loading && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-slate-600">Chargement de l'historique...</p>
+              <p className="text-slate-600">Chargement de l&apos;historique...</p>
             </div>
           )}
 
@@ -103,7 +106,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                 Aucun historique disponible
               </p>
               <p className="text-sm text-slate-500">
-                Vous n'avez pas encore complété d'auto-évaluation pour cette ressource.
+                Vous n&apos;avez pas encore complété d&apos;auto-évaluation pour cette ressource.
               </p>
             </div>
           )}
@@ -111,7 +114,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
           {/* History list */}
           {!loading && history.length > 0 && (
             <div className="space-y-4">
-              {history.map((result) => (
+              {history.map((result): JSX.Element => (
                 <div
                   key={result.id}
                   className={`border rounded-lg p-4 transition-all ${
@@ -175,7 +178,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                   {/* Expanded details */}
                   {expandedResult === result.id && (
                     <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
-                      {result.feedback.map((feedback, index) => (
+                      {result.feedback.map((feedback, index): JSX.Element => (
                         <div
                           key={feedback.questionId}
                           className={`p-3 rounded-lg ${

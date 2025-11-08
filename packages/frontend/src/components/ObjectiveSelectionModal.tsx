@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -26,13 +26,7 @@ export function ObjectiveSelectionModal({
   const [loading, setLoading] = useState(true);
   const [selectedObjective, setSelectedObjective] = useState<LearningObjective | null>(null);
 
-  useEffect((): void => {
-    if (isOpen && userId !== '') {
-      void loadObjectives();
-    }
-  }, [isOpen, userId]);
-
-  const loadObjectives = async (): Promise<void> => {
+  const loadObjectives = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
       const response = await apiService.getActiveObjectivesForRecovery(userId);
@@ -47,7 +41,16 @@ export function ObjectiveSelectionModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect((): undefined => {
+    if (isOpen && userId !== '') {
+      loadObjectives().catch((error: unknown): void => {
+        console.error('Error loading objectives:', error);
+      });
+    }
+    return undefined;
+  }, [isOpen, userId, loadObjectives]);
 
   const calculateQuestionCount = (days: number): number => {
     const MAX_RECOVERY_DAYS = 7;

@@ -20,10 +20,10 @@ export default function LandingPage(): JSX.Element {
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
-              <Button variant="ghost">Se connecter</Button>
+              <Button variant="ghost">Sign in</Button>
             </Link>
             <Link to="/auth">
-              <Button>Commencer</Button>
+              <Button>Get started</Button>
             </Link>
           </div>
         </div>
@@ -34,28 +34,28 @@ export default function LandingPage(): JSX.Element {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
             <Sparkles className="h-4 w-4" />
-            <span>Apprentissage adaptatif propulsé par l&apos;IA</span>
+            <span>Adaptive learning powered by AI</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-balance leading-tight">
-            Apprenez plus vite avec l&apos;intelligence artificielle
+            Master any subject with an AI-powered approach
           </h1>
 
           <p className="text-xl text-muted-foreground text-pretty max-w-2xl mx-auto leading-relaxed">
-            FlashLearn AI crée des parcours d&apos;apprentissage personnalisés basés sur vos
-            objectifs. Des flashcards intelligentes aux quiz adaptatifs, maîtrisez n&apos;importe
-            quel sujet efficacement.
+            Create personalized learning paths tailored to your goals. Smart flashcards, adaptive
+            quizzes, and AI-powered content help you identify your knowledge gaps, learn faster and
+            more effectively.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link to={isAuthenticated ? '/dashboard' : '/auth'}>
               <Button size="lg" className="text-lg px-8">
-                Commencer gratuitement
+                Start for free
               </Button>
             </Link>
             <a href="#features">
               <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent">
-                Découvrir les fonctionnalités
+                Discover features
               </Button>
             </a>
           </div>
@@ -65,9 +65,9 @@ export default function LandingPage(): JSX.Element {
       {/* Features Section */}
       <section id="features" className="container mx-auto px-4 py-20">
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl font-bold text-balance">Comment ça marche</h2>
+          <h2 className="text-4xl font-bold text-balance">How it works</h2>
           <p className="text-xl text-muted-foreground text-pretty max-w-2xl mx-auto">
-            Une approche en 4 étapes pour un apprentissage optimal
+            A 4-step AI-powered approach to identify gaps and master any subject
           </p>
         </div>
 
@@ -77,10 +77,9 @@ export default function LandingPage(): JSX.Element {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Target className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Définissez vos objectifs</CardTitle>
+              <CardTitle>Define your goals</CardTitle>
               <CardDescription>
-                Créez des objectifs d&apos;apprentissage personnalisés avec un niveau cible et une
-                date limite
+                Create personalized learning objectives with a target level and deadline
               </CardDescription>
             </CardHeader>
           </Card>
@@ -90,10 +89,9 @@ export default function LandingPage(): JSX.Element {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Logo size="md" />
               </div>
-              <CardTitle>Évaluation IA</CardTitle>
+              <CardTitle>AI Assessment</CardTitle>
               <CardDescription>
-                Passez une évaluation de 25 questions générée par l&apos;IA pour déterminer votre
-                niveau actuel
+                Take an AI-generated assessment to identify your knowledge gaps and current level
               </CardDescription>
             </CardHeader>
           </Card>
@@ -103,10 +101,9 @@ export default function LandingPage(): JSX.Element {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Parcours adaptatifs</CardTitle>
+              <CardTitle>Adaptive paths</CardTitle>
               <CardDescription>
-                Recevez des parcours d&apos;apprentissage personnalisés avec des modules progressifs
-                et des flashcards
+                Receive personalized learning paths with progressive modules and flashcards
               </CardDescription>
             </CardHeader>
           </Card>
@@ -116,9 +113,9 @@ export default function LandingPage(): JSX.Element {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Award className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Validez vos acquis</CardTitle>
+              <CardTitle>Validate your knowledge</CardTitle>
               <CardDescription>
-                Complétez des quiz de validation pour débloquer de nouveaux modules et progresser
+                Complete validation quizzes to unlock new modules and progress
               </CardDescription>
             </CardHeader>
           </Card>
@@ -132,32 +129,32 @@ export default function LandingPage(): JSX.Element {
             <CardContent className="p-12">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div className="space-y-6">
-                  <h3 className="text-3xl font-bold text-balance">Pourquoi FlashLearn AI ?</h3>
+                  <h3 className="text-3xl font-bold text-balance">Why FlashLearn AI?</h3>
                   <ul className="space-y-4">
                     <li className="flex items-start gap-3">
                       <TrendingUp className="h-6 w-6 text-primary shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold">Apprentissage adaptatif</p>
+                        <p className="font-semibold">Adaptive learning</p>
                         <p className="text-muted-foreground text-sm">
-                          Le contenu s&apos;adapte à votre niveau et à votre progression
+                          Content adapts to your level and progress
                         </p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
                       <Sparkles className="h-6 w-6 text-primary shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold">Contenu généré par IA</p>
+                        <p className="font-semibold">AI-generated content</p>
                         <p className="text-muted-foreground text-sm">
-                          Des flashcards et quiz créés automatiquement pour chaque sujet
+                          Flashcards and quizzes automatically created for each subject
                         </p>
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
                       <Target className="h-6 w-6 text-primary shrink-0 mt-1" />
                       <div>
-                        <p className="font-semibold">Suivi de progression</p>
+                        <p className="font-semibold">Progress tracking</p>
                         <p className="text-muted-foreground text-sm">
-                          Visualisez vos progrès et débloquez de nouveaux contenus
+                          Track your progress, identify knowledge gaps, and unlock targeted content
                         </p>
                       </div>
                     </li>
@@ -178,16 +175,14 @@ export default function LandingPage(): JSX.Element {
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-3xl mx-auto text-center space-y-8 bg-primary text-primary-foreground rounded-2xl p-12">
-          <h2 className="text-4xl font-bold text-balance">
-            Prêt à transformer votre apprentissage ?
-          </h2>
+          <h2 className="text-4xl font-bold text-balance">Ready to transform your learning?</h2>
           <p className="text-lg text-pretty opacity-90">
-            Rejoignez des milliers d&apos;apprenants qui utilisent l&apos;IA pour atteindre leurs
-            objectifs plus rapidement.
+            Join thousands of learners using AI to identify their knowledge gaps and master any
+            subject faster.
           </p>
           <Link to={isAuthenticated ? '/dashboard' : '/auth'}>
             <Button size="lg" variant="secondary" className="text-lg px-8">
-              Commencer maintenant
+              Start now
             </Button>
           </Link>
         </div>
@@ -202,7 +197,7 @@ export default function LandingPage(): JSX.Element {
               <span className="font-semibold">FlashLearn AI</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 FlashLearn AI. Tous droits réservés.
+              © 2025 FlashLearn AI. All rights reserved.
             </p>
           </div>
         </div>

@@ -11,13 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 import { toast } from 'react-hot-toast';
 
-// eslint-disable-next-line max-lines-per-function, complexity
+// eslint-disable-next-line max-lines-per-function
 export default function AuthPage(): JSX.Element {
   const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();

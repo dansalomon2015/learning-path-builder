@@ -86,29 +86,6 @@ export function ObjectiveCard({ objective, onDelete }: ObjectiveCardProps): JSX.
     (objective.assessmentResults == null || objective.assessmentResults.length === 0) &&
     !hasPaths;
 
-  // Find the first active/in-progress path, or the first path if all are completed
-  const getFirstPathLink = (): string => {
-    if (!hasPaths) {
-      return `/objectives/${objective.id}/paths`;
-    }
-    // Try to find an in-progress path first
-    const inProgressPath = objective.learningPaths.find(
-      (p): boolean => !p.isCompleted && p.isEnabled
-    );
-    if (inProgressPath != null) {
-      return `/objectives/${objective.id}/paths/${inProgressPath.id}`;
-    }
-    // Otherwise, get the first enabled path
-    const firstEnabledPath = objective.learningPaths.find((p): boolean => p.isEnabled);
-    if (firstEnabledPath != null) {
-      return `/objectives/${objective.id}/paths/${firstEnabledPath.id}`;
-    }
-    // Fallback to first path (should always exist if hasPaths is true)
-    if (objective.learningPaths.length > 0) {
-      return `/objectives/${objective.id}/paths/${objective.learningPaths[0].id}`;
-    }
-    return `/objectives/${objective.id}/paths`;
-  };
 
   return (
     <Card className="border-2 hover:border-primary/50 transition-colors">

@@ -61,7 +61,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     completedResourceCount: number;
     finalExamPassed: boolean;
   } | null>(null);
-  const [loadingModuleProgress, setLoadingModuleProgress] = useState(false);
+  const [_loadingModuleProgress, setLoadingModuleProgress] = useState(false);
 
   const reloadData = useCallback(async (): Promise<void> => {
     try {
@@ -109,9 +109,13 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
         setModule(m);
 
         // Check final exam eligibility
-        if (m != null && moduleId != null && moduleId !== '') {
-          void checkFinalExamEligibility(moduleId);
-          void loadModuleProgress();
+        if (m != null && moduleId !== '') {
+          checkFinalExamEligibility(moduleId).catch((error: unknown): void => {
+            console.error('Error checking final exam eligibility:', error);
+          });
+          loadModuleProgress().catch((error: unknown): void => {
+            console.error('Error loading module progress:', error);
+          });
         }
 
         // Check if flashcards need to be generated
@@ -145,6 +149,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
       console.error('Error loading module data:', error);
     });
     return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [objectiveId, pathId, moduleId, reloadData]);
 
   const loadModuleProgress = useCallback(async (): Promise<void> => {
@@ -164,10 +169,13 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     }
   }, [objectiveId, pathId, moduleId]);
 
-  useEffect((): void => {
+  useEffect((): undefined => {
     if (objectiveId != null && pathId != null && moduleId != null && module != null) {
-      void loadModuleProgress();
+      loadModuleProgress().catch((error: unknown): void => {
+        console.error('Error loading module progress:', error);
+      });
     }
+    return undefined;
   }, [objectiveId, pathId, moduleId, module, loadModuleProgress]);
 
   const checkFinalExamEligibility = async (modId: string): Promise<void> => {
@@ -188,7 +196,8 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     setIsFlipped(!isFlipped);
     if (!isFlipped && module != null && currentIndex < module.flashcards.length) {
       const currentCard = module.flashcards[currentIndex];
-      if (currentCard != null) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (currentCard !== undefined) {
         setStudiedCards(new Set(studiedCards).add(currentCard.id));
       }
     }
@@ -364,13 +373,15 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
   }
 
   const flashcards: Flashcard[] = module.flashcards;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const currentCard: Flashcard | undefined = flashcards[currentIndex];
-  const flashcardProgress = flashcards.length > 0 ? (studiedCards.size / flashcards.length) * 100 : 0;
+  const flashcardProgress =
+    flashcards.length > 0 ? (studiedCards.size / flashcards.length) * 100 : 0;
   const allCardsStudied = flashcards.length > 0 && studiedCards.size === flashcards.length;
-  
+
   // Use module progress (weighted: resources + final exam) if available, otherwise fallback to flashcard progress
-  const moduleProgressValue = moduleProgress?.progress ?? (typeof module.progress === 'number' ? module.progress : flashcardProgress);
+  const moduleProgressValue =
+    moduleProgress?.progress ??
+    (typeof module.progress === 'number' ? module.progress : flashcardProgress);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -401,7 +412,9 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
               <div className="text-sm font-medium">{Math.round(moduleProgressValue)}%</div>
               <p className="text-xs text-muted-foreground">
                 {moduleProgress != null
-                  ? `Module: ${moduleProgress.completedResourceCount}/${moduleProgress.resourceCount} resources${moduleProgress.finalExamPassed ? ' + Exam' : ''}`
+                  ? `Module: ${moduleProgress.completedResourceCount}/${
+                      moduleProgress.resourceCount
+                    } resources${moduleProgress.finalExamPassed ? ' + Exam' : ''}`
                   : 'Progress'}
               </p>
             </div>
@@ -410,7 +423,8 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
           {moduleProgress != null && (
             <div className="mt-2 text-xs text-muted-foreground">
               <span>
-                Progress based on resources ({moduleProgress.resourceWeight}% each) and final exam ({moduleProgress.finalExamWeight}%)
+                Progress based on resources ({moduleProgress.resourceWeight}% each) and final exam (
+                {moduleProgress.finalExamWeight}%)
               </span>
             </div>
           )}
@@ -542,28 +556,29 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
         </div>
 
         {/* Final Exam Section */}
-        {!module.isCompleted && module.suggestedResources != null && module.suggestedResources.length > 0 && (
-          <Card className="mb-6 border-2 border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <Trophy className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">Module Final Exam</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    To take the final exam and complete this module, you must first pass
-                    at least one self-assessment test (with a score of 80% or more) for each
-                    suggested resource in the module.
-                  </p>
-                  {checkingEligibility ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Checking eligibility...
-                    </div>
-                  ) : finalExamEligibility != null ? (
-                    <>
-                      {finalExamEligibility.canTake ? (
+        {!module.isCompleted &&
+          module.suggestedResources != null &&
+          module.suggestedResources.length > 0 && (
+            <Card className="mb-6 border-2 border-primary/20">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Trophy className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-2">Module Final Exam</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      To take the final exam and complete this module, you must first pass at least
+                      one self-assessment test (with a score of 80% or more) for each suggested
+                      resource in the module.
+                    </p>
+                    {checkingEligibility ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Checking eligibility...
+                      </div>
+                    ) : finalExamEligibility != null ? (
+                      finalExamEligibility.canTake ? (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-sm text-green-600">
                             <CheckCircle2 className="h-4 w-4" />
@@ -593,21 +608,22 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                               <div className="text-sm text-muted-foreground">
                                 <p className="font-medium mb-1">Resources to complete:</p>
                                 <ul className="list-disc list-inside space-y-1">
-                                  {finalExamEligibility.missingResources.map((resource, index) => (
-                                    <li key={index}>{resource}</li>
-                                  ))}
+                                  {finalExamEligibility.missingResources.map(
+                                    (resource, index): JSX.Element => (
+                                      <li key={index}>{resource}</li>
+                                    )
+                                  )}
                                 </ul>
                               </div>
                             )}
                         </div>
-                      )}
-                    </>
-                  ) : null}
+                      )
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Completion Card */}
         {allCardsStudied && !module.isCompleted && (
@@ -728,4 +744,3 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
 };
 
 export default ModuleLearnPage;
-

@@ -77,15 +77,15 @@ export function ModuleResources({
   const [loadingStatuses, setLoadingStatuses] = useState<Set<string>>(new Set());
 
   // Load resource statuses on mount
-  useEffect((): void => {
+  useEffect((): undefined => {
     const loadStatuses = async (): Promise<void> => {
       for (const resource of resources) {
         try {
-          setLoadingStatuses((prev) => new Set(prev).add(resource.id));
+          setLoadingStatuses((prev): Set<string> => new Set(prev).add(resource.id));
           const response = await apiService.getResourceAssessmentStatus(resource.id);
           if (response.success && response.data != null) {
             const data = response.data;
-            setResourceStatuses((prev) => {
+            setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore: number | null }> => {
               const newMap = new Map(prev);
               newMap.set(resource.id, {
                 isCompleted: data.isCompleted,
@@ -98,7 +98,7 @@ export function ModuleResources({
           // Silently fail - status is optional
           console.error('Error loading resource status:', error);
         } finally {
-          setLoadingStatuses((prev) => {
+          setLoadingStatuses((prev): Set<string> => {
             const newSet = new Set(prev);
             newSet.delete(resource.id);
             return newSet;
@@ -107,8 +107,11 @@ export function ModuleResources({
       }
     };
     if (resources.length > 0) {
-      void loadStatuses();
+      loadStatuses().catch((error: unknown): void => {
+        console.error('Error loading statuses:', error);
+      });
     }
+    return undefined;
   }, [resources]);
 
   const handleSelfAssess = (resourceId: string, resourceTitle: string): void => {
@@ -120,7 +123,7 @@ export function ModuleResources({
 
   const handleAssessmentComplete = (result: ResourceAssessmentResult): void => {
     // Update local status
-    setResourceStatuses((prev) => {
+    setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore: number | null }> => {
       const newMap = new Map(prev);
       newMap.set(result.resourceId, {
         isCompleted: true,
@@ -247,7 +250,7 @@ export function ModuleResources({
       </CardContent>
       {selectedResource != null && (
         <ResourceAssessmentModal
-          isOpen={true}
+          isOpen
           resourceId={selectedResource.id}
           resourceTitle={selectedResource.title}
           moduleId={moduleId}
@@ -258,7 +261,7 @@ export function ModuleResources({
       )}
       {historyResource != null && (
         <ResourceAssessmentHistoryModal
-          isOpen={true}
+          isOpen
           resourceId={historyResource.id}
           resourceTitle={historyResource.title}
           onClose={handleCloseHistory}

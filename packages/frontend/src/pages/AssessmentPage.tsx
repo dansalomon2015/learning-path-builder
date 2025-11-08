@@ -13,7 +13,7 @@ export default function AssessmentPage(): JSX.Element | null {
   const [loading, setLoading] = useState(true);
   const [generatingPaths, setGeneratingPaths] = useState(false);
 
-  useEffect((): void => {
+  useEffect((): undefined => {
     const startAssessment = async (): Promise<void> => {
       if (objectiveId == null || objectiveId === '') {
         toast.error('Objective ID is required');
@@ -47,7 +47,10 @@ export default function AssessmentPage(): JSX.Element | null {
       }
     };
 
-    void startAssessment();
+    startAssessment().catch((error: unknown): void => {
+      console.error('Error starting assessment:', error);
+    });
+    return undefined;
   }, [objectiveId, navigate]);
 
   const handleComplete = (): void => {
@@ -129,7 +132,7 @@ export default function AssessmentPage(): JSX.Element | null {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Préparation de l'évaluation...</p>
+          <p className="text-muted-foreground">Préparation de l&apos;évaluation...</p>
         </div>
       </div>
     );

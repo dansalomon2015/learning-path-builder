@@ -27,15 +27,15 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   onClose,
   onRetry,
 }): JSX.Element => {
-  const correctCount = result.feedback.filter((f) => f.correct).length;
-  const incorrectCount = result.feedback.filter((f) => !f.correct).length;
+  const correctCount = result.feedback.filter((f): boolean => f.correct).length;
+  const incorrectCount = result.feedback.filter((f): boolean => !f.correct).length;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-800">Résultats de l'auto-évaluation</h2>
+            <h2 className="text-2xl font-bold text-slate-800">Résultats de l&apos;auto-évaluation</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -88,7 +88,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
 
           <div className="space-y-4 mb-6">
             <h4 className="font-semibold text-slate-800">Answer Details</h4>
-            {result.feedback.map((feedback, index) => {
+            {result.feedback.map((feedback, index): JSX.Element => {
               return (
                 <div
                   key={feedback.questionId}
@@ -240,11 +240,14 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
   }, [resourceId, moduleId, objectiveId, onClose]);
 
   // Generate assessment when modal opens (only once per resource)
-  useEffect((): void => {
+  useEffect((): undefined => {
     if (isOpen && assessment == null && !generating && !hasGeneratedRef.current) {
       hasGeneratedRef.current = true;
-      void generateAssessment();
+      generateAssessment().catch((error: unknown): void => {
+        console.error('Error generating assessment:', error);
+      });
     }
+    return undefined;
   }, [isOpen, resourceId, moduleId, objectiveId, assessment, generating, generateAssessment]);
 
   const handleAnswerSelect = (questionId: string, answer: string | number): void => {
@@ -274,7 +277,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
 
     setSubmitting(true);
     try {
-      const answersArray = Array.from(answers.entries()).map(([questionId, selectedAnswer]) => ({
+      const answersArray = Array.from(answers.entries()).map(([questionId, selectedAnswer]): { questionId: string; selectedAnswer: string | number } => ({
         questionId,
         selectedAnswer,
       }));
@@ -310,7 +313,9 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
     setTimeSpent(0);
     setResult(null);
     hasGeneratedRef.current = false;
-    void generateAssessment();
+    generateAssessment().catch((error: unknown): void => {
+      console.error('Error generating assessment:', error);
+    });
   };
 
   const formatTime = (seconds: number): string => {
@@ -401,7 +406,7 @@ export const ResourceAssessmentModal: React.FC<ResourceAssessmentModalProps> = (
               {currentQuestion.question}
             </h3>
             <div className="space-y-2">
-              {currentQuestion.options.map((option: string, index: number) => {
+              {currentQuestion.options.map((option: string, index: number): JSX.Element => {
                 const isSelected = selectedAnswer === index || selectedAnswer === option;
                 return (
                   <button

@@ -177,10 +177,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Question Type Indicator */}
       <div className="mt-4 pt-4 border-t border-slate-200">
         <div className="flex items-center space-x-2 text-sm text-slate-500">
-          <span className="capitalize">
-            {question.type != null ? String(question.type).replace('_', ' ') : 'multiple choice'}
-          </span>
+                <span className="capitalize">
+                  {String(question.type).replace('_', ' ')}
+                </span>
           <span>•</span>
+          {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
           <span>{question.category != null && question.category !== '' ? question.category : 'general'}</span>
         </div>
       </div>
