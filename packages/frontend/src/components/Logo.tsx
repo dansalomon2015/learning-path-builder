@@ -13,8 +13,17 @@ const sizeMap = {
 export function Logo({ size = 'md', className = '' }: LogoProps): JSX.Element {
   const sizeClass = sizeMap[size];
   // Use icon-512.png for larger sizes, icon-192.png for smaller
-  const logoSrc = size === 'xl' ? '/icon-512.png' : '/icon-192.png';
+  // Use relative path from public folder (Vite handles this correctly)
+  const logoSrc = size === 'xl' ? 'icon-512.png' : 'icon-192.png';
   return (
-    <img src={logoSrc} alt="FlashLearn AI Logo" className={`${sizeClass} ${className}`.trim()} />
+    <img 
+      src={`/${logoSrc}`} 
+      alt="FlashLearn AI Logo" 
+      className={`${sizeClass} ${className}`.trim()} 
+      onError={(e): void => {
+        // Fallback to favicon if icons fail to load
+        (e.target as HTMLImageElement).src = '/favicon.ico';
+      }}
+    />
   );
 }
