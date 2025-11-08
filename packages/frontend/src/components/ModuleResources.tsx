@@ -72,7 +72,7 @@ export function ModuleResources({
     title: string;
   } | null>(null);
   const [resourceStatuses, setResourceStatuses] = useState<
-    Map<string, { isCompleted: boolean; lastScore?: number }>
+    Map<string, { isCompleted: boolean; lastScore?: number | null }>
   >(new Map());
   const [loadingStatuses, setLoadingStatuses] = useState<Set<string>>(new Set());
 
@@ -85,7 +85,7 @@ export function ModuleResources({
           const response = await apiService.getResourceAssessmentStatus(resource.id);
           if (response.success && response.data != null) {
             const data = response.data;
-            setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore: number | null }> => {
+            setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore?: number | null }> => {
               const newMap = new Map(prev);
               newMap.set(resource.id, {
                 isCompleted: data.isCompleted,
@@ -123,7 +123,7 @@ export function ModuleResources({
 
   const handleAssessmentComplete = (result: ResourceAssessmentResult): void => {
     // Update local status
-    setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore: number | null }> => {
+    setResourceStatuses((prev): Map<string, { isCompleted: boolean; lastScore?: number | null }> => {
       const newMap = new Map(prev);
       newMap.set(result.resourceId, {
         isCompleted: true,

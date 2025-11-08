@@ -3,7 +3,6 @@ import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 import { logger } from '@/utils/logger';
 import type { QuizQuestion } from '@/types';
-import { completeModuleAndUpdateProgress } from '@/utils/progressHelpers';
 import { moduleProgressService } from '@/services/moduleProgressService';
 
 export interface ModuleFinalExam {
@@ -473,74 +472,6 @@ class ModuleFinalExamService {
       return result;
     } catch (error: unknown) {
       logger.error('Error submitting module final exam:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Complete module after passing final exam
-   * Uses the shared completeModuleAndUpdateProgress helper
-   */
-  private async completeModule(
-    objectiveId: string,
-    pathId: string,
-    moduleId: string
-  ): Promise<void> {
-    try {
-      const objectiveDoc = await firebaseService.getDocument('objectives', objectiveId);
-      if (objectiveDoc == null) {
-        throw new Error('Objective not found');
-      }
-
-      const learningPathsValue: unknown = objectiveDoc['learningPaths'];
-      const learningPaths = Array.isArray(learningPathsValue)
-        ? (learningPathsValue as Array<Record<string, unknown>>)
-        : [];
-      const pathIndex = learningPaths.findIndex(
-        (p: Record<string, unknown>): boolean => p['id'] === pathId
-      );
-      if (pathIndex === -1) {
-        throw new Error('Path not found');
-      }
-
-      const path: Record<string, unknown> | undefined = learningPaths[pathIndex];
-      if (path == null) {
-        throw new Error('Path not found');
-      }
-      const modulesValue: unknown = path['modules'];
-      const modules = Array.isArray(modulesValue)
-        ? (modulesValue as Array<Record<string, unknown>>)
-        : [];
-      const moduleIndex = modules.findIndex(
-        (m: Record<string, unknown>): boolean => m['id'] === moduleId
-      );
-      if (moduleIndex === -1) {
-        throw new Error('Module not found');
-      }
-
-      const module: Record<string, unknown> = modules[moduleIndex] ?? {};
-
-      // Use shared helper to complete module and update all progress
-      const { objectiveProgress }: { objectiveProgress: number } = completeModuleAndUpdateProgress({
-        learningPaths,
-        pathIndex,
-        path,
-        modules,
-        moduleIndex,
-        module,
-        context: 'after passing final exam',
-      });
-
-      // Update objective
-      await firebaseService.updateDocument('objectives', objectiveId, {
-        learningPaths,
-        progress: objectiveProgress,
-        updatedAt: new Date().toISOString(),
-      });
-
-      logger.info(`Module ${moduleId} marked as completed after passing final exam`);
-    } catch (error: unknown) {
-      logger.error('Error completing module:', error);
       throw error;
     }
   }
