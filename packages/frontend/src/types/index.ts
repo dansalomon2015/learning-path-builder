@@ -65,6 +65,57 @@ export enum DocumentStatus {
   FAILED = 'failed',
 }
 
+export interface RecoveryAssessment {
+  id: string;
+  userId: string;
+  objectiveId: string;
+  objectiveTitle: string;
+  missedDays: number;
+  questionCount: number;
+  questions: QuizQuestion[];
+  status: 'pending' | 'completed';
+  score?: number;
+  passed?: boolean;
+  recoveredDays?: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface RecoveryResult {
+  assessmentId: string;
+  score: number;
+  passed: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  recoveredDays: number;
+  newStreak: number;
+  feedback?: Array<{
+    questionId: string;
+    question: string;
+    correct: boolean;
+    userAnswer: string | number;
+    correctAnswer: string | number;
+    explanation: string;
+  }>;
+  averageTimePerQuestion?: number;
+  suspiciousPattern?: boolean;
+}
+
+export interface Streak {
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastStudyDate: string;
+  missedDays: number;
+  recoveryHistory: Array<{
+    date: string;
+    recoveredDays: number;
+    assessmentId: string;
+    objectiveId: string;
+  }>;
+  updatedAt: string;
+}
+
 export enum ExportFormat {
   CSV = 'csv',
   PDF = 'pdf',
@@ -409,6 +460,111 @@ export interface AssessmentAnswer {
   selectedAnswer: string | number;
   isCorrect: boolean;
   timeSpent: number; // seconds
+}
+
+// Resource Assessment System
+export interface ResourceAssessment {
+  id: string;
+  userId: string;
+  resourceId: string;
+  moduleId: string;
+  objectiveId: string;
+  resourceTitle: string;
+  resourceType: ResourceType;
+  resourceUrl?: string;
+  questions: QuizQuestion[];
+  status: 'pending' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+  score?: number;
+  passed?: boolean; // >= 70%
+  correctAnswers?: number;
+  totalQuestions?: number;
+  timeSpent?: number; // en secondes
+}
+
+export interface ResourceAssessmentResult {
+  id: string;
+  userId: string;
+  resourceId: string;
+  assessmentId: string;
+  moduleId: string;
+  objectiveId: string;
+  resourceTitle: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  timeSpent: number;
+  passed: boolean;
+  answers: Array<{
+    questionId: string;
+    selectedAnswer: string | number;
+    correct: boolean;
+    explanation?: string;
+  }>;
+  feedback: Array<{
+    questionId: string;
+    question: string;
+    correct: boolean;
+    userAnswer: string | number;
+    correctAnswer: string | number;
+    explanation: string;
+  }>;
+  completedAt: string;
+}
+
+// Module Final Exam System
+export interface ModuleFinalExam {
+  id: string;
+  userId: string;
+  moduleId: string;
+  pathId: string;
+  objectiveId: string;
+  moduleTitle: string;
+  questions: QuizQuestion[];
+  status: 'pending' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+  score?: number;
+  passed?: boolean;
+  correctAnswers?: number;
+  totalQuestions?: number;
+  timeSpent?: number;
+}
+
+export interface ModuleFinalExamResult {
+  id: string;
+  userId: string;
+  moduleId: string;
+  pathId: string;
+  objectiveId: string;
+  examId: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  timeSpent: number;
+  passed: boolean;
+  answers: Array<{
+    questionId: string;
+    selectedAnswer: string | number;
+    correct: boolean;
+    explanation?: string;
+  }>;
+  feedback: Array<{
+    questionId: string;
+    question: string;
+    correct: boolean;
+    userAnswer: string | number;
+    correctAnswer: string | number;
+    explanation: string;
+  }>;
+  completedAt: string;
+}
+
+export interface ModuleFinalExamEligibility {
+  canTake: boolean;
+  missingResources?: string[];
+  reason?: string;
 }
 
 // Enhanced Learning Plan with Objective Integration

@@ -4,6 +4,8 @@ import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 import { adaptiveLearningService } from '@/services/adaptiveLearning';
 import { type LearningPlan, type StudySession, type PerformanceMetric } from '@/types';
+import { streakService } from '@/services/streakService';
+import { logger } from '@/utils/logger';
 
 const router = Router();
 
@@ -537,6 +539,11 @@ router.post('/:id/quiz-submit', async (req: Request, res: Response): Promise<Res
       },
     ]
   );
+
+  // Update streak (non-blocking)
+  streakService.updateStreakOnStudy(userId).catch((error: unknown) => {
+    logger.warn('Failed to update streak after quiz', { userId, error });
+  });
 
   return res.json({
     success: true,

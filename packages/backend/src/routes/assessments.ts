@@ -3,8 +3,24 @@ import { firebaseService } from '@/services/firebase';
 import { geminiService } from '@/services/gemini';
 import { logger } from '@/utils/logger';
 import { type QuizQuestion } from '@/types';
+import { streakService } from '@/services/streakService';
 
 const router = Router();
+
+/**
+ * Get default assessment question count from environment variable
+ * Default: 25 questions
+ */
+const getDefaultQuestionCount = (): number => {
+  const questionCountEnv = process.env['ASSESSMENT_QUESTION_COUNT'];
+  if (questionCountEnv != null && questionCountEnv !== '') {
+    const parsed = Number.parseInt(questionCountEnv, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return 25; // Default: 25 questions
+};
 
 // Start an assessment for an objective: generate AI-powered questions
 router.post('/start', async (req: Request, res: Response): Promise<Response> => {
@@ -18,7 +34,7 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
     count?: number;
   };
   const objectiveId: string = body.objectiveId;
-  const count: number = body.count ?? 25;
+  const count: number = body.count ?? getDefaultQuestionCount();
 
   if (objectiveId === '') {
     return res.status(400).json({ success: false, message: 'objectiveId is required' });
@@ -37,10 +53,26 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
+    // Update objective status to 'in_progress' if it's still in 'planning'
+    const objective = objectiveDoc as Record<string, unknown>;
+    const objectiveStatus: string = (objective['status'] as string) ?? 'planning';
+    if (objectiveStatus === 'planning') {
+      try {
+        await firebaseService.updateDocument('objectives', objectiveId, {
+          status: 'in_progress',
+          updatedAt: new Date().toISOString(),
+        });
+        logger.info(`Objective ${objectiveId} status updated from 'planning' to 'in_progress'`);
+      } catch (updateError: unknown) {
+        // Log but don't fail the assessment creation if status update fails
+        logger.warn('Failed to update objective status to in_progress:', updateError);
+      }
+    }
+
     // Generate AI-powered questions based on objective using Gemini
     let questions: QuizQuestion[];
     try {
-      const objective = objectiveDoc as {
+      const objectiveData = objectiveDoc as {
         title: string;
         description: string;
         category: string;
@@ -50,12 +82,12 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
       };
       questions = await geminiService.generateAssessment(
         {
-          title: objective.title,
-          description: objective.description,
-          category: objective.category,
-          targetRole: objective.targetRole,
-          currentLevel: objective.currentLevel,
-          targetLevel: objective.targetLevel,
+          title: objectiveData.title,
+          description: objectiveData.description,
+          category: objectiveData.category,
+          targetRole: objectiveData.targetRole,
+          currentLevel: objectiveData.currentLevel,
+          targetLevel: objectiveData.targetLevel,
         },
         count
       );
@@ -63,7 +95,7 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
       logger.error('Gemini assessment generation failed, using fallback:', geminiError);
 
       // Fallback to basic questions if Gemini fails
-      const objective = objectiveDoc as {
+      const objectiveData = objectiveDoc as {
         title: string;
         category: string;
         targetLevel: string;
@@ -72,24 +104,24 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
       questions = Array.from({ length: questionCount }).map(
         (_item: unknown, i: number): QuizQuestion => ({
           id: `q${i + 1}`,
-          question: `Question ${i + 1} about ${objective.title}?`,
+          question: `Question ${i + 1} about ${objectiveData.title}?`,
           options: ['Option A', 'Option B', 'Option C', 'Option D'],
           correctAnswer: 0,
           explanation: 'Sample explanation for learning purposes.',
           difficulty:
-            objective.targetLevel === 'advanced'
+            objectiveData.targetLevel === 'advanced'
               ? 'hard'
-              : objective.targetLevel === 'intermediate'
+              : objectiveData.targetLevel === 'intermediate'
               ? 'medium'
               : 'easy',
-          category: objective.category,
-          skills: [objective.category],
+          category: objectiveData.category,
+          skills: [objectiveData.category],
         })
       );
     }
 
     const now: string = new Date().toISOString();
-    const objective = objectiveDoc as {
+    const objectiveData = objectiveDoc as {
       title: string;
       targetRole: string;
       category: string;
@@ -98,10 +130,10 @@ router.post('/start', async (req: Request, res: Response): Promise<Response> => 
     const assessment = {
       userId: uid,
       objectiveId,
-      title: `Assessment: ${objective.title}`,
-      description: `Skill evaluation for ${objective.targetRole}`,
-      category: objective.category,
-      skillLevel: objective.currentLevel,
+      title: `Assessment: ${objectiveData.title}`,
+      description: `Skill evaluation for ${objectiveData.targetRole}`,
+      category: objectiveData.category,
+      skillLevel: objectiveData.currentLevel,
       questions,
       duration: 10,
       createdAt: now,
@@ -229,6 +261,12 @@ router.post('/:assessmentId/submit', async (req: Request, res: Response): Promis
       objectiveId: assessmentObjectiveId,
     });
   }
+
+  // Update streak (non-blocking)
+  streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+    logger.warn('Failed to update streak after assessment', { userId: uid, error });
+  });
+
   return res.json({ success: true, data: { id: resultId, ...result } });
 });
 

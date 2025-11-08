@@ -10,6 +10,12 @@ import type {
   QuizResult,
   ObjectiveAnalytics,
   LearningAnalytics,
+  RecoveryAssessment,
+  RecoveryResult,
+  LearningObjective,
+  ResourceAssessment,
+  ResourceAssessmentResult,
+  Streak,
 } from '@/types';
 import { toast } from 'react-hot-toast';
 
@@ -359,6 +365,47 @@ class ApiService {
     return response.data;
   }
 
+  // Module Final Exam
+  async checkModuleFinalExamEligibility(
+    moduleId: string
+  ): Promise<ApiResponse<{ canTake: boolean; missingResources?: string[]; reason?: string }>> {
+    const response = await this.api.get<ApiResponse<{ canTake: boolean; missingResources?: string[]; reason?: string }>>(
+      `/module-final-exams/modules/${moduleId}/can-take`
+    );
+    return response.data;
+  }
+
+  async startModuleFinalExam(data: {
+    moduleId: string;
+    pathId: string;
+    objectiveId: string;
+  }): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
+      '/module-final-exams/start',
+      data
+    );
+    return response.data;
+  }
+
+  async submitModuleFinalExam(
+    examId: string,
+    answers: Array<{ questionId: string; selectedAnswer: string | number }>,
+    timeSpent?: number
+  ): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.post<ApiResponse<Record<string, unknown>>>(
+      `/module-final-exams/${examId}/submit`,
+      { answers, timeSpent }
+    );
+    return response.data;
+  }
+
+  async getModuleFinalExam(examId: string): Promise<ApiResponse<Record<string, unknown>>> {
+    const response = await this.api.get<ApiResponse<Record<string, unknown>>>(
+      `/module-final-exams/${examId}`
+    );
+    return response.data;
+  }
+
   // Learning Plans
   async getLearningPlans(): Promise<ApiResponse<LearningPlan[]>> {
     const response = await this.api.get<ApiResponse<LearningPlan[]>>('/learning-plans');
@@ -561,6 +608,122 @@ class ApiService {
   ): Promise<ApiResponse<ObjectiveAnalytics>> {
     const response = await this.api.get<ApiResponse<ObjectiveAnalytics>>(
       `/analytics/objective/${objectiveId}?timeRange=${timeRange}`
+    );
+    return response.data;
+  }
+
+  // Streak Recovery
+  async getStreak(userId: string): Promise<ApiResponse<Streak>> {
+    const response = await this.api.get<ApiResponse<Streak>>(`/streak/${userId}`);
+    return response.data;
+  }
+
+  async getMissedDays(
+    userId: string
+  ): Promise<ApiResponse<{ missedDays: number; lastStudyDate: string | null }>> {
+    const response = await this.api.get<
+      ApiResponse<{ missedDays: number; lastStudyDate: string | null }>
+    >(`/streak/${userId}/missed-days`);
+    return response.data;
+  }
+
+  async getActiveObjectivesForRecovery(userId: string): Promise<ApiResponse<LearningObjective[]>> {
+    const response = await this.api.get<ApiResponse<LearningObjective[]>>(
+      `/streak/${userId}/active-objectives`
+    );
+    return response.data;
+  }
+
+  async generateRecoveryAssessment(
+    objectiveId: string,
+    missedDays: number
+  ): Promise<ApiResponse<RecoveryAssessment>> {
+    try {
+      const response = await this.api.post<ApiResponse<RecoveryAssessment>>(
+        '/streak/recovery/generate',
+        {
+          objectiveId,
+          missedDays,
+        }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      // Re-throw to let the component handle 429 (cooldown) errors
+      throw error;
+    }
+  }
+
+  async submitRecoveryAssessment(
+    assessmentId: string,
+    answers: Array<{ questionId: string; selectedAnswer: string | number }>,
+    timeSpent?: number
+  ): Promise<ApiResponse<RecoveryResult>> {
+    const response = await this.api.post<ApiResponse<RecoveryResult>>('/streak/recovery/submit', {
+      assessmentId,
+      answers,
+      timeSpent,
+    });
+    return response.data;
+  }
+
+  // Resource Assessment Methods
+  async startResourceAssessment(
+    resourceId: string,
+    moduleId: string,
+    objectiveId: string,
+    questionCount?: number,
+    forceNew?: boolean
+  ): Promise<ApiResponse<ResourceAssessment>> {
+    try {
+      const response = await this.api.post<ApiResponse<ResourceAssessment>>(
+        '/resource-assessments/start',
+        {
+          resourceId,
+          moduleId,
+          objectiveId,
+          questionCount,
+          forceNew,
+        }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      // Re-throw to let the component handle 429 (cooldown) errors
+      throw error;
+    }
+  }
+
+  async submitResourceAssessment(
+    assessmentId: string,
+    answers: Array<{ questionId: string; selectedAnswer: string | number }>,
+    timeSpent?: number
+  ): Promise<ApiResponse<ResourceAssessmentResult>> {
+    const response = await this.api.post<ApiResponse<ResourceAssessmentResult>>(
+      `/resource-assessments/${assessmentId}/submit`,
+      {
+        answers,
+        timeSpent,
+      }
+    );
+    return response.data;
+  }
+
+  async getResourceAssessmentStatus(
+    resourceId: string
+  ): Promise<ApiResponse<{ hasAssessment: boolean; assessmentId?: string; isCompleted: boolean; lastScore?: number }>> {
+    const response = await this.api.get<ApiResponse<{
+      hasAssessment: boolean;
+      assessmentId?: string;
+      isCompleted: boolean;
+      lastScore?: number;
+    }>>(`/resource-assessments/resource/${resourceId}/status`);
+    return response.data;
+  }
+
+  async getResourceAssessmentHistory(
+    resourceId: string
+  ): Promise<ApiResponse<ResourceAssessmentResult[]>> {
+    const response = await this.api.get<ApiResponse<ResourceAssessmentResult[]>>(
+      `/resource-assessments/resource/${resourceId}/history`
     );
     return response.data;
   }

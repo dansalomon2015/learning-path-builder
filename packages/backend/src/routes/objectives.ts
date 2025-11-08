@@ -11,6 +11,7 @@ import {
   activateNextPath,
   completeModuleAndUpdateProgress,
 } from '@/utils/progressHelpers';
+import { streakService } from '@/services/streakService';
 
 const router = Router();
 
@@ -937,6 +938,11 @@ router.patch(
         updatedAt: new Date().toISOString(),
       });
 
+      // Update streak (non-blocking)
+      streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+        logger.warn('Failed to update streak after module completion', { userId: uid, error });
+      });
+
       return res.json({
         success: true,
         data: { path: learningPaths[pathIndex], objectiveProgress },
@@ -1603,6 +1609,13 @@ router.post(
         modules,
         moduleIndex,
       });
+
+      // Update streak if validation passed (non-blocking)
+      if (passed) {
+        streakService.updateStreakOnStudy(uid).catch((error: unknown) => {
+          logger.warn('Failed to update streak after module validation', { userId: uid, error });
+        });
+      }
 
       return res.json({
         success: true,
