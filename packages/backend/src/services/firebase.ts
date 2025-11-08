@@ -85,6 +85,16 @@ class FirebaseService {
   }
 
   constructor() {
+    // Skip Firebase initialization in test environment
+    if (process.env['NODE_ENV'] === 'test') {
+      this.serviceAccount = {};
+      // Create mock instances for tests (Jest mocks will override these)
+      this.firestore = {} as admin.firestore.Firestore;
+      this.auth = {} as admin.auth.Auth;
+      logger.info('Firebase initialization skipped in test environment');
+      return;
+    }
+
     try {
       // Try to load from FIREBASE_CONFIG first (from Secret Manager)
       let {
