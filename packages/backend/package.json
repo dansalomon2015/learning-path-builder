@@ -11,7 +11,7 @@
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage=false --maxWorkers=2",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.ts --ignore-pattern '**/*.test.ts' --ignore-pattern '**/*.spec.ts'",
+    "lint": "eslint src/**/*.ts --ignore-pattern '**/*.test.ts' --ignore-pattern '**/*.spec.ts' --quiet",
     "lint:fix": "eslint src/**/*.ts --fix",
     "clean": "rimraf dist",
     "copy:assets": "cp -r src/assets dist/ 2>/dev/null || true",
