@@ -78,19 +78,6 @@ export default function AuthPage(): JSX.Element {
           </Link>
         </div>
 
-        {mode === 'login' && (
-          <Alert className="border-primary/50 bg-primary/5">
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              <strong>Mode démo :</strong> Utilisez{' '}
-              <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">
-                demo@flashlearn.ai
-              </code>{' '}
-              / <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">demo123</code>
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Card className="border-2">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">

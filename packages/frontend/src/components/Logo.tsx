@@ -4,10 +4,10 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: 'h-4 w-4',
-  md: 'h-6 w-6',
-  lg: 'h-8 w-8',
-  xl: 'h-10 w-10',
+  sm: 'h-8 w-8',
+  md: 'h-15 w-15',
+  lg: 'h-20 w-20',
+  xl: 'h-30 w-30',
 };
 
 export function Logo({ size = 'md', className = '' }: LogoProps): JSX.Element {
