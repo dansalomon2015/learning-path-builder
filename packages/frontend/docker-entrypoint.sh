@@ -52,15 +52,24 @@ server {
         proxy_connect_timeout 75s;
     }
 
-    # Handle client-side routing
-    location / {
-        try_files \$uri \$uri/ /index.html;
+    # Serve favicon and other icons explicitly
+    location ~* ^/(favicon\.ico|.*\.png|manifest\.json)$ {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
     # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Handle client-side routing
+    location / {
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Health check endpoint
@@ -101,15 +110,24 @@ server {
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
 
-    # Handle client-side routing
-    location / {
-        try_files \$uri \$uri/ /index.html;
+    # Serve favicon and other icons explicitly
+    location ~* ^/(favicon\.ico|.*\.png|manifest\.json)$ {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
     # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Handle client-side routing
+    location / {
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Health check endpoint
