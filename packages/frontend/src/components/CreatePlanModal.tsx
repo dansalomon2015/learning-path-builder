@@ -58,7 +58,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           description:
             description.trim() !== ''
               ? description.trim()
-              : `Plan d'apprentissage pour ${title.trim()}`,
+              : `Learning plan for ${title.trim()}`,
           topic: topic.trim(),
           skillLevel,
           mode,

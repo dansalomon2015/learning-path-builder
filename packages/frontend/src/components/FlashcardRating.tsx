@@ -37,7 +37,7 @@ export function FlashcardRating({
     <Card className="border-2">
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Évaluer cette carte</span>
+          <span className="text-sm font-medium">Rate this card</span>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map(
               (value): JSX.Element => (
@@ -71,22 +71,22 @@ export function FlashcardRating({
             onClick={(): void => setShowComment(true)}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Ajouter un commentaire
+            Add Comment
           </Button>
         ) : (
           <div className="space-y-2">
             <Textarea
-              placeholder="Partagez vos réflexions sur cette carte..."
+              placeholder="Share your thoughts on this card..."
               value={comment}
               onChange={(e): void => setComment(e.target.value)}
               rows={3}
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleCommentSave}>
-                Enregistrer
+                Save
               </Button>
               <Button size="sm" variant="outline" onClick={(): void => setShowComment(false)}>
-                Annuler
+                Cancel
               </Button>
             </div>
           </div>

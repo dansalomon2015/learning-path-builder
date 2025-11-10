@@ -35,7 +35,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-800">Résultats de l&apos;auto-évaluation</h2>
+            <h2 className="text-2xl font-bold text-slate-800">Self-Assessment Results</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 transition-colors"

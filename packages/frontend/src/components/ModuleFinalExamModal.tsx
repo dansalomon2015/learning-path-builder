@@ -90,7 +90,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onClose }): JSX.Eleme
         </div>
       </div>
 
-      {/* Feedback détaillé */}
+      {/* Detailed feedback */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Answer Details</h3>
         {result.feedback.map((item, index): JSX.Element => (

@@ -331,7 +331,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
     );
   }
 
-  // Si pas de flashcards générées
+  // If no flashcards generated
   if (module.hasFlashcards !== true || module.flashcards.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -457,7 +457,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                     </h2>
                     <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
                       <RotateCw className="h-4 w-4" />
-                      <span>Cliquez pour voir la réponse</span>
+                      <span>Click to see the answer</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -470,13 +470,13 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                   )}
                 >
                   <CardContent className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <div className="mb-4 text-sm font-medium text-green-500">Réponse</div>
+                    <div className="mb-4 text-sm font-medium text-green-500">Answer</div>
                     <p className="text-lg md:text-xl leading-relaxed text-pretty">
                       {currentCard.answer}
                     </p>
                     <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
                       <RotateCw className="h-4 w-4" />
-                      <span>Cliquez pour voir la question</span>
+                      <span>Click to see the question</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -502,7 +502,7 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
         <div className="flex items-center justify-between mb-6">
           <Button variant="outline" onClick={handlePrevious} disabled={currentIndex === 0}>
             <ChevronLeft className="h-4 w-4 mr-2" />
-            Précédent
+            Previous
           </Button>
 
           <div className="flex items-center gap-2">
@@ -642,10 +642,10 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
                 {generatingQuiz ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Génération du quiz...
+                    Generating quiz...
                   </>
                 ) : (
-                  'Passer le quiz de validation'
+                  'Take Validation Quiz'
                 )}
               </Button>
             </CardContent>
@@ -679,21 +679,21 @@ const ModuleLearnPage: React.FC = (): JSX.Element => {
         {/* Study Tips */}
         <Card className="mt-6 border-2">
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-3">Conseils d&apos;étude</h3>
+            <h3 className="font-semibold mb-3">Study Tips</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
                 <span>
-                  Prenez le temps de bien comprendre chaque concept avant de passer au suivant
+                  Take the time to fully understand each concept before moving to the next
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                <span>Révisez régulièrement les flashcards pour renforcer votre mémoire</span>
+                <span>Review flashcards regularly to strengthen your memory</span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                <span>N&apos;hésitez pas à revenir sur les cartes que vous trouvez difficiles</span>
+                <span>Don&apos;t hesitate to revisit cards you find difficult</span>
               </li>
             </ul>
           </CardContent>

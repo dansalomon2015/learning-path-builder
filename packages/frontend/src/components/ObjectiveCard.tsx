@@ -37,7 +37,7 @@ export function ObjectiveCard({ objective, onDelete }: ObjectiveCardProps): JSX.
 
     switch (objective.status) {
       case ObjectiveStatus.PLANNING:
-        // Only show "En attente d'évaluation" if assessment is truly needed (same condition as button)
+        // Only show "Awaiting assessment" if assessment is truly needed (same condition as button)
         if (needsAssessment) {
           return <Badge variant="secondary">Awaiting Assessment</Badge>;
         }

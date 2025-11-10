@@ -29,11 +29,11 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
       if (response.success && response.data != null) {
         setHistory(response.data);
       } else {
-        toast.error('Erreur lors du chargement de l&apos;historique');
+        toast.error('Error loading history');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      toast.error(`Erreur: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Historique des auto-évaluations</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Self-Assessment History</h2>
               <p className="text-sm text-slate-500 mt-1">{resourceTitle}</p>
             </div>
             <button
@@ -94,7 +94,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
           {loading && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <p className="text-slate-600">Chargement de l&apos;historique...</p>
+              <p className="text-slate-600">Loading history...</p>
             </div>
           )}
 
@@ -103,10 +103,10 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
             <div className="text-center py-12">
               <Clock className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-lg font-medium text-slate-600 mb-2">
-                Aucun historique disponible
+                No history available
               </p>
               <p className="text-sm text-slate-500">
-                Vous n&apos;avez pas encore complété d&apos;auto-évaluation pour cette ressource.
+                You haven&apos;t completed a self-assessment for this resource yet.
               </p>
             </div>
           )}
@@ -149,7 +149,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                           )}
                         </div>
                         <p className="text-sm text-slate-600">
-                          {result.correctAnswers} / {result.totalQuestions} réponses correctes
+                          {result.correctAnswers} / {result.totalQuestions} correct answers
                         </p>
                       </div>
                     </div>
@@ -172,7 +172,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                     }
                     className="w-full text-left text-sm text-primary hover:text-primary/80 font-medium"
                   >
-                    {expandedResult === result.id ? 'Masquer les détails' : 'Voir les détails'}
+                    {expandedResult === result.id ? 'Hide details' : 'Show details'}
                   </button>
 
                   {/* Expanded details */}
@@ -199,7 +199,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                               </p>
                               <div className="space-y-1 text-sm">
                                 <p>
-                                  <span className="font-medium">Votre réponse:</span>{' '}
+                                  <span className="font-medium">Your answer:</span>{' '}
                                   <span
                                     className={
                                       feedback.correct ? 'text-green-700' : 'text-red-700'
@@ -210,7 +210,7 @@ export const ResourceAssessmentHistoryModal: React.FC<ResourceAssessmentHistoryM
                                 </p>
                                 {!feedback.correct && (
                                   <p>
-                                    <span className="font-medium">Bonne réponse:</span>{' '}
+                                    <span className="font-medium">Correct answer:</span>{' '}
                                     <span className="text-green-700">
                                       {String(feedback.correctAnswer)}
                                     </span>

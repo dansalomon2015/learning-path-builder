@@ -93,11 +93,11 @@ export default function AssessmentPage(): JSX.Element | null {
 
     try {
       setGeneratingPaths(true);
-      toast.loading("Génération des parcours d'apprentissage...", { id: 'generating-paths' });
+      toast.loading("Generating learning paths...", { id: 'generating-paths' });
 
       const res = await apiService.generateLearningPaths(objId);
       if (res.success === true) {
-        toast.success("Parcours d'apprentissage générés avec succès!", { id: 'generating-paths' });
+        toast.success("Learning paths generated successfully!", { id: 'generating-paths' });
 
         // Get updated objective to find the first path
         const objectiveRes = await apiService.getObjective(objId);
@@ -132,7 +132,7 @@ export default function AssessmentPage(): JSX.Element | null {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Préparation de l&apos;évaluation...</p>
+          <p className="text-muted-foreground">Preparing assessment...</p>
         </div>
       </div>
     );
@@ -155,7 +155,7 @@ export default function AssessmentPage(): JSX.Element | null {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Génération des parcours d&apos;apprentissage...</p>
+            <p className="text-muted-foreground">Generating learning paths...</p>
           </div>
         </div>
       )}

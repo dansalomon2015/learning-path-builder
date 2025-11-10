@@ -10,7 +10,7 @@ interface ContentGenerationModalProps {
 export const ContentGenerationModal: React.FC<ContentGenerationModalProps> = ({
   isOpen,
   moduleTitle,
-  message = "Génération du contenu d'apprentissage en cours...",
+  message = "Generating learning content...",
 }): JSX.Element | null => {
   if (!isOpen) {
     return null;
@@ -22,7 +22,7 @@ export const ContentGenerationModal: React.FC<ContentGenerationModalProps> = ({
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">Génération du contenu</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Generating Content</h3>
             <p className="text-sm text-slate-600 mb-1">{message}</p>
             <p className="text-sm font-medium text-indigo-600">{moduleTitle}</p>
           </div>
@@ -33,7 +33,7 @@ export const ContentGenerationModal: React.FC<ContentGenerationModalProps> = ({
             />
           </div>
           <p className="text-xs text-slate-500 text-center">
-            Cela peut prendre quelques instants. Veuillez patienter...
+            This may take a few moments. Please wait...
           </p>
         </div>
       </div>

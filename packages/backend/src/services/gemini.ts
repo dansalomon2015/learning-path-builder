@@ -679,6 +679,59 @@ Respond ONLY with JSON in this format:
     }
   }
 
+  /**
+   * Extract questions array from various response formats
+   * Handles: { questions: [...] }, [...], { quiz: [...] }, etc.
+   */
+  private extractQuestionsArray(
+    parsed: unknown,
+    response: string,
+    cleaned: string
+  ): Record<string, unknown>[] {
+    // Log full details for debugging
+    logger.error('=== EXTRACT QUESTIONS ARRAY DEBUG ===');
+    logger.error('Parsed type:', typeof parsed);
+    logger.error('Is Array?:', Array.isArray(parsed));
+    logger.error('Is Object?:', parsed instanceof Object);
+    logger.error('Parsed value:', JSON.stringify(parsed, null, 2));
+    logger.error('Raw response FULL:', response);
+    logger.error('Cleaned response FULL:', cleaned);
+    logger.error('===================================');
+
+    if (parsed == null || !(parsed instanceof Object)) {
+      logger.error('Gemini response JSON parse failed - not an object.');
+      throw new Error('Failed to parse quiz questions from AI response');
+    }
+
+    // Case 1: Response has { questions: [...] } format
+    if ('questions' in parsed && Array.isArray((parsed as { questions: unknown }).questions)) {
+      logger.debug('Format detected: { questions: [...] }');
+      return (parsed as { questions: Record<string, unknown>[] }).questions;
+    }
+
+    // Case 2: Response is directly an array
+    if (Array.isArray(parsed)) {
+      logger.debug('Format detected: Direct array');
+      return parsed as Record<string, unknown>[];
+    }
+
+    // Case 3: Response might have different key names (quiz, items, data, etc.)
+    const possibleKeys = ['quiz', 'items', 'data', 'quizQuestions', 'assessmentQuestions'];
+    const parsedObj = parsed as Record<string, unknown>;
+    for (const key of possibleKeys) {
+      if (key in parsedObj && Array.isArray(parsedObj[key])) {
+        logger.debug(`Format detected: { ${key}: [...] }`);
+        return parsedObj[key] as Record<string, unknown>[];
+      }
+    }
+
+    // Failed to extract array
+    logger.error('Could not extract questions array from parsed response.');
+    logger.error('Parsed object keys:', Object.keys(parsed));
+    logger.error('Parsed result:', JSON.stringify(parsed, null, 2).slice(0, 1000));
+    throw new Error('Failed to parse quiz questions from AI response');
+  }
+
   private parseQuizQuestionsFromResponse(response: string): QuizQuestion[] {
     const normalize = (raw: string): string => {
       // Extract JSON inside code fences if present
@@ -688,36 +741,18 @@ Respond ONLY with JSON in this format:
         return matchValue.trim();
       }
 
-      // Try to find JSON object boundaries more robustly
-      // Look for the first '{' that starts a valid JSON object
-      let firstBrace = -1;
-      let braceCount = 0;
-      let lastBrace = -1;
-
-      for (let i = 0; i < raw.length; i++) {
-        if (raw[i] === '{') {
-          if (firstBrace === -1) {
-            firstBrace = i;
-          }
-          braceCount++;
-        } else if (raw[i] === '}') {
-          braceCount--;
-          if (braceCount === 0 && firstBrace !== -1) {
-            lastBrace = i;
-            break;
-          }
-        }
+      // Try to find JSON array boundaries first
+      const firstBracket = raw.indexOf('[');
+      const lastBracket = raw.lastIndexOf(']');
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        return raw.slice(firstBracket, lastBracket + 1);
       }
 
+      // Try to find JSON object boundaries
+      const firstBrace = raw.indexOf('{');
+      const lastBrace = raw.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         return raw.slice(firstBrace, lastBrace + 1);
-      }
-
-      // Fallback: try to find first '{' and last '}'
-      const simpleFirstBrace = raw.indexOf('{');
-      const simpleLastBrace = raw.lastIndexOf('}');
-      if (simpleFirstBrace !== -1 && simpleLastBrace !== -1 && simpleLastBrace > simpleFirstBrace) {
-        return raw.slice(simpleFirstBrace, simpleLastBrace + 1);
       }
 
       return raw.trim();
@@ -761,56 +796,52 @@ Respond ONLY with JSON in this format:
       }
     }
 
-    if (
-      parsed == null ||
-      !(parsed instanceof Object) ||
-      !('questions' in parsed) ||
-      !Array.isArray((parsed as { questions: unknown }).questions)
-    ) {
-      logger.error('Gemini response JSON parse failed.');
-      logger.error('Raw response (first 1000 chars):', response.slice(0, 1000));
-      logger.error('Cleaned response (first 1000 chars):', cleaned.slice(0, 1000));
-      logger.error('Parsed result:', parsed);
-      if (parsed != null && parsed instanceof Object) {
-        logger.error('Parsed object keys:', Object.keys(parsed));
-      }
-      throw new Error('Failed to parse quiz questions from AI response');
-    }
+    // Handle multiple response formats from Gemini
+    const questionsArray = this.extractQuestionsArray(parsed, response, cleaned);
+    logger.info(`Successfully extracted ${questionsArray.length} questions from response`);
 
-    const parsedWithQuestions = parsed as { questions: Record<string, unknown>[] };
-    return parsedWithQuestions.questions.map(
-      (q: Record<string, unknown>, index: number): QuizQuestion => {
-        const usageExample: string | undefined = q['usageExample'] as string | undefined;
-        const skills: string[] = Array.isArray(q['skills']) ? (q['skills'] as string[]) : [];
-        return {
-          id: `quiz_${Date.now()}_${index}`,
-          question: q['question'] as string,
-          options: q['options'] as string[],
-          correctAnswer: q['correctAnswer'] as number,
-          explanation: q['explanation'] as string,
-          difficulty: ((q['difficulty'] as string | undefined) ?? 'medium') as
-            | 'easy'
-            | 'medium'
-            | 'hard',
-          category: (q['category'] as string | undefined) ?? 'general',
-          ...(usageExample !== undefined && { usageExample }),
-          ...(skills.length > 0 && { skills }),
-        };
-      }
-    );
+    return questionsArray.map((q: Record<string, unknown>, index: number): QuizQuestion => {
+      const usageExample: string | undefined = q['usageExample'] as string | undefined;
+      const skills: string[] = Array.isArray(q['skills']) ? (q['skills'] as string[]) : [];
+      return {
+        id: `quiz_${Date.now()}_${index}`,
+        question: q['question'] as string,
+        options: q['options'] as string[],
+        correctAnswer: q['correctAnswer'] as number,
+        explanation: q['explanation'] as string,
+        difficulty: ((q['difficulty'] as string | undefined) ?? 'medium') as
+          | 'easy'
+          | 'medium'
+          | 'hard',
+        category: (q['category'] as string | undefined) ?? 'general',
+        ...(usageExample !== undefined && { usageExample }),
+        ...(skills.length > 0 && { skills }),
+      };
+    });
   }
 
   private normalizeJson(raw: string): string {
+    // Try to extract JSON from markdown code fence
     const codeFenceMatch = raw.match(/```(?:json)?\n([\s\S]*?)```/i);
     const matchValue: string | undefined = codeFenceMatch?.[1];
     if (matchValue != null && matchValue !== '') {
       return matchValue.trim();
     }
+
+    // Try to extract object {...}
     const firstBrace = raw.indexOf('{');
     const lastBrace = raw.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       return raw.slice(firstBrace, lastBrace + 1);
     }
+
+    // Try to extract array [...]
+    const firstBracket = raw.indexOf('[');
+    const lastBracket = raw.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      return raw.slice(firstBracket, lastBracket + 1);
+    }
+
     return raw.trim();
   }
 
@@ -1437,29 +1468,29 @@ Ensure resources are:
     questionCount: number
   ): string {
     return `
-Génère ${questionCount} questions de quiz pour valider la compréhension d'une ressource d'apprentissage.
+Generate ${questionCount} quiz questions to validate understanding of a learning resource.
 
-Ressource:
-- Titre: ${resource.title}
+Resource:
+- Title: ${resource.title}
 - Description: ${resource.description}
 - Type: ${resource.type}
-- Auteur: ${resource.author ?? 'N/A'}
+- Author: ${resource.author ?? 'N/A'}
 
-Contexte:
+Context:
 - Module: ${context.moduleTitle}
-- Description du module: ${context.moduleDescription}
-- Objectif: ${context.objectiveTitle}
-- Catégorie: ${context.objectiveCategory}
-- Niveau: ${context.difficulty}
-- Rôle cible: ${context.targetRole}
+- Module Description: ${context.moduleDescription}
+- Objective: ${context.objectiveTitle}
+- Category: ${context.objectiveCategory}
+- Difficulty Level: ${context.difficulty}
+- Target Role: ${context.targetRole}
 
-Les questions doivent:
-1. Tester la compréhension des concepts clés de la ressource
-2. Être adaptées au niveau ${context.difficulty}
-3. Être pratiques et applicatives
-4. Inclure des explications détaillées
-5. Se concentrer sur les aspects essentiels de la ressource pour le rôle ${context.targetRole}
-6. Varier en difficulté (mélange de easy, medium, et hard)
+The questions should:
+1. Test understanding of key concepts from the resource
+2. Be appropriate for ${context.difficulty} level
+3. Be practical and applicable
+4. Include detailed explanations
+5. Focus on essential aspects of the resource relevant to the ${context.targetRole} role
+6. Vary in difficulty (mix of easy, medium, and hard)
 
 Format the response as JSON:
 {
@@ -1532,26 +1563,26 @@ CRITICAL: Your response must be ONLY the JSON object, nothing else before or aft
     questionCount: number
   ): string {
     return `
-Génère ${questionCount} questions de quiz pour l'examen final d'un module d'apprentissage.
+Generate ${questionCount} quiz questions for the final exam of a learning module.
 
 Module:
-- Titre: ${module.moduleTitle}
+- Title: ${module.moduleTitle}
 - Description: ${module.moduleDescription}
 - Type: ${module.moduleType}
 
-Contexte:
-- Objectif: ${context.objectiveTitle}
-- Catégorie: ${context.objectiveCategory}
-- Rôle cible: ${context.targetRole}
+Context:
+- Objective: ${context.objectiveTitle}
+- Category: ${context.objectiveCategory}
+- Target Role: ${context.targetRole}
 
-Les questions doivent:
-1. Tester la compréhension complète du module
-2. Couvrir tous les concepts clés du module
-3. Être adaptées au niveau du module
-4. Être pratiques et applicatives
-5. Inclure des explications détaillées
-6. Varier en difficulté (mélange de easy, medium, et hard)
-7. Tester la capacité à appliquer les connaissances acquises
+The questions should:
+1. Test complete understanding of the module
+2. Cover all key concepts of the module
+3. Be appropriate for the module level
+4. Be practical and applicable
+5. Include detailed explanations
+6. Vary in difficulty (mix of easy, medium, and hard)
+7. Test the ability to apply acquired knowledge
 
 Format the response as JSON:
 {

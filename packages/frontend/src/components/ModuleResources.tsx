@@ -174,7 +174,7 @@ export function ModuleResources({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
-          Ressources suggérées
+          Suggested Resources
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

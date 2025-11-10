@@ -181,9 +181,9 @@ export function RecoveryAssessmentModal({
         <DialogContent>
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Génération du test de récupération...</p>
+            <p className="text-muted-foreground">Generating recovery test...</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Cela peut prendre quelques secondes
+              This may take a few seconds
             </p>
           </div>
         </DialogContent>
@@ -203,30 +203,30 @@ export function RecoveryAssessmentModal({
               {result.passed ? (
                 <>
                   <CheckCircle2 className="h-6 w-6 text-green-500" />
-                  Récupération réussie !
+                  Recovery successful!
                 </>
               ) : (
                 <>
                   <XCircle className="h-6 w-6 text-red-500" />
-                  Récupération échouée
+                  Recovery failed
                 </>
               )}
             </DialogTitle>
             <DialogDescription>
               {result.passed
-                ? `Vous avez récupéré ${result.recoveredDays} jour(s) !`
-                : 'Vous devez obtenir au moins 70% pour récupérer votre série.'}
+                ? `You have recovered ${result.recoveredDays} day(s)!`
+                : 'You must achieve at least 70% to recover your streak.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">{Math.round(result.score)}%</div>
               <p className="text-muted-foreground">
-                {result.correctAnswers} / {result.totalQuestions} réponses correctes
+                {result.correctAnswers} / {result.totalQuestions} correct answers
               </p>
               {result.averageTimePerQuestion != null && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Temps moyen par question : {Math.round(result.averageTimePerQuestion)}s
+                  Average time per question: {Math.round(result.averageTimePerQuestion)}s
                 </p>
               )}
             </div>
@@ -234,7 +234,7 @@ export function RecoveryAssessmentModal({
               <Card className="bg-green-500/10 border-green-500/20">
                 <CardContent className="p-4">
                   <p className="text-sm text-center">
-                    Votre série est maintenant de <strong>{result.newStreak} jours</strong>
+                    Your streak is now <strong>{result.newStreak} days</strong>
                   </p>
                 </CardContent>
               </Card>
@@ -243,17 +243,16 @@ export function RecoveryAssessmentModal({
               <Card className="bg-yellow-500/10 border-yellow-500/20">
                 <CardContent className="p-4">
                   <p className="text-sm text-center text-yellow-700 dark:text-yellow-400">
-                    ⚠️ Votre temps de réponse est très rapide. Veuillez prendre le temps de
-                    réfléchir aux questions.
+                    ⚠️ Your response time is very fast. Please take time to think about the questions.
                   </p>
                 </CardContent>
               </Card>
             )}
-            {/* Feedback pédagogique - afficher seulement si échec ou si demandé */}
+            {/* Educational feedback - display only if failed or requested */}
             {result.feedback != null && result.feedback.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">
-                  {result.passed ? 'Détails des réponses' : 'Correction et explications'}
+                  {result.passed ? 'Answer Details' : 'Corrections and Explanations'}
                 </h3>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {result.feedback.map(
@@ -278,7 +277,7 @@ export function RecoveryAssessmentModal({
                           <p className="text-sm font-medium">{item.question}</p>
                           <div className="space-y-1 text-xs">
                             <div>
-                              <span className="font-medium">Votre réponse :</span>{' '}
+                              <span className="font-medium">Your answer:</span>{' '}
                               <span className={item.correct ? 'text-green-600' : 'text-red-600'}>
                                 {typeof item.userAnswer === 'number'
                                   ? `Option ${String.fromCharCode(65 + item.userAnswer)}`
@@ -287,7 +286,7 @@ export function RecoveryAssessmentModal({
                             </div>
                             {!item.correct && (
                               <div>
-                                <span className="font-medium">Bonne réponse :</span>{' '}
+                                <span className="font-medium">Correct answer:</span>{' '}
                                 <span className="text-green-600">
                                   {typeof item.correctAnswer === 'number'
                                     ? `Option ${String.fromCharCode(65 + item.correctAnswer)}`
@@ -339,7 +338,7 @@ export function RecoveryAssessmentModal({
         <DialogHeader>
           <DialogTitle>{objectiveTitle}</DialogTitle>
           <DialogDescription>
-            Test de récupération : {assessment.questionCount} questions • Score minimum : 70%
+            Recovery Test: {assessment.questionCount} questions • Minimum score: 70%
           </DialogDescription>
         </DialogHeader>
 
@@ -417,7 +416,7 @@ export function RecoveryAssessmentModal({
               disabled={currentQuestionIndex === 0}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Précédent
+              Previous
             </Button>
             {currentQuestionIndex === assessment.questions.length - 1 ? (
               <Button onClick={handleSubmit} disabled={!allAnswered || submitting}>

@@ -29,12 +29,12 @@ export default function AuthPage(): JSX.Element {
 
   const validateRegisterForm = (): boolean => {
     if (password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error('Passwords do not match');
       return false;
     }
 
     if (password.length < 6) {
-      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      toast.error('Password must contain at least 6 characters');
       return false;
     }
 
@@ -53,14 +53,14 @@ export default function AuthPage(): JSX.Element {
     try {
       if (mode === 'login') {
         await signIn(email, password);
-        toast.success('Connexion réussie');
+        toast.success('Login successful');
       } else {
         await signUp(email, password, name);
-        toast.success('Compte créé avec succès');
+        toast.success('Account created successfully');
       }
       navigate('/dashboard');
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -80,23 +80,23 @@ export default function AuthPage(): JSX.Element {
         <Card className="border-2">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
-              {mode === 'login' ? 'Se connecter' : 'Créer un compte'}
+              {mode === 'login' ? 'Sign In' : 'Create Account'}
             </CardTitle>
             <CardDescription>
               {mode === 'login'
-                ? 'Entrez vos identifiants pour accéder à votre compte'
-                : 'Commencez votre parcours d&apos;apprentissage avec l&apos;IA'}
+                ? 'Enter your credentials to access your account'
+                : 'Start your AI-powered learning journey'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nom</Label>
+                  <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
                     type="text"
-                    placeholder="Votre nom"
+                    placeholder="Your name"
                     value={name}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                       setName(e.target.value)
@@ -111,7 +111,7 @@ export default function AuthPage(): JSX.Element {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder="your@email.com"
                   value={email}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                     setEmail(e.target.value)
@@ -121,7 +121,7 @@ export default function AuthPage(): JSX.Element {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -136,7 +136,7 @@ export default function AuthPage(): JSX.Element {
               </div>
               {mode === 'register' && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -154,12 +154,12 @@ export default function AuthPage(): JSX.Element {
                 {loading || isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {mode === 'login' ? 'Connexion...' : 'Création...'}
+                    {mode === 'login' ? 'Signing in...' : 'Creating account...'}
                   </>
                 ) : mode === 'login' ? (
-                  'Se connecter'
+                  'Sign In'
                 ) : (
-                  'Créer mon compte'
+                  'Create Account'
                 )}
               </Button>
             </form>
@@ -168,18 +168,18 @@ export default function AuthPage(): JSX.Element {
             <div className="text-sm text-muted-foreground text-center">
               {mode === 'login' ? (
                 <>
-                  Pas encore de compte ?{' '}
+                  Don't have an account yet?{' '}
                   <button
                     type="button"
                     onClick={(): void => setMode('register')}
                     className="text-primary hover:underline font-medium"
                   >
-                    Créer un compte
+                    Create account
                   </button>
                 </>
               ) : (
                 <>
-                  Déjà un compte ?{' '}
+                  Already have an account?{' '}
                   <button
                     type="button"
                     onClick={(): void => setMode('login')}

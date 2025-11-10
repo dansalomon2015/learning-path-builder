@@ -70,13 +70,13 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
 
   const handleRecoveryComplete = (result: RecoveryResult): void => {
     if (result.passed) {
-      toast.success(`Récupération réussie ! ${result.recoveredDays} jour(s) récupéré(s)`);
+      toast.success(`Recovery successful! ${result.recoveredDays} day(s) recovered`);
       // Reload all streak data to get updated longestStreak if needed
       loadStreakData().catch((error: unknown): void => {
         console.error('Error loading streak data:', error);
       });
     } else {
-      toast.error(`Récupération échouée. Score: ${Math.round(result.score)}% (minimum: 70%)`);
+      toast.error(`Recovery failed. Score: ${Math.round(result.score)}% (minimum: 70%)`);
     }
     setShowRecoveryAssessment(false);
     setSelectedObjective(null);
@@ -87,7 +87,7 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
       <Card className="relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-full blur-3xl" />
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Série d&apos;apprentissage</CardTitle>
+          <CardTitle className="text-sm font-medium">Learning Streak</CardTitle>
           <Flame className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
@@ -102,7 +102,7 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
                 />
                 {currentStreak}
               </div>
-              <p className="text-xs text-muted-foreground">Jours consécutifs</p>
+              <p className="text-xs text-muted-foreground">Consecutive Days</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Trophy className="h-4 w-4" />
@@ -115,10 +115,10 @@ export function StreakCard({ userId }: StreakCardProps): JSX.Element {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-orange-500" />
-                  <span>{missedDays} jour(s) manqué(s)</span>
+                  <span>{missedDays} day(s) missed</span>
                 </div>
                 <Button size="sm" variant="outline" onClick={handleRecoverStreak}>
-                  Récupérer
+                  Recover
                 </Button>
               </div>
             </div>

@@ -77,12 +77,12 @@ export function ObjectiveSelectionModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Sélectionner un objectif pour récupérer
+            Select an Objective to Recover
           </DialogTitle>
           <DialogDescription>
-            Choisissez un objectif actif pour générer un test de récupération. Vous devrez répondre
-            à {questionCount} questions (10 par jour manqué, maximum 30). Vous pouvez récupérer
-            jusqu&apos;à 7 jours maximum.
+            Choose an active objective to generate a recovery test. You will need to answer
+            {questionCount} questions (10 per missed day, maximum 30). You can recover
+            up to 7 days maximum.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,8 +93,8 @@ export function ObjectiveSelectionModal({
         ) : objectives.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-muted-foreground">
-              Aucun objectif actif trouvé. Vous devez avoir au moins un objectif en cours pour
-              récupérer votre série.
+              No active objective found. You must have at least one active objective to
+              recover your streak.
             </p>
           </div>
         ) : (
@@ -134,16 +134,16 @@ export function ObjectiveSelectionModal({
 
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
-            Annuler
+            Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={selectedObjective == null || loading}>
             {selectedObjective != null ? (
               <>
                 <Target className="h-4 w-4 mr-2" />
-                Continuer ({questionCount} questions)
+                Continue ({questionCount} questions)
               </>
             ) : (
-              'Sélectionner un objectif'
+              'Select an Objective'
             )}
           </Button>
         </div>

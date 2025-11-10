@@ -80,6 +80,27 @@ jobs:
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
 
+      - name: Create/Update JWT_SECRET in Secret Manager
+        if: ${{ secrets.JWT_SECRET != '' }}
+        run: |
+          echo "🔑 Creating/updating JWT_SECRET in Secret Manager from GitHub secret..."
+          
+          # Check if secret exists
+          if gcloud secrets describe JWT_SECRET --project=${{ env.PROJECT_ID }} &>/dev/null; then
+            echo "📝 JWT_SECRET exists, creating new version..."
+            echo -n "${{ secrets.JWT_SECRET }}" | gcloud secrets versions add JWT_SECRET \
+              --data-file=- \
+              --project=${{ env.PROJECT_ID }}
+          else
+            echo "➕ Creating JWT_SECRET..."
+            echo -n "${{ secrets.JWT_SECRET }}" | gcloud secrets create JWT_SECRET \
+              --data-file=- \
+              --replication-policy="automatic" \
+              --project=${{ env.PROJECT_ID }}
+          fi
+          
+          echo "✅ JWT_SECRET configured in Secret Manager"
+
       - name: Ensure Cloud Run service account has secret access
         run: |
           echo "🔑 Ensuring Cloud Run service account has secret access..."
