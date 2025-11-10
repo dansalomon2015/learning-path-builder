@@ -168,7 +168,7 @@ export default function AuthPage(): JSX.Element {
             <div className="text-sm text-muted-foreground text-center">
               {mode === 'login' ? (
                 <>
-                  Don't have an account yet?{' '}
+                  Don&apos;t have an account yet?{' '}
                   <button
                     type="button"
                     onClick={(): void => setMode('register')}
