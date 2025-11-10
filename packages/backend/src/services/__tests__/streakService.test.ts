@@ -369,4 +369,133 @@ describe('StreakService - Critical Functions', () => {
       expect(result.canAttempt).toBe(true);
     });
   });
+
+  describe('getStreak - Recalculation Logic', () => {
+    it('should recalculate and reset streak to 0 when user missed 2+ days', async () => {
+      // Mock: User last studied 3 days ago with a streak of 5
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      threeDaysAgo.setHours(0, 0, 0, 0);
+
+      const mockStreakDoc: Record<string, unknown> = {
+        userId: 'user1',
+        currentStreak: 5,
+        longestStreak: 10,
+        lastStudyDate: admin.firestore.Timestamp.fromDate(threeDaysAgo),
+        missedDays: 0,
+        recoveryHistory: [],
+        updatedAt: admin.firestore.Timestamp.fromDate(threeDaysAgo),
+      };
+
+      mockFirebaseService.getDocument.mockResolvedValue(mockStreakDoc);
+
+      const result = await streakService.getStreak('user1');
+
+      // Streak should be recalculated to 0 (broken)
+      expect(result).not.toBeNull();
+      expect(result?.currentStreak).toBe(0);
+      expect(result?.missedDays).toBe(2); // 3 days since last study - 1 = 2 missed days
+      expect(result?.longestStreak).toBe(10); // Longest streak unchanged
+    });
+
+    it('should keep streak active when user studied today', async () => {
+      // Mock: User studied earlier today
+      const today = new Date();
+      today.setHours(8, 0, 0, 0);
+
+      const mockStreakDoc: Record<string, unknown> = {
+        userId: 'user1',
+        currentStreak: 7,
+        longestStreak: 10,
+        lastStudyDate: admin.firestore.Timestamp.fromDate(today),
+        missedDays: 0,
+        recoveryHistory: [],
+        updatedAt: admin.firestore.Timestamp.fromDate(today),
+      };
+
+      mockFirebaseService.getDocument.mockResolvedValue(mockStreakDoc);
+
+      const result = await streakService.getStreak('user1');
+
+      // Streak should remain active
+      expect(result).not.toBeNull();
+      expect(result?.currentStreak).toBe(7);
+      expect(result?.missedDays).toBe(0);
+    });
+
+    it('should keep streak active when user studied yesterday (grace period)', async () => {
+      // Mock: User studied yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(23, 0, 0, 0);
+
+      const mockStreakDoc: Record<string, unknown> = {
+        userId: 'user1',
+        currentStreak: 3,
+        longestStreak: 5,
+        lastStudyDate: admin.firestore.Timestamp.fromDate(yesterday),
+        missedDays: 0,
+        recoveryHistory: [],
+        updatedAt: admin.firestore.Timestamp.fromDate(yesterday),
+      };
+
+      mockFirebaseService.getDocument.mockResolvedValue(mockStreakDoc);
+
+      const result = await streakService.getStreak('user1');
+
+      // Streak should remain active (1-day grace period)
+      expect(result).not.toBeNull();
+      expect(result?.currentStreak).toBe(3);
+      expect(result?.missedDays).toBe(0);
+    });
+
+    it('should reset streak when exactly 2 days have passed', async () => {
+      // Mock: User last studied 2 days ago
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      twoDaysAgo.setHours(0, 0, 0, 0);
+
+      const mockStreakDoc: Record<string, unknown> = {
+        userId: 'user1',
+        currentStreak: 15,
+        longestStreak: 20,
+        lastStudyDate: admin.firestore.Timestamp.fromDate(twoDaysAgo),
+        missedDays: 0,
+        recoveryHistory: [],
+        updatedAt: admin.firestore.Timestamp.fromDate(twoDaysAgo),
+      };
+
+      mockFirebaseService.getDocument.mockResolvedValue(mockStreakDoc);
+
+      const result = await streakService.getStreak('user1');
+
+      // Streak should be broken
+      expect(result).not.toBeNull();
+      expect(result?.currentStreak).toBe(0);
+      expect(result?.missedDays).toBe(1); // 2 days since last study - 1 = 1 missed day
+    });
+
+    it('should create initial streak with 0 when user has no streak', async () => {
+      // Mock: No existing streak
+      mockFirebaseService.getDocument.mockResolvedValue(null);
+      mockFirebaseService.createDocument.mockResolvedValue('user1');
+
+      const result = await streakService.getStreak('user1');
+
+      // Should create new streak with 0
+      expect(result).not.toBeNull();
+      expect(result?.currentStreak).toBe(0);
+      expect(result?.longestStreak).toBe(0);
+      expect(result?.missedDays).toBe(0);
+      expect(mockFirebaseService.createDocument).toHaveBeenCalledWith(
+        'streaks',
+        expect.objectContaining({
+          userId: 'user1',
+          currentStreak: 0,
+          longestStreak: 0,
+        }),
+        'user1'
+      );
+    });
+  });
 });

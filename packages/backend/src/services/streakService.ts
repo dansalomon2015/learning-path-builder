@@ -525,7 +525,62 @@ class StreakService {
   }
 
   /**
+   * Recalculate streak based on current date
+   * This method checks if the streak is still valid and updates the values accordingly
+   * WITHOUT persisting to the database (read-only operation)
+   * 
+   * @param streak - The streak object from the database
+   * @returns The streak with recalculated values based on current date
+   */
+  private recalculateStreakFromLastStudy(streak: Streak): Streak {
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    const lastStudy = new Date(streak.lastStudyDate);
+    lastStudy.setHours(0, 0, 0, 0);
+
+    const daysSinceLastStudy = Math.floor(
+      (today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // Streak is still active if:
+    // - Studied today (0 days since last study) OR
+    // - Studied yesterday (1 day since last study - grace period)
+    const isStreakActive = daysSinceLastStudy <= 1;
+
+    if (!isStreakActive && daysSinceLastStudy >= 2) {
+      // Streak is broken - recalculate values
+      const missedDays = daysSinceLastStudy - 1; // Don't count today as missed
+      
+      logger.info('Streak recalculated as broken', {
+        userId: streak.userId,
+        oldStreak: streak.currentStreak,
+        daysSinceLastStudy,
+        missedDays,
+        lastStudyDate: streak.lastStudyDate.toISOString(),
+      });
+
+      return {
+        ...streak,
+        currentStreak: 0,              // Reset to 0 when broken
+        missedDays,                    // Update missed days count
+      };
+    }
+
+    // Streak is still active - return as is
+    logger.debug('Streak still active', {
+      userId: streak.userId,
+      currentStreak: streak.currentStreak,
+      daysSinceLastStudy,
+    });
+
+    return streak;
+  }
+
+  /**
    * Get or create streak for user
+   * Always returns recalculated values based on current date
    */
   async getStreak(userId: string): Promise<Streak | null> {
     try {
@@ -602,12 +657,16 @@ class StreakService {
           )
         : [];
 
-      return {
+      const rawStreak = {
         ...streak,
         lastStudyDate: lastStudyDateConverted,
         updatedAt: updatedAtConverted,
         recoveryHistory: recoveryHistoryConverted,
       } as Streak;
+
+      // Recalculate streak based on current date before returning
+      // This ensures the frontend always gets accurate data
+      return this.recalculateStreakFromLastStudy(rawStreak);
     } catch (error: unknown) {
       logger.error('Error getting streak:', error);
       throw error;
