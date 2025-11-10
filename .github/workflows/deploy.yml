@@ -81,7 +81,7 @@ jobs:
           docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:latest
 
       - name: Create/Update JWT_SECRET in Secret Manager
-        if: ${{ secrets.JWT_SECRET != '' }}
+        if: ${{ secrets.JWT_SECRET }}
         run: |
           echo "🔑 Creating/updating JWT_SECRET in Secret Manager from GitHub secret..."
           
