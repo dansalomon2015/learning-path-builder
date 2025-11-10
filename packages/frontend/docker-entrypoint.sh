@@ -52,12 +52,31 @@ server {
         proxy_connect_timeout 75s;
     }
 
-    # Serve favicon and other icons explicitly
-    location ~* ^/(favicon\.ico|.*\.png|manifest\.json)$ {
+    # Serve favicon explicitly (exact match, highest priority)
+    location = /favicon.ico {
         access_log off;
         log_not_found off;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+
+    # Serve manifest.json explicitly
+    location = /manifest.json {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+
+    # Serve other static icons
+    location ~* ^/(apple-touch-icon\.png|icon-.*\.png)$ {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
     }
 
     # Cache static assets
@@ -65,9 +84,10 @@ server {
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
+        try_files \$uri =404;
     }
 
-    # Handle client-side routing
+    # Handle client-side routing (last, catch-all)
     location / {
         try_files \$uri \$uri/ /index.html;
     }
@@ -110,12 +130,31 @@ server {
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
 
-    # Serve favicon and other icons explicitly
-    location ~* ^/(favicon\.ico|.*\.png|manifest\.json)$ {
+    # Serve favicon explicitly (exact match, highest priority)
+    location = /favicon.ico {
         access_log off;
         log_not_found off;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+
+    # Serve manifest.json explicitly
+    location = /manifest.json {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+
+    # Serve other static icons
+    location ~* ^/(apple-touch-icon\.png|icon-.*\.png)$ {
+        access_log off;
+        log_not_found off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
     }
 
     # Cache static assets
@@ -123,9 +162,10 @@ server {
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
+        try_files \$uri =404;
     }
 
-    # Handle client-side routing
+    # Handle client-side routing (last, catch-all)
     location / {
         try_files \$uri \$uri/ /index.html;
     }

@@ -109,7 +109,9 @@ export default function DashboardPage(): JSX.Element | null {
     try {
       const res = await apiService.deleteObjective(confirmDeleteId);
       if (res.success === true) {
-        setObjectives((prev): LearningObjective[] => prev.filter((o): boolean => o.id !== confirmDeleteId));
+        setObjectives((prev): LearningObjective[] =>
+          prev.filter((o): boolean => o.id !== confirmDeleteId)
+        );
         toast.success('Objective deleted');
       } else {
         const errorMessage =
@@ -119,8 +121,7 @@ export default function DashboardPage(): JSX.Element | null {
         toast.error(errorMessage);
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to delete objective';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete objective';
       toast.error(errorMessage);
     } finally {
       closeDeleteConfirm();
@@ -211,7 +212,7 @@ export default function DashboardPage(): JSX.Element | null {
         </div>
 
         {/* Objectives Section */}
-        <div className="space-y-6">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">My Objectives</h2>
             <Button onClick={(): void => setShowCreateDialog(true)}>
@@ -262,7 +263,9 @@ export default function DashboardPage(): JSX.Element | null {
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Objective</h3>
             <p className="text-slate-600 mb-6">
-              Are you sure you want to delete <span className="font-semibold">{confirmDeleteTitle}</span>? This action will also delete all associated learning paths.
+              Are you sure you want to delete{' '}
+              <span className="font-semibold">{confirmDeleteTitle}</span>? This action will also
+              delete all associated learning paths.
             </p>
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={closeDeleteConfirm}>
