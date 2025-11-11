@@ -21,8 +21,8 @@ export function Logo({ size = 'md', className = '' }: LogoProps): JSX.Element {
       alt="FlashLearn AI Logo" 
       className={`${sizeClass} ${className}`.trim()} 
       onError={(e): void => {
-        // Fallback to favicon if icons fail to load
-        (e.target as HTMLImageElement).src = '/favicon.ico';
+        // Fallback to Cloudinary-hosted favicon if icons fail to load
+        (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dpuietmcx/image/upload/v1762824312/favicon_xbonvi.ico';
       }}
     />
   );
